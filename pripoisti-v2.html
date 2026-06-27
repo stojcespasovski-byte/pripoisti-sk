@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>pripoisti.sk — automanager</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --red:      #D63B1F;
+    --orange:   #E8821A;
+    --amber:    #F0A500;
+    --slate:    #4A5568;
+    --slate-lt: #718096;
+    --bg:       #F7F6F3;
+    --white:    #FFFFFF;
+    --border:   #E2DDD6;
+    --text:     #1A1A1A;
+    --shadow:   0 4px 24px rgba(26,26,26,0.08);
+    --shadow-sm:0 2px 8px rgba(26,26,26,0.05);
+    --grad:     linear-gradient(90deg, var(--red) 0%, var(--orange) 55%, var(--amber) 100%);
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+  }
+
+  /* ─── HEADER ─── */
+  header {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    height: 68px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 48px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo-wrap img {
+    height: 42px;
+    display: block;
+  }
+  .header-trust {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--slate-lt);
+    font-weight: 500;
+  }
+  .lock-icon {
+    width: 14px; height: 14px;
+    fill: none;
+    stroke: var(--slate-lt);
+    stroke-width: 1.8;
+  }
+
+  /* ─── PROGRESS ─── */
+  .progress-wrap {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 0 48px;
+  }
+  .progress-inner {
+    max-width: 680px;
+    margin: 0 auto;
+    display: flex;
+  }
+  .step {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 8px 12px;
+    position: relative;
+    cursor: pointer;
+    gap: 5px;
+  }
+  .step::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+  }
+  .step.active::after { background: var(--grad); }
+  .step.done::after   { background: var(--orange); opacity: .35; }
+  .step-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--bg);
+    color: var(--slate-lt);
+    font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .2s;
+  }
+  .step.active .step-num {
+    background: var(--grad);
+    color: white;
+  }
+  .step.done .step-num {
+    background: rgba(232,130,26,.15);
+    color: var(--orange);
+  }
+  .step-label {
+    font-size: 11px; font-weight: 500;
+    color: var(--slate-lt);
+    white-space: nowrap;
+  }
+  .step.active .step-label { color: var(--orange); font-weight: 700; }
+  .step.done   .step-label { color: var(--slate); }
+
+  /* ─── LAYOUT ─── */
+  .main {
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 40px 48px;
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 28px;
+    align-items: start;
+  }
+  .main.center { grid-template-columns: 1fr; max-width: 700px; }
+
+  /* ─── CARD ─── */
+  .card {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 36px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+  }
+  .card-title {
+    font-size: 22px; font-weight: 800;
+    color: var(--text);
+    margin-bottom: 4px;
+    letter-spacing: -.3px;
+  }
+  .card-sub {
+    font-size: 13px; color: var(--slate-lt);
+    margin-bottom: 28px;
+    line-height: 1.55;
+  }
+
+  /* ─── HERO ─── */
+  .hero {
+    background: var(--text);
+    border-radius: 16px;
+    padding: 40px 44px;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 240px; height: 240px;
+    border-radius: 50%;
+    background: var(--orange);
+    opacity: .07;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -40px; left: 40%;
+    width: 160px; height: 160px;
+    border-radius: 50%;
+    background: var(--red);
+    opacity: .06;
+  }
+  .hero-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(240,165,0,.4);
+    background: rgba(240,165,0,.1);
+    font-size: 11px; font-weight: 700;
+    color: var(--amber);
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    margin-bottom: 18px;
+  }
+  .hero h1 {
+    font-size: 30px; font-weight: 800;
+    line-height: 1.22;
+    color: white;
+    margin-bottom: 12px;
+    letter-spacing: -.4px;
+    position: relative;
+  }
+  .hero h1 em {
+    font-style: normal;
+    background: var(--grad);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero p {
+    font-size: 14px;
+    color: rgba(255,255,255,.6);
+    line-height: 1.65;
+    max-width: 500px;
+    position: relative;
+  }
+
+  /* ─── FORM ─── */
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+  .form-row.single  { grid-template-columns: 1fr; }
+  .form-row.triple  { grid-template-columns: 1fr 1fr 1fr; }
+  .field label {
+    display: block;
+    font-size: 11px; font-weight: 700;
+    color: var(--slate);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+  }
+  .field input, .field select {
+    width: 100%;
+    height: 46px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 0 14px;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    color: var(--text);
+    background: var(--white);
+    outline: none;
+    transition: border-color .15s;
+  }
+  .field input:focus, .field select:focus { border-color: var(--orange); }
+  .field input::placeholder { color: #BDB7AE; }
+
+  /* ─── FREQ TABS ─── */
+  .freq-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .freq-label { font-size: 12px; font-weight: 700; color: var(--slate); text-transform: uppercase; letter-spacing: .5px; margin-right: 2px; }
+  .freq-tabs {
+    display: flex;
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 3px;
+    border: 1px solid var(--border);
+  }
+  .freq-tab {
+    padding: 7px 15px;
+    border-radius: 7px;
+    font-size: 13px; font-weight: 600;
+    color: var(--slate-lt);
+    cursor: pointer;
+    transition: all .15s;
+    border: none;
+    background: none;
+    font-family: 'Inter', sans-serif;
+  }
+  .freq-tab.active {
+    background: var(--white);
+    color: var(--orange);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+  }
+
+  /* ─── TILES ─── */
+  .tiles-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .tile {
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 16px 14px;
+    cursor: pointer;
+    transition: all .18s;
+    position: relative;
+    background: var(--white);
+    user-select: none;
+  }
+  .tile:hover { border-color: var(--orange); box-shadow: 0 4px 16px rgba(232,130,26,.12); }
+  .tile.selected {
+    border-color: var(--orange);
+    background: rgba(232,130,26,.04);
+  }
+  .tile-check {
+    position: absolute;
+    top: 12px; right: 12px;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: white;
+    transition: all .18s;
+  }
+  .tile.selected .tile-check {
+    background: var(--grad);
+    border: none;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tile.selected .tile-check::after {
+    content: '';
+    width: 9px; height: 5px;
+    border-left: 2px solid white;
+    border-bottom: 2px solid white;
+    transform: rotate(-45deg) translateY(-1px);
+    display: block;
+  }
+  /* SVG ICON */
+  .tile-icon {
+    width: 36px; height: 36px;
+    margin-bottom: 10px;
+  }
+  .tile-icon svg {
+    width: 100%; height: 100%;
+  }
+  .tile-name {
+    font-size: 13px; font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+    line-height: 1.3;
+  }
+  .tile-desc {
+    font-size: 11px; color: var(--slate-lt);
+    line-height: 1.45;
+    margin-bottom: 10px;
+  }
+  .tile-price {
+    font-size: 15px; font-weight: 800;
+    color: var(--orange);
+  }
+  .tile-price span { font-size: 11px; font-weight: 400; color: var(--slate-lt); }
+  .tile-info {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 11px; font-weight: 600;
+    color: var(--slate-lt);
+    margin-top: 5px;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .tile-info:hover { color: var(--orange); }
+
+  /* ─── SIDEBAR ─── */
+  .sidebar {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 26px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    position: sticky;
+    top: 130px;
+  }
+  .sidebar-title {
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    color: var(--slate);
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sum-items { margin-bottom: 16px; min-height: 40px; }
+  .sum-empty { font-size: 13px; color: var(--slate-lt); text-align: center; padding: 16px 0; }
+  .sum-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--bg);
+    font-size: 13px;
+  }
+  .sum-item-name { color: var(--slate); font-weight: 500; display: flex; align-items: center; gap: 6px; }
+  .sum-item-price { font-weight: 700; color: var(--text); }
+  .sum-remove {
+    background: none; border: none;
+    color: #BDB7AE; cursor: pointer;
+    font-size: 16px; line-height: 1;
+    margin-left: 6px; transition: color .15s;
+    padding: 0;
+  }
+  .sum-remove:hover { color: var(--red); }
+  .sum-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding-top: 14px;
+    border-top: 2px solid var(--text);
+    margin-top: 4px;
+  }
+  .sum-total-label { font-size: 12px; font-weight: 700; color: var(--slate); text-transform: uppercase; letter-spacing: .5px; }
+  .sum-total-price { font-size: 22px; font-weight: 800; color: var(--text); }
+  .sum-total-price sup { font-size: 13px; font-weight: 600; }
+  .freq-note { font-size: 11px; color: var(--slate-lt); margin-top: 4px; text-align: right; }
+
+  /* ─── BUTTONS ─── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    height: 50px;
+    border-radius: 12px;
+    font-size: 14px; font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all .15s;
+    border: none;
+    white-space: nowrap;
+  }
+  .btn-primary {
+    background: var(--grad);
+    color: white;
+    padding: 0 28px;
+    width: 100%;
+    box-shadow: 0 4px 16px rgba(232,130,26,.25);
+  }
+  .btn-primary:hover { opacity: .92; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(232,130,26,.3); }
+  .btn-ghost {
+    background: none;
+    color: var(--slate);
+    border: 1.5px solid var(--border);
+    padding: 0 20px;
+  }
+  .btn-ghost:hover { border-color: var(--slate); color: var(--text); }
+  .btn-row { display: flex; gap: 12px; margin-top: 28px; }
+
+  /* ─── MODAL ─── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(26,26,26,.55);
+    backdrop-filter: blur(3px);
+    z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity .2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: white;
+    border-radius: 20px;
+    padding: 36px;
+    max-width: 460px;
+    width: 90%;
+    box-shadow: 0 24px 64px rgba(0,0,0,.18);
+    transform: translateY(20px);
+    transition: transform .2s;
+    position: relative;
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-icon { margin-bottom: 14px; }
+  .modal-icon svg { width: 44px; height: 44px; }
+  .modal-title { font-size: 21px; font-weight: 800; margin-bottom: 10px; letter-spacing: -.3px; }
+  .modal-body { font-size: 14px; color: var(--slate); line-height: 1.7; margin-bottom: 20px; }
+  .modal-body ul { padding-left: 18px; margin-top: 8px; }
+  .modal-body li { margin-bottom: 5px; }
+  .modal-price { font-size: 28px; font-weight: 800; background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 22px; }
+  .modal-price small { font-size: 14px; font-weight: 400; color: var(--slate-lt); -webkit-text-fill-color: var(--slate-lt); }
+  .modal-close {
+    position: absolute; top: 18px; right: 18px;
+    width: 30px; height: 30px;
+    border-radius: 50%; border: none;
+    background: var(--bg); color: var(--slate);
+    font-size: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .15s;
+  }
+  .modal-close:hover { background: var(--border); }
+  .modal-btns { display: flex; gap: 10px; }
+  .modal-add {
+    flex: 1;
+    background: var(--grad); color: white;
+    border: none; border-radius: 12px;
+    height: 46px; font-size: 14px; font-weight: 700;
+    cursor: pointer; font-family: 'Inter', sans-serif;
+    transition: opacity .15s;
+    box-shadow: 0 4px 14px rgba(232,130,26,.25);
+  }
+  .modal-add:hover { opacity: .9; }
+  .modal-add.remove { background: var(--red); box-shadow: 0 4px 14px rgba(214,59,31,.2); }
+  .modal-cancel {
+    flex: 1;
+    background: var(--bg); color: var(--slate);
+    border: 1.5px solid var(--border); border-radius: 12px;
+    height: 46px; font-size: 14px; font-weight: 600;
+    cursor: pointer; font-family: 'Inter', sans-serif;
+  }
+
+  /* ─── PAGES ─── */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ─── SECTION LABEL ─── */
+  .sec-label {
+    font-size: 11px; font-weight: 700;
+    color: var(--orange);
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    margin-bottom: 16px;
+    margin-top: 24px;
+  }
+  .sec-label:first-child { margin-top: 0; }
+
+  /* ─── CHECKBOXES ─── */
+  .chk-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+  .chk-row input { width: 16px; height: 16px; accent-color: var(--orange); margin-top: 2px; flex-shrink: 0; cursor: pointer; }
+  .chk-row label { font-size: 13px; color: var(--slate); line-height: 1.5; cursor: pointer; }
+  .chk-row label a { color: var(--orange); text-decoration: none; }
+
+  /* ─── CONFIRM ─── */
+  .confirm-box {
+    background: rgba(232,130,26,.06);
+    border: 1px solid rgba(232,130,26,.2);
+    border-radius: 14px;
+    padding: 22px;
+    margin-bottom: 24px;
+  }
+  .confirm-row { display: flex; justify-content: space-between; font-size: 14px; padding: 8px 0; border-bottom: 1px solid rgba(232,130,26,.1); }
+  .confirm-row:last-child { border-bottom: none; }
+  .confirm-row-label { color: var(--slate-lt); }
+  .confirm-row-val { font-weight: 600; }
+  .confirm-items-title { font-size: 14px; font-weight: 700; color: var(--text); margin: 24px 0 12px; }
+  .confirm-item {
+    display: flex; align-items: center;
+    justify-content: space-between;
+    padding: 11px 14px;
+    background: white;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .confirm-item-left { font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .confirm-item-price { font-weight: 800; color: var(--orange); }
+  .confirm-total-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding-top: 18px;
+    border-top: 2px solid var(--text);
+    margin-top: 14px;
+  }
+  .confirm-total-label { font-size: 14px; font-weight: 700; }
+  .confirm-total-price { font-size: 30px; font-weight: 800; }
+
+  /* ─── SUCCESS ─── */
+  .success { text-align: center; padding: 60px 30px; }
+  .success-icon {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    background: rgba(232,130,26,.1);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 22px;
+  }
+  .success-icon svg { width: 32px; height: 32px; }
+  .success h2 { font-size: 26px; font-weight: 800; margin-bottom: 10px; }
+  .success p { font-size: 14px; color: var(--slate); line-height: 1.65; }
+
+  /* ─── ICON SET ─── */
+  /* Single stroke, brand-neutral, 24×24 viewBox */
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo-wrap">
+    <img src="data:image/png;base64,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" alt="pripoisti.sk automanager">
+  </div>
+  <div class="header-trust">
+    <svg class="lock-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    Bezpečné &amp; šifrované
+  </div>
+</header>
+
+<!-- PROGRESS -->
+<div class="progress-wrap">
+  <div class="progress-inner">
+    <div class="step active" id="prog-1" onclick="goStep(1)">
+      <div class="step-num">1</div>
+      <div class="step-label">Vozidlo</div>
+    </div>
+    <div class="step" id="prog-2" onclick="goStep(2)">
+      <div class="step-num">2</div>
+      <div class="step-label">Pripoistenia</div>
+    </div>
+    <div class="step" id="prog-3" onclick="goStep(3)">
+      <div class="step-num">3</div>
+      <div class="step-label">Osobné údaje</div>
+    </div>
+    <div class="step" id="prog-4" onclick="goStep(4)">
+      <div class="step-num">4</div>
+      <div class="step-label">Súhrn</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ STEP 1 ══════ -->
+<div id="page-1" class="page active">
+  <div style="max-width:1160px;margin:0 auto;padding:40px 48px;">
+    <div class="hero">
+      <div class="hero-badge">✦ Unikátne na slovenskom trhu</div>
+      <h1>Pripoistenie <em>kedykoľvek</em>,<br>ku akémukoľvek PZP alebo havarijnému poisteniu</h1>
+      <p>9 pripoistení, ktoré si navolíte priamo k existujúcej zmluve — bez väzby na poisťovňu. Žiadne čakanie, žiadne kompromisy.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Údaje o vozidle</div>
+      <div class="card-sub">Zadajte EČV alebo VIN. Ostatné údaje doplníme automaticky z evidencie.</div>
+
+      <div class="form-row">
+        <div class="field">
+          <label>EČV vozidla *</label>
+          <input type="text" placeholder="BA123AB" id="ecv-input">
+        </div>
+        <div class="field">
+          <label>VIN číslo</label>
+          <input type="text" placeholder="Voliteľné">
+        </div>
+      </div>
+      <div class="form-row triple">
+        <div class="field">
+          <label>Značka *</label>
+          <select id="znacka-input">
+            <option value="">Vyberte...</option>
+            <option>Škoda</option><option>Volkswagen</option><option>BMW</option>
+            <option>Mercedes-Benz</option><option>Audi</option><option>Toyota</option>
+            <option>Kia</option><option>Hyundai</option><option>Ford</option><option>Iné</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Model *</label>
+          <input type="text" placeholder="Octavia" id="model-input">
+        </div>
+        <div class="field">
+          <label>Rok výroby *</label>
+          <select id="rok-input" onchange="checkGAP()">
+            <option value="">Rok...</option>
+            <option>2025</option><option>2024</option><option>2023</option>
+            <option>2022</option><option>2021</option><option>2020</option>
+            <option>2019</option><option>2018</option><option>2017</option>
+            <option>2016</option><option>Starší</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row triple">
+        <div class="field">
+          <label>Typ paliva</label>
+          <select><option>Benzín</option><option>Nafta</option><option>Elektro</option><option>Hybrid</option><option>LPG</option></select>
+        </div>
+        <div class="field">
+          <label>Objem motora (ccm)</label>
+          <input type="number" placeholder="1598">
+        </div>
+        <div class="field">
+          <label>Výkon (kW)</label>
+          <input type="number" placeholder="85">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label>Existujúca poisťovňa *</label>
+          <select id="poistovna-input">
+            <option value="">Vyberte poisťovňu...</option>
+            <option>Allianz</option><option>ČSOB Poisťovňa</option>
+            <option>Generali</option><option>Komunálna poisťovňa</option>
+            <option>NN</option><option>Uniqa</option><option>Union</option><option>Wüstenrot</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Číslo poistnej zmluvy *</label>
+          <input type="text" placeholder="1234567890" id="zmluva-input">
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="goStep(2)" style="max-width:360px;">Pokračovať na výber pripoistení →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ STEP 2 ══════ -->
+<div id="page-2" class="page">
+  <div class="main">
+    <div>
+      <div class="card">
+        <div class="card-title">Vyberte pripoistenia</div>
+        <div class="card-sub">Kliknite na produkt pre výber. Tlačidlo „Detail" zobrazí podmienky a kryté riziká.</div>
+
+        <div class="freq-wrap">
+          <span class="freq-label">Platba:</span>
+          <div class="freq-tabs">
+            <button class="freq-tab active" onclick="setFreq('mesačne',1,this)">Mesačne</button>
+            <button class="freq-tab" onclick="setFreq('štvrťročne',3,this)">Štvrťročne</button>
+            <button class="freq-tab" onclick="setFreq('polročne',6,this)">Polročne</button>
+            <button class="freq-tab" onclick="setFreq('ročne',12,this)">Ročne</button>
+          </div>
+        </div>
+
+        <div class="tiles-grid" id="tiles-grid"></div>
+
+        <div class="btn-row">
+          <button class="btn btn-ghost" style="width:auto" onclick="goStep(1)">← Späť</button>
+          <button class="btn btn-primary" onclick="goStep(3)">Pokračovať →</button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sidebar">
+        <div class="sidebar-title">Váš výber</div>
+        <div class="sum-items" id="sum-items">
+          <div class="sum-empty">Zatiaľ ste nevybrali žiadne pripoistenie.</div>
+        </div>
+        <div class="sum-total">
+          <span class="sum-total-label">Celkom</span>
+          <div>
+            <div class="sum-total-price" id="sum-total"><sup>€</sup>0,00</div>
+            <div class="freq-note" id="freq-note">/ mesačne</div>
+          </div>
+        </div>
+        <div style="margin-top:18px;">
+          <button class="btn btn-primary" style="height:44px;font-size:13px;" onclick="goStep(3)">Pokračovať →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ STEP 3 ══════ -->
+<div id="page-3" class="page">
+  <div style="max-width:1160px;margin:0 auto;padding:40px 48px;">
+    <div class="card">
+      <div class="card-title">Osobné údaje</div>
+      <div class="card-sub">Vyplňte údaje poistníka — osoby uzatvárajúcej zmluvu.</div>
+
+      <div class="sec-label">Základné informácie</div>
+      <div class="form-row">
+        <div class="field"><label>Meno *</label><input type="text" placeholder="Ján"></div>
+        <div class="field"><label>Priezvisko *</label><input type="text" placeholder="Novák"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>Rodné číslo *</label><input type="text" placeholder="820101/1234"></div>
+        <div class="field"><label>Dátum narodenia *</label><input type="date"></div>
+      </div>
+
+      <div class="sec-label">Kontaktné údaje</div>
+      <div class="form-row">
+        <div class="field"><label>E-mail *</label><input type="email" placeholder="jan.novak@email.sk"></div>
+        <div class="field"><label>Telefón *</label><input type="tel" placeholder="+421 900 000 000"></div>
+      </div>
+
+      <div class="sec-label">Trvalé bydlisko</div>
+      <div class="form-row single">
+        <div class="field"><label>Ulica a číslo *</label><input type="text" placeholder="Hlavná 12"></div>
+      </div>
+      <div class="form-row triple">
+        <div class="field"><label>PSČ *</label><input type="text" placeholder="81101"></div>
+        <div class="field" style="grid-column:span 2;"><label>Mesto *</label><input type="text" placeholder="Bratislava"></div>
+      </div>
+
+      <div class="sec-label">IBAN pre prípadné plnenie</div>
+      <div class="form-row single">
+        <div class="field"><label>IBAN</label><input type="text" placeholder="SK00 0000 0000 0000 0000 0000"></div>
+      </div>
+
+      <div style="margin-top:8px;">
+        <div class="chk-row">
+          <input type="checkbox" id="gdpr">
+          <label for="gdpr">Súhlasím so <a href="#">spracovaním osobných údajov</a> v súlade s GDPR *</label>
+        </div>
+        <div class="chk-row">
+          <input type="checkbox" id="vop">
+          <label for="vop">Oboznámil/a som sa s <a href="#">Všeobecnými poistnými podmienkami</a> *</label>
+        </div>
+        <div class="chk-row">
+          <input type="checkbox" id="marketing">
+          <label for="marketing">Súhlasím so zasielaním marketingových informácií (voliteľné)</label>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-ghost" style="width:auto" onclick="goStep(2)">← Späť</button>
+        <button class="btn btn-primary" onclick="goStep(4)">Zobraziť súhrn →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ STEP 4 ══════ -->
+<div id="page-4" class="page">
+  <div style="max-width:740px;margin:0 auto;padding:40px 48px;">
+    <div class="card" id="confirm-card"></div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-icon" id="modal-icon"></div>
+    <div class="modal-title" id="modal-title"></div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-price" id="modal-price"></div>
+    <div class="modal-btns">
+      <button class="modal-add" id="modal-add-btn" onclick="modalToggle()"></button>
+      <button class="modal-cancel" onclick="closeModal()">Zatvoriť</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ─── DATA ─── */
+const COVERS = [
+  {
+    id:'havaria', name:'Havária a zrážka so zverou',
+    desc:'Škody z nehody aj zrážky so zverou.',
+    detail:'Kryje škody na vozidle spôsobené dopravnou nehodou alebo zrážkou so zverou. Platí bez ohľadu na vinníka.',
+    covers:['Dopravná nehoda','Zrážka s divou zverou','Prevrhnutie vozidla','Pád do priekopy'],
+    base:12.5,
+    svg:`<svg viewBox="0 0 24 24" fill="none" stroke="#E8821A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="13" width="22" height="7" rx="2"/><path d="M4 20v2m16-2v2M7 13l2-5h6l2 5"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg>`
+  },
+  {
+    id:'zver', name:'Zrážka so zverou',
+    desc:'Ochrana pri náraze do divej zveri.',
+    detail:'Pokrýva škody spôsobené divou zverou — srnkami, diviakmi, líškami a ďalšími zvieratami. Cielené riešenie pre tých, čo nepotrebujú plnú havárku.',
+    covers:['Divá zver akéhokoľvek druhu','Náhradné vozidlo','Odťahové služby'],
+    base:3.9,
+    svg:`<svg viewBox="0 0 24 24" fill="none" stroke="#E8821A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12c0-4.4 3.6-8 8-8s8 3.6 8 8"/><path d="M12 4V2m4.2 2.8 1.4-1.4M19 12h2M16.8 7.8l1.4-1.4"/><path d="M7 16l2-2 2 2 2-2 2 2"/></svg>`
+  },
+  {
+    id:'kradez', name:'Krádež',
+    desc:'Poistenie odcudzenia vozidla alebo jeho časti.',
+    detail:'Chráni pred finančnou stratou pri krádeži vozidla alebo jeho súčastí. Zahŕňa aj škody pri pokuse o krádež.',
+    covers:['Odcudzenie vozidla','Krádež vybavenia','Vandalizmus pri pokuse','Odťah zahrnutý'],
+    base:8.2,
+    svg:`<svg viewBox="0 0 24 24" fill="none" stroke="#E8821A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2.5 2.5"/><path d="M6.5 6.5 5 5M17.5 6.5 19 5"/></svg>`
+  },
+  {
+    id:'priroda', name:'Prírodná udalosť',
+    desc:'Búrka, povodeň, krupobitie, pád stromu.',
+    detail:'Kryje škody zo živelných pohrôm — krupobitia, víchrice, povodne, pádu stromu alebo iného predmetu pôsobením počasia.',
+    covers:['Krupobitie','Víchrica','Povodeň','Pád stromu','Zosuv pôdy'],
+    base:4.5,
+    svg:`<svg viewBox="0 0 24 24" fill="none" stroke="#E8821A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25"/><polyline points="16 13 12 17 8 13"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`
+  },
+  {
+    id:'skla', name:'Sklá',
+    desc:'Poškodenie čelného, zadného alebo bočného skla.',
+    detail:'Pokrýva opravu alebo výmenu poškodených skiel — čelné, zadné aj bočné okná. Väčšinou bez spoluúčasti.',
+    covers:['Čelné sklo','Zadné sklo','Bočné okná','Strešné okno','Kamera v skle'],
+    base:2.9,
+    svg:`<svg viewBox="0 0 24 24" fill="none" stroke="#E8821A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="6" x2="12" y2="18"/></svg>`
+  },
+  {
+    id:'vandalizmus', name:'Vandalizmus',
+    desc:'Úmyselné poškodenie vozidla cudzou osobou.',
+    detail:'Chráni pred škodami spôsobenými tretími osobami úmyselne — poškriabanie, poškodenie karosérie, zničenie zrkadiel.',
+    covers:['Poškriabanie laku','Poškodenie karosérie','Zničenie svetiel','Podpálenie'],
+    base:3.1,
+    svg:`<svg viewBox="0 0 24 24" fill="none" stroke="#E8821A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.5 0 10-4.5 10-10S17.5 2 12 2 2 6.5 2 12s4.5 10 10 10z"/><path d="M15 9l-6 6M9 9l6 6"/></svg>`
+  },
+  {
+    id:'asistencia', name:'Asistencia',
+    desc:'24/7 pomoc na ceste kdekoľvek v Európe.',
+    detail:'Nepretržitá asistenčná služba v celej Európe — odťah, defekt, vypytie paliva, náhradné vozidlo.',
+    covers:['Odťah do 100 km','Pomoc pri defekte','Dopravenie domov','Náhradné vozidlo 3 dni','Pokrytie celej Európy'],
+    base:5.5,
+    svg:`<svg viewBox="0 0 24 24" fill="none" stroke="#E8821A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92V22h-5.09a10 10 0 1 1 5.09-5.08z"/><path d="M12 8v4l2 2"/></svg>`
+  },
+  {
+    id:'uraz', name:'Úraz',
+    desc:'Krytie vodiča a spolucestujúcich pri nehode.',
+    detail:'Finančná pomoc pri úraze vodiča alebo spolucestujúcich. Krytie trvalých následkov, hospitalizácie aj smrti.',
+    covers:['Trvalé následky','Hospitalizácia','Smrť úrazom','Denné odškodné'],
+    base:6.8,
+    svg:`<svg viewBox="0 0 24 24" fill="none" stroke="#E8821A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>`
+  },
+  {
+    id:'batozina', name:'Batožina',
+    desc:'Ochrana vecí vo vozidle pri nehode alebo krádeži.',
+    detail:'Kryje poškodenie alebo odcudzenie osobných vecí prepravovaných vo vozidle — elektronika, oblečenie, športové vybavenie.',
+    covers:['Elektronika a gadgety','Športové vybavenie','Oblečenie a doplnky','Do 2 000 € hodnoty'],
+    base:2.2,
+    svg:`<svg viewBox="0 0 24 24" fill="none" stroke="#E8821A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>`
+  }
+];
+
+const GAP = {
+  id:'gap', name:'GAP — rozdiel hodnoty',
+  desc:'Doplnok ku Havárií alebo Krádeži. Platí pre autá do 6 mes. od 1. prihlásenia.',
+  detail:'GAP kryje rozdiel medzi pôvodnou hodnotou vozidla a výplatou od poisťovne. Dostupné len pre autá do 6 mesiacov od prvého prihlásenia.',
+  covers:['Rozdiel reálnej hodnoty','Príplatok ku Havárií alebo Krádeži'],
+  base:15.0,
+  svg:`<svg viewBox="0 0 24 24" fill="none" stroke="#D63B1F" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`
+};
+
+let currentFreq = 'mesačne';
+let freqMult = 1;
+let selected = {};
+let showGAP = false;
+let modalCoverId = null;
+
+function price(base, mult) {
+  return (base * mult).toFixed(2).replace('.',',');
+}
+
+function checkGAP() {
+  const rok = document.getElementById('rok-input').value;
+  showGAP = (rok === '2025' || rok === '2024');
+  renderTiles();
+}
+
+function getCovers() {
+  const list = [...COVERS];
+  if (showGAP) list.push(GAP);
+  return list;
+}
+
+function renderTiles() {
+  const grid = document.getElementById('tiles-grid');
+  grid.innerHTML = '';
+  getCovers().forEach(c => {
+    const sel = !!selected[c.id];
+    const p = price(c.base, freqMult);
+    const div = document.createElement('div');
+    div.className = 'tile' + (sel ? ' selected' : '');
+    div.innerHTML = `
+      <div class="tile-check"></div>
+      <div class="tile-icon">${c.svg}</div>
+      <div class="tile-name">${c.name}</div>
+      <div class="tile-desc">${c.desc}</div>
+      <div class="tile-price">€${p} <span>/ ${currentFreq}</span></div>
+      <div class="tile-info" onclick="openModal('${c.id}',event)">Detail a podmienky</div>
+    `;
+    div.addEventListener('click', e => {
+      if (e.target.classList.contains('tile-info')) return;
+      toggleCover(c.id);
+    });
+    grid.appendChild(div);
+  });
+}
+
+function toggleCover(id) {
+  if (selected[id]) delete selected[id];
+  else selected[id] = true;
+  renderTiles();
+  renderSummary();
+}
+
+function renderSummary() {
+  const container = document.getElementById('sum-items');
+  const totalEl   = document.getElementById('sum-total');
+  const ids = Object.keys(selected);
+  if (!ids.length) {
+    container.innerHTML = '<div class="sum-empty">Zatiaľ ste nevybrali žiadne pripoistenie.</div>';
+    totalEl.innerHTML = '<sup>€</sup>0,00';
+    return;
+  }
+  let total = 0;
+  container.innerHTML = '';
+  ids.forEach(id => {
+    const c = getCovers().find(x => x.id === id);
+    if (!c) return;
+    const p = c.base * freqMult;
+    total += p;
+    const row = document.createElement('div');
+    row.className = 'sum-item';
+    row.innerHTML = `
+      <span class="sum-item-name">${c.name}<button class="sum-remove" onclick="removeCover('${id}')">×</button></span>
+      <span class="sum-item-price">€${price(c.base,freqMult)}</span>
+    `;
+    container.appendChild(row);
+  });
+  totalEl.innerHTML = `<sup>€</sup>${total.toFixed(2).replace('.',',')}`;
+}
+
+function removeCover(id) {
+  delete selected[id];
+  renderTiles();
+  renderSummary();
+}
+
+function setFreq(label, mult, btn) {
+  currentFreq = label;
+  freqMult = mult;
+  document.querySelectorAll('.freq-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('freq-note').textContent = `/ ${label}`;
+  renderTiles();
+  renderSummary();
+}
+
+function openModal(id, e) {
+  if (e) e.stopPropagation();
+  const c = getCovers().find(x => x.id === id);
+  modalCoverId = id;
+  document.getElementById('modal-icon').innerHTML = c.svg.replace('36px','44px').replace('36px','44px').replace('stroke-width="1.6"','stroke-width="1.5"');
+  document.getElementById('modal-title').textContent = c.name;
+  document.getElementById('modal-body').innerHTML = `<p>${c.detail}</p><ul>${c.covers.map(x=>`<li>${x}</li>`).join('')}</ul>`;
+  document.getElementById('modal-price').innerHTML = `€${price(c.base,freqMult)} <small>/ ${currentFreq}</small>`;
+  const btn = document.getElementById('modal-add-btn');
+  if (selected[id]) { btn.textContent = 'Odobrať pripoistenie'; btn.className = 'modal-add remove'; }
+  else              { btn.textContent = 'Pridať pripoistenie';  btn.className = 'modal-add'; }
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').classList.remove('open');
+  modalCoverId = null;
+}
+
+function modalToggle() {
+  if (!modalCoverId) return;
+  toggleCover(modalCoverId);
+  closeModal();
+}
+
+function buildConfirm() {
+  const ids = Object.keys(selected);
+  let total = 0;
+  ids.forEach(id => { const c = getCovers().find(x=>x.id===id); if(c) total += c.base*freqMult; });
+  const itemsHtml = ids.length ? ids.map(id => {
+    const c = getCovers().find(x=>x.id===id);
+    return `<div class="confirm-item"><div class="confirm-item-left">${c.name}</div><div class="confirm-item-price">€${price(c.base,freqMult)}</div></div>`;
+  }).join('') : '<p style="color:var(--slate-lt);font-size:14px;">Žiadne pripoistenia</p>';
+
+  const ecv     = document.getElementById('ecv-input')?.value || 'BA123AB';
+  const znacka  = document.getElementById('znacka-input')?.value || 'Škoda';
+  const model   = document.getElementById('model-input')?.value || 'Octavia';
+  const poist   = document.getElementById('poistovna-input')?.value || 'Allianz';
+  const zmluva  = document.getElementById('zmluva-input')?.value || '1234567890';
+
+  return `
+    <div class="card-title" style="margin-bottom:4px;">Súhrn objednávky</div>
+    <div class="card-sub">Skontrolujte všetky údaje pred uzatvorením.</div>
+
+    <div class="confirm-box">
+      <div class="confirm-row"><span class="confirm-row-label">Vozidlo</span><span class="confirm-row-val">${znacka} ${model} (${ecv})</span></div>
+      <div class="confirm-row"><span class="confirm-row-label">Poisťovňa</span><span class="confirm-row-val">${poist}</span></div>
+      <div class="confirm-row"><span class="confirm-row-label">Číslo zmluvy</span><span class="confirm-row-val">${zmluva}</span></div>
+      <div class="confirm-row"><span class="confirm-row-label">Platba</span><span class="confirm-row-val" style="color:var(--orange);">${currentFreq.charAt(0).toUpperCase()+currentFreq.slice(1)}</span></div>
+    </div>
+
+    <div class="confirm-items-title">Vybrané pripoistenia</div>
+    ${itemsHtml}
+
+    <div class="confirm-total-row">
+      <span class="confirm-total-label">Celková suma</span>
+      <span class="confirm-total-price">€${total.toFixed(2).replace('.',',')} <span style="font-size:16px;font-weight:500;color:var(--slate-lt);">/ ${currentFreq}</span></span>
+    </div>
+
+    <div style="margin-top:28px;">
+      <button class="btn btn-primary" onclick="submitOrder()" style="font-size:16px;height:54px;">
+        Potvrdiť a uzatvoriť zmluvu
+      </button>
+      <button class="btn btn-ghost" onclick="goStep(3)" style="margin-top:10px;width:100%;">← Upraviť údaje</button>
+    </div>
+  `;
+}
+
+function submitOrder() {
+  document.getElementById('confirm-card').innerHTML = `
+    <div class="success">
+      <div class="success-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <h2>Gratulujeme!</h2>
+      <p>Vaše pripoistenia boli úspešne uzatvorené.<br>Potvrdenie sme zaslali na váš e-mail.<br><br><strong>Vitajte v rodine pripoisti.sk!</strong></p>
+      <br>
+      <button class="btn btn-primary" onclick="location.reload()" style="width:auto;padding:0 32px;margin:0 auto;">Nová objednávka</button>
+    </div>
+  `;
+}
+
+function goStep(n) {
+  for (let i=1; i<=4; i++) {
+    document.getElementById('page-'+i).classList.toggle('active', i===n);
+    const p = document.getElementById('prog-'+i);
+    p.classList.remove('active','done');
+    if (i===n) p.classList.add('active');
+    else if (i<n) p.classList.add('done');
+  }
+  if (n===4) document.getElementById('confirm-card').innerHTML = buildConfirm();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// Init
+renderTiles();
+renderSummary();
+</script>
+</body>
+</html>
