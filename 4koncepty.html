@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>pripoisti.sk — koncepty WOW efektu</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--r:#D63B1F;--o:#E8821A;--a:#F0A500;--bg:#0D0D0D;--card:#1A1A1A;--border:rgba(255,255,255,.08);--grad:linear-gradient(100deg,#D63B1F 0%,#E8821A 55%,#F0A500 100%);}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:#fff;min-height:100vh}
+.pg-header{padding:28px 48px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.pg-logo{font-size:18px;font-weight:800}.pg-logo span{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.pg-badge{background:rgba(232,130,26,.12);border:1px solid rgba(232,130,26,.25);border-radius:20px;padding:4px 14px;font-size:11px;font-weight:700;color:var(--o);text-transform:uppercase;letter-spacing:.8px}
+.pg-intro{padding:40px 48px 0;max-width:680px}
+.pg-intro h1{font-size:28px;font-weight:900;letter-spacing:-1px;margin-bottom:10px}
+.pg-intro p{font-size:14px;color:rgba(255,255,255,.4);line-height:1.65}
+.concepts{padding:40px 48px 80px;display:flex;flex-direction:column;gap:48px}
+.concept-card{background:var(--card);border-radius:20px;overflow:hidden;border:1px solid var(--border)}
+.concept-header{padding:24px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.concept-meta{display:flex;align-items:center;gap:14px}
+.concept-letter{width:40px;height:40px;border-radius:10px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;flex-shrink:0}
+.concept-title{font-size:16px;font-weight:800}
+.concept-desc{font-size:13px;color:rgba(255,255,255,.4);margin-top:2px}
+.concept-tags{display:flex;gap:6px}
+.tag{padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;background:rgba(255,255,255,.06);color:rgba(255,255,255,.4)}
+.tag.good{background:rgba(56,161,105,.12);color:#68D391}
+.tag.wow{background:rgba(232,130,26,.12);color:var(--o)}
+.concept-body{padding:28px}
+.v-inputs{display:flex;gap:12px;margin-bottom:24px}
+.v-field{flex:1}
+.v-label{font-size:11px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:.6px;text-transform:uppercase;margin-bottom:6px}
+.v-input{width:100%;height:50px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);border-radius:10px;padding:0 14px;font-size:16px;font-weight:700;font-family:'Inter',sans-serif;color:#fff;outline:none;transition:border-color .2s;letter-spacing:1px}
+.v-input::placeholder{color:rgba(255,255,255,.18);font-weight:400;letter-spacing:0}
+.v-input:focus{border-color:var(--o)}
+.v-input.ready{border-color:rgba(232,130,26,.5);background:rgba(232,130,26,.05)}
+.tiles-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.tile-base{border:1.5px solid rgba(255,255,255,.08);border-radius:12px;padding:16px 14px;background:rgba(255,255,255,.03);cursor:pointer;position:relative;transition:border-color .18s,background .18s}
+.tile-base:hover{border-color:rgba(232,130,26,.35)}
+.tile-base.sel{border-color:var(--o);background:rgba(232,130,26,.08)}
+.tile-icon{margin-bottom:8px;display:block;width:22px;height:22px}
+.tile-name{font-size:12px;color:rgba(255,255,255,.5);font-weight:500;margin-bottom:5px}
+.tile-price{font-size:15px;font-weight:800;color:var(--o);font-variant-numeric:tabular-nums}
+.tile-price small{font-size:11px;font-weight:400;color:rgba(255,255,255,.25)}
+.tile-chk{position:absolute;top:10px;right:10px;width:17px;height:17px;border-radius:50%;border:1.5px solid rgba(255,255,255,.18);transition:all .15s}
+.tile-base.sel .tile-chk{background:var(--grad);border:none;display:flex;align-items:center;justify-content:center}
+.tile-base.sel .tile-chk::after{content:'';width:7px;height:4px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translateY(-1px);display:block}
+.ctrl-row{display:flex;align-items:center;gap:10px;margin-top:18px;padding-top:18px;border-top:1px solid var(--border)}
+.run-btn{background:var(--grad);color:#fff;border:none;border-radius:9px;padding:9px 22px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 4px 14px rgba(232,130,26,.25)}
+.reset-btn{background:none;border:1px solid var(--border);color:rgba(255,255,255,.3);border-radius:9px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif}
+.status-text{font-size:12px;color:rgba(255,255,255,.25);margin-left:auto}
+.note-box{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:14px 16px;font-size:12px;color:rgba(255,255,255,.35);line-height:1.6;margin-top:16px}
+.note-box strong{color:rgba(255,255,255,.6)}
+.loader-wrap{display:flex;align-items:center;gap:10px;margin-bottom:16px;opacity:0;height:0;overflow:hidden;transition:opacity .3s,height .3s}
+.loader-wrap.show{opacity:1;height:32px}
+.spinner{width:18px;height:18px;border:2px solid rgba(232,130,26,.2);border-top-color:var(--o);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader-text{font-size:13px;color:rgba(255,255,255,.4)}
+/* A */
+.a-tile{opacity:0;transform:scale(.94);transition:opacity .4s ease,transform .4s ease}
+.a-tile.vis{opacity:1;transform:scale(1)}
+.a-price{opacity:0;transition:opacity .35s .25s}
+.a-tile.vis .a-price{opacity:1}
+/* B */
+.b-tile{opacity:0;transform:translateY(14px);transition:opacity .35s ease,transform .35s ease}
+.b-tile.vis{opacity:1;transform:translateY(0)}
+/* C */
+.flip-wrap{perspective:700px}
+.flip-inner{position:relative;height:88px;transform-style:preserve-3d;transition:transform .55s ease}
+.flip-inner.flipped{transform:rotateY(180deg)}
+.flip-front,.flip-back{position:absolute;inset:0;backface-visibility:hidden;border-radius:12px;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;padding:12px}
+.flip-front{background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.08)}
+.flip-back{background:rgba(232,130,26,.08);border:1.5px solid rgba(232,130,26,.3);transform:rotateY(180deg)}
+.flip-back .tile-price{color:var(--o);font-size:15px;font-weight:800}
+.flip-back .tile-name{color:rgba(255,255,255,.45)}
+/* D */
+.d-overflow{overflow:hidden}
+.d-grid{transform:translateY(110%);transition:transform .65s cubic-bezier(.22,1,.36,1)}
+.d-grid.vis{transform:translateY(0)}
+</style>
+</head>
+<body>
+<div class="pg-header">
+  <div class="pg-logo">pripoisti<span>.sk</span> — design playground</div>
+  <div class="pg-badge">Interné / WIP</div>
+</div>
+<div class="pg-intro">
+  <h1>4 koncepty WOW efektu</h1>
+  <p>Po zadaní IČO + EČV sa spustí animácia a 9 dlaždíc s cenami sa "oživí". Každý koncept má iný charakter.</p>
+</div>
+<div class="concepts">
+
+<!-- A -->
+<div class="concept-card">
+  <div class="concept-header">
+    <div class="concept-meta"><div class="concept-letter">A</div><div><div class="concept-title">Fade in — všetky naraz</div><div class="concept-desc">Dlaždice sa objavia súčasne s plynulým fade + scale efektom.</div></div></div>
+    <div class="concept-tags"><div class="tag">Minimalistický</div><div class="tag good">Bezpečný</div></div>
+  </div>
+  <div class="concept-body">
+    <div class="v-inputs">
+      <div class="v-field"><div class="v-label">IČO</div><input class="v-input" id="a-ico" placeholder="12345678" oninput="aCheck()"></div>
+      <div class="v-field"><div class="v-label">EČV</div><input class="v-input" id="a-ecv" placeholder="BA123AB" oninput="aCheck()"></div>
+    </div>
+    <div class="loader-wrap" id="a-loader"><div class="spinner"></div><div class="loader-text">Načítavam údaje o vozidle...</div></div>
+    <div class="tiles-3" id="a-tiles"><div class="tile-base a-tile" onclick="this.classList.toggle('sel')"><div class="tile-chk"></div><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><rect x="1" y="13" width="22" height="7" rx="2"/><path d="M7 13l2-5h6l2 5"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg><div class="tile-name">Havária</div><div class="tile-price a-price">€12.50 <small>/mes</small></div></div>
+<div class="tile-base a-tile" onclick="this.classList.toggle('sel')"><div class="tile-chk"></div><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><path d="M3 12c0-4.4 3.6-8 8-8s8 3.6 8 8"/><path d="M7 16l2-2 2 2 2-2 2 2"/></svg><div class="tile-name">Zrážka so zverou</div><div class="tile-price a-price">€3.90 <small>/mes</small></div></div>
+<div class="tile-base a-tile" onclick="this.classList.toggle('sel')"><div class="tile-chk"></div><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2.5 2.5"/></svg><div class="tile-name">Krádež</div><div class="tile-price a-price">€8.20 <small>/mes</small></div></div>
+<div class="tile-base a-tile" onclick="this.classList.toggle('sel')"><div class="tile-chk"></div><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25"/><polyline points="16 13 12 17 8 13"/></svg><div class="tile-name">Prírodná udalosť</div><div class="tile-price a-price">€4.50 <small>/mes</small></div></div>
+<div class="tile-base a-tile" onclick="this.classList.toggle('sel')"><div class="tile-chk"></div><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="2" y1="12" x2="22" y2="12"/></svg><div class="tile-name">Sklá</div><div class="tile-price a-price">€2.90 <small>/mes</small></div></div>
+<div class="tile-base a-tile" onclick="this.classList.toggle('sel')"><div class="tile-chk"></div><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg><div class="tile-name">Vandalizmus</div><div class="tile-price a-price">€3.10 <small>/mes</small></div></div>
+<div class="tile-base a-tile" onclick="this.classList.toggle('sel')"><div class="tile-chk"></div><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><path d="M22 16.92V22h-5.09a10 10 0 1 1 5.09-5.08z"/><path d="M12 8v4l2 2"/></svg><div class="tile-name">Asistencia</div><div class="tile-price a-price">€5.50 <small>/mes</small></div></div>
+<div class="tile-base a-tile" onclick="this.classList.toggle('sel')"><div class="tile-chk"></div><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg><div class="tile-name">Úraz</div><div class="tile-price a-price">€6.80 <small>/mes</small></div></div>
+<div class="tile-base a-tile" onclick="this.classList.toggle('sel')"><div class="tile-chk"></div><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg><div class="tile-name">Batožina</div><div class="tile-price a-price">€2.20 <small>/mes</small></div></div></div>
+    <div class="ctrl-row">
+      <button class="run-btn" onclick="runA()">▶ Spustiť</button>
+      <button class="reset-btn" onclick="resetA()">Reset</button>
+      <span class="status-text" id="a-status">Zadajte IČO a EČV pre automatické spustenie</span>
+    </div>
+    <div class="note-box"><strong>Charakter:</strong> Jemný, profesionálny. Ceny sa objavia naraz — žiadne drama.</div>
+  </div>
+</div>
+
+<!-- B -->
+<div class="concept-card">
+  <div class="concept-header">
+    <div class="concept-meta"><div class="concept-letter">B</div><div><div class="concept-title">Stagger kaskáda + rolovacie čísla</div><div class="concept-desc">Dlaždice pribúdajú jedna po druhej a čísla sa "narolujú" na finálnu cenu.</div></div></div>
+    <div class="concept-tags"><div class="tag wow">WOW efekt</div><div class="tag good">Odporúčaný</div></div>
+  </div>
+  <div class="concept-body">
+    <div class="v-inputs">
+      <div class="v-field"><div class="v-label">IČO</div><input class="v-input" id="b-ico" placeholder="12345678" oninput="bCheck()"></div>
+      <div class="v-field"><div class="v-label">EČV</div><input class="v-input" id="b-ecv" placeholder="BA123AB" oninput="bCheck()"></div>
+    </div>
+    <div class="loader-wrap" id="b-loader"><div class="spinner"></div><div class="loader-text">Načítavam údaje o vozidle...</div></div>
+    <div class="tiles-3" id="b-tiles"><div class="tile-base b-tile" data-p="12.50" onclick="this.classList.toggle('sel')"><div class="tile-chk"></div><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><rect x="1" y="13" width="22" height="7" rx="2"/><path d="M7 13l2-5h6l2 5"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg><div class="tile-name">Havária</div><div class="tile-price b-price" data-final="12.50">€0,00 <small>/mes</small></div></div>
+<div class="tile-base b-tile" data-p="3.90" onclick="this.classList.toggle('sel')"><div class="tile-chk"></div><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><path d="M3 12c0-4.4 3.6-8 8-8s8 3.6 8 8"/><path d="M7 16l2-2 2 2 2-2 2 2"/></svg><div class="tile-name">Zrážka so zverou</div><div class="tile-price b-price" data-final="3.90">€0,00 <small>/mes</small></div></div>
+<div class="tile-base b-tile" data-p="8.20" onclick="this.classList.toggle('sel')"><div class="tile-chk"></div><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2.5 2.5"/></svg><div class="tile-name">Krádež</div><div class="tile-price b-price" data-final="8.20">€0,00 <small>/mes</small></div></div>
+<div class="tile-base b-tile" data-p="4.50" onclick="this.classList.toggle('sel')"><div class="tile-chk"></div><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25"/><polyline points="16 13 12 17 8 13"/></svg><div class="tile-name">Prírodná udalosť</div><div class="tile-price b-price" data-final="4.50">€0,00 <small>/mes</small></div></div>
+<div class="tile-base b-tile" data-p="2.90" onclick="this.classList.toggle('sel')"><div class="tile-chk"></div><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="2" y1="12" x2="22" y2="12"/></svg><div class="tile-name">Sklá</div><div class="tile-price b-price" data-final="2.90">€0,00 <small>/mes</small></div></div>
+<div class="tile-base b-tile" data-p="3.10" onclick="this.classList.toggle('sel')"><div class="tile-chk"></div><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg><div class="tile-name">Vandalizmus</div><div class="tile-price b-price" data-final="3.10">€0,00 <small>/mes</small></div></div>
+<div class="tile-base b-tile" data-p="5.50" onclick="this.classList.toggle('sel')"><div class="tile-chk"></div><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><path d="M22 16.92V22h-5.09a10 10 0 1 1 5.09-5.08z"/><path d="M12 8v4l2 2"/></svg><div class="tile-name">Asistencia</div><div class="tile-price b-price" data-final="5.50">€0,00 <small>/mes</small></div></div>
+<div class="tile-base b-tile" data-p="6.80" onclick="this.classList.toggle('sel')"><div class="tile-chk"></div><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg><div class="tile-name">Úraz</div><div class="tile-price b-price" data-final="6.80">€0,00 <small>/mes</small></div></div>
+<div class="tile-base b-tile" data-p="2.20" onclick="this.classList.toggle('sel')"><div class="tile-chk"></div><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg><div class="tile-name">Batožina</div><div class="tile-price b-price" data-final="2.20">€0,00 <small>/mes</small></div></div></div>
+    <div class="ctrl-row">
+      <button class="run-btn" onclick="runB()">▶ Spustiť</button>
+      <button class="reset-btn" onclick="resetB()">Reset</button>
+      <span class="status-text" id="b-status">Zadajte IČO a EČV pre automatické spustenie</span>
+    </div>
+    <div class="note-box"><strong>Charakter:</strong> Dynamický, živý. Rolovacie čísla vyvolávajú pocit výpočtu v reálnom čase. Najsilnejší WOW efekt.</div>
+  </div>
+</div>
+
+<!-- C -->
+<div class="concept-card">
+  <div class="concept-header">
+    <div class="concept-meta"><div class="concept-letter">C</div><div><div class="concept-title">Otočenie kariet (flip)</div><div class="concept-desc">Karty sú otočené rubom, po zadaní údajov sa otočia a odhalia cenu.</div></div></div>
+    <div class="concept-tags"><div class="tag">Dramatický</div><div class="tag wow">Originálny</div></div>
+  </div>
+  <div class="concept-body">
+    <div class="v-inputs">
+      <div class="v-field"><div class="v-label">IČO</div><input class="v-input" id="c-ico" placeholder="12345678" oninput="cCheck()"></div>
+      <div class="v-field"><div class="v-label">EČV</div><input class="v-input" id="c-ecv" placeholder="BA123AB" oninput="cCheck()"></div>
+    </div>
+    <div class="loader-wrap" id="c-loader"><div class="spinner"></div><div class="loader-text">Načítavam údaje o vozidle...</div></div>
+    <div class="tiles-3"><div class="flip-wrap"><div class="flip-inner" id="cf0"><div class="flip-front"><svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><rect x="1" y="13" width="22" height="7" rx="2"/><path d="M7 13l2-5h6l2 5"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg><div class="tile-name" style="margin-top:6px">Havária</div></div><div class="flip-back"><div class="tile-name">Havária</div><div class="tile-price">€12.50 <small>/mes</small></div></div></div></div>
+<div class="flip-wrap"><div class="flip-inner" id="cf1"><div class="flip-front"><svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><path d="M3 12c0-4.4 3.6-8 8-8s8 3.6 8 8"/><path d="M7 16l2-2 2 2 2-2 2 2"/></svg><div class="tile-name" style="margin-top:6px">Zrážka so zverou</div></div><div class="flip-back"><div class="tile-name">Zrážka so zverou</div><div class="tile-price">€3.90 <small>/mes</small></div></div></div></div>
+<div class="flip-wrap"><div class="flip-inner" id="cf2"><div class="flip-front"><svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2.5 2.5"/></svg><div class="tile-name" style="margin-top:6px">Krádež</div></div><div class="flip-back"><div class="tile-name">Krádež</div><div class="tile-price">€8.20 <small>/mes</small></div></div></div></div>
+<div class="flip-wrap"><div class="flip-inner" id="cf3"><div class="flip-front"><svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25"/><polyline points="16 13 12 17 8 13"/></svg><div class="tile-name" style="margin-top:6px">Prírodná udalosť</div></div><div class="flip-back"><div class="tile-name">Prírodná udalosť</div><div class="tile-price">€4.50 <small>/mes</small></div></div></div></div>
+<div class="flip-wrap"><div class="flip-inner" id="cf4"><div class="flip-front"><svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="2" y1="12" x2="22" y2="12"/></svg><div class="tile-name" style="margin-top:6px">Sklá</div></div><div class="flip-back"><div class="tile-name">Sklá</div><div class="tile-price">€2.90 <small>/mes</small></div></div></div></div>
+<div class="flip-wrap"><div class="flip-inner" id="cf5"><div class="flip-front"><svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg><div class="tile-name" style="margin-top:6px">Vandalizmus</div></div><div class="flip-back"><div class="tile-name">Vandalizmus</div><div class="tile-price">€3.10 <small>/mes</small></div></div></div></div>
+<div class="flip-wrap"><div class="flip-inner" id="cf6"><div class="flip-front"><svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><path d="M22 16.92V22h-5.09a10 10 0 1 1 5.09-5.08z"/><path d="M12 8v4l2 2"/></svg><div class="tile-name" style="margin-top:6px">Asistencia</div></div><div class="flip-back"><div class="tile-name">Asistencia</div><div class="tile-price">€5.50 <small>/mes</small></div></div></div></div>
+<div class="flip-wrap"><div class="flip-inner" id="cf7"><div class="flip-front"><svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg><div class="tile-name" style="margin-top:6px">Úraz</div></div><div class="flip-back"><div class="tile-name">Úraz</div><div class="tile-price">€6.80 <small>/mes</small></div></div></div></div>
+<div class="flip-wrap"><div class="flip-inner" id="cf8"><div class="flip-front"><svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg><div class="tile-name" style="margin-top:6px">Batožina</div></div><div class="flip-back"><div class="tile-name">Batožina</div><div class="tile-price">€2.20 <small>/mes</small></div></div></div></div></div>
+    <div class="ctrl-row">
+      <button class="run-btn" onclick="runC()">▶ Spustiť</button>
+      <button class="reset-btn" onclick="resetC()">Reset</button>
+      <span class="status-text" id="c-status">Zadajte IČO a EČV pre automatické spustenie</span>
+    </div>
+    <div class="note-box"><strong>Charakter:</strong> Dramatické odhalenie — ako otváranie kariet. Výrazné, pamätné.</div>
+  </div>
+</div>
+
+<!-- D -->
+<div class="concept-card">
+  <div class="concept-header">
+    <div class="concept-meta"><div class="concept-letter">D</div><div><div class="concept-title">Vysunutie zdola (slide up)</div><div class="concept-desc">Dlaždice sú skryté a po zadaní údajov vyplávajú zdola nahor.</div></div></div>
+    <div class="concept-tags"><div class="tag">Plynulý</div><div class="tag">Moderný</div></div>
+  </div>
+  <div class="concept-body">
+    <div class="v-inputs">
+      <div class="v-field"><div class="v-label">IČO</div><input class="v-input" id="d-ico" placeholder="12345678" oninput="dCheck()"></div>
+      <div class="v-field"><div class="v-label">EČV</div><input class="v-input" id="d-ecv" placeholder="BA123AB" oninput="dCheck()"></div>
+    </div>
+    <div class="loader-wrap" id="d-loader"><div class="spinner"></div><div class="loader-text">Načítavam údaje o vozidle...</div></div>
+    <div class="d-overflow" style="max-height:380px;">
+      <div class="tiles-3 d-grid" id="d-grid"><div class="tile-base" onclick="this.classList.toggle('sel')"><div class="tile-chk"></div><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><rect x="1" y="13" width="22" height="7" rx="2"/><path d="M7 13l2-5h6l2 5"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg><div class="tile-name">Havária</div><div class="tile-price">€12.50 <small>/mes</small></div></div>
+<div class="tile-base" onclick="this.classList.toggle('sel')"><div class="tile-chk"></div><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><path d="M3 12c0-4.4 3.6-8 8-8s8 3.6 8 8"/><path d="M7 16l2-2 2 2 2-2 2 2"/></svg><div class="tile-name">Zrážka so zverou</div><div class="tile-price">€3.90 <small>/mes</small></div></div>
+<div class="tile-base" onclick="this.classList.toggle('sel')"><div class="tile-chk"></div><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2.5 2.5"/></svg><div class="tile-name">Krádež</div><div class="tile-price">€8.20 <small>/mes</small></div></div>
+<div class="tile-base" onclick="this.classList.toggle('sel')"><div class="tile-chk"></div><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25"/><polyline points="16 13 12 17 8 13"/></svg><div class="tile-name">Prírodná udalosť</div><div class="tile-price">€4.50 <small>/mes</small></div></div>
+<div class="tile-base" onclick="this.classList.toggle('sel')"><div class="tile-chk"></div><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="2" y1="12" x2="22" y2="12"/></svg><div class="tile-name">Sklá</div><div class="tile-price">€2.90 <small>/mes</small></div></div>
+<div class="tile-base" onclick="this.classList.toggle('sel')"><div class="tile-chk"></div><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg><div class="tile-name">Vandalizmus</div><div class="tile-price">€3.10 <small>/mes</small></div></div>
+<div class="tile-base" onclick="this.classList.toggle('sel')"><div class="tile-chk"></div><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><path d="M22 16.92V22h-5.09a10 10 0 1 1 5.09-5.08z"/><path d="M12 8v4l2 2"/></svg><div class="tile-name">Asistencia</div><div class="tile-price">€5.50 <small>/mes</small></div></div>
+<div class="tile-base" onclick="this.classList.toggle('sel')"><div class="tile-chk"></div><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg><div class="tile-name">Úraz</div><div class="tile-price">€6.80 <small>/mes</small></div></div>
+<div class="tile-base" onclick="this.classList.toggle('sel')"><div class="tile-chk"></div><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="tile-icon"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg><div class="tile-name">Batožina</div><div class="tile-price">€2.20 <small>/mes</small></div></div></div>
+    </div>
+    <div class="ctrl-row">
+      <button class="run-btn" onclick="runD()">▶ Spustiť</button>
+      <button class="reset-btn" onclick="resetD()">Reset</button>
+      <span class="status-text" id="d-status">Zadajte IČO a EČV pre automatické spustenie</span>
+    </div>
+    <div class="note-box"><strong>Charakter:</strong> Plynulý, elegantný. Celá mriežka sa vynoří ako jeden celok.</div>
+  </div>
+</div>
+
+</div>
+<script>
+const DELAY = 800;
+function showL(v){document.getElementById(v+'-loader').classList.add('show')}
+function hideL(v){document.getElementById(v+'-loader').classList.remove('show')}
+function setSt(v,t){document.getElementById(v+'-status').textContent=t}
+function chk(iv,ev){
+  const i=document.getElementById(iv).value.trim(), e=document.getElementById(ev).value.trim();
+  document.getElementById(iv).classList.toggle('ready',i.length>=6);
+  document.getElementById(ev).classList.toggle('ready',e.length>=5);
+  return i.length>=6&&e.length>=5;
+}
+let aR=false,bR=false,cR=false,dR=false;
+function aCheck(){if(chk('a-ico','a-ecv')&&!aR){aR=true;setTimeout(runA,600)}}
+function runA(){showL('a');setSt('a','Načítavam...');setTimeout(()=>{hideL('a');document.querySelectorAll('.a-tile').forEach((t,i)=>setTimeout(()=>t.classList.add('vis'),i*40));setSt('a','Ceny načítané ✓')},DELAY)}
+function resetA(){aR=false;document.querySelectorAll('.a-tile').forEach(t=>t.classList.remove('vis','sel'));setSt('a','Zadajte IČO a EČV');hideL('a');document.getElementById('a-ico').value='';document.getElementById('a-ecv').value='';document.getElementById('a-ico').classList.remove('ready');document.getElementById('a-ecv').classList.remove('ready')}
+function bCheck(){if(chk('b-ico','b-ecv')&&!bR){bR=true;setTimeout(runB,600)}}
+function runB(){showL('b');setSt('b','Načítavam...');setTimeout(()=>{hideL('b');document.querySelectorAll('.b-tile').forEach((t,i)=>{setTimeout(()=>{t.classList.add('vis');const el=t.querySelector('.b-price');const fin=parseFloat(el.dataset.final);let cur=0;const iv=setInterval(()=>{cur+=fin/20;if(cur>=fin){cur=fin;clearInterval(iv)}el.innerHTML='€'+cur.toFixed(2).replace('.',',')+'<small>/mes</small>'},30)},i*100)});setSt('b','Ceny načítané ✓')},DELAY)}
+function resetB(){bR=false;document.querySelectorAll('.b-tile').forEach(t=>{t.classList.remove('vis','sel');t.querySelector('.b-price').innerHTML='€0,00 <small>/mes</small>'});setSt('b','Zadajte IČO a EČV');hideL('b');document.getElementById('b-ico').value='';document.getElementById('b-ecv').value='';document.getElementById('b-ico').classList.remove('ready');document.getElementById('b-ecv').classList.remove('ready')}
+function cCheck(){if(chk('c-ico','c-ecv')&&!cR){cR=true;setTimeout(runC,600)}}
+function runC(){showL('c');setSt('c','Načítavam...');setTimeout(()=>{hideL('c');for(let i=0;i<9;i++)setTimeout(()=>document.getElementById('cf'+i).classList.add('flipped'),i*110);setSt('c','Ceny načítané ✓')},DELAY)}
+function resetC(){cR=false;for(let i=0;i<9;i++)document.getElementById('cf'+i).classList.remove('flipped');setSt('c','Zadajte IČO a EČV');hideL('c');document.getElementById('c-ico').value='';document.getElementById('c-ecv').value='';document.getElementById('c-ico').classList.remove('ready');document.getElementById('c-ecv').classList.remove('ready')}
+function dCheck(){if(chk('d-ico','d-ecv')&&!dR){dR=true;setTimeout(runD,600)}}
+function runD(){showL('d');setSt('d','Načítavam...');setTimeout(()=>{hideL('d');document.getElementById('d-grid').classList.add('vis');setSt('d','Ceny načítané ✓')},DELAY)}
+function resetD(){dR=false;document.getElementById('d-grid').classList.remove('vis');setSt('d','Zadajte IČO a EČV');hideL('d');document.getElementById('d-ico').value='';document.getElementById('d-ecv').value='';document.getElementById('d-ico').classList.remove('ready');document.getElementById('d-ecv').classList.remove('ready')}
+</script>
+</body>
+</html>
