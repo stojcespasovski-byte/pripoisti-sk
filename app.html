@@ -399,8 +399,8 @@ select.entry-input option { background: #1a1a1a; color: white; }
 }
 .tile.disabled:hover { border-color: var(--border); background: transparent; }
 .tile.disabled .tile-chk { display: none; }
-.tile.disabled .tile-price { display: none; }
-.tile-note { display: none; grid-area: price; }
+.tile.disabled .tile-price { visibility: hidden; }   /* nechať zaberať miesto → žiadny reflow */
+.tile-note { display: none; grid-area: price; align-self: center; }
 .tile.disabled .tile-note {
   display: inline-block;
   font-size: 11px; font-weight: 600;
