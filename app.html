@@ -233,6 +233,24 @@ h1 {
 select.entry-input { cursor: pointer; }
 select.entry-input option { background: #1a1a1a; color: white; }
 
+/* ─── AUTOCOMPLETE OBEC (číselník obcí → PSČ) ─── */
+.ac-wrap { position: relative; }
+.ac-dropdown {
+  position: absolute; top: calc(100% + 4px); left: 0;
+  min-width: 240px; max-width: 320px;
+  background: #1b1b1b; border: 1.5px solid rgba(255,255,255,.14);
+  border-radius: 9px; box-shadow: 0 10px 28px rgba(0,0,0,.5);
+  max-height: 240px; overflow-y: auto; z-index: 600;
+}
+.ac-item {
+  padding: 9px 12px; cursor: pointer; font-size: 13px; font-weight: 600; color: #fff;
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  border-bottom: 1px solid rgba(255,255,255,.06); white-space: nowrap;
+}
+.ac-item:last-child { border-bottom: none; }
+.ac-item:hover, .ac-item.ac-active { background: rgba(232,130,26,.18); }
+.ac-item .ac-psc { color: var(--a); font-size: 12px; font-weight: 700; }
+
 .entry-loader {
   display: flex; align-items: center; gap: 10px;
   margin-bottom: 16px;
@@ -297,6 +315,24 @@ select.entry-input option { background: #1a1a1a; color: white; }
 .tile-desc { font-size: 12px; color: rgba(255,255,255,.38); line-height: 1.5; margin-bottom: 14px; }
 .tile-price { font-size: 16px; font-weight: 800; color: var(--o); }
 .tile-price span { font-size: 11px; font-weight: 400; color: rgba(255,255,255,.3); }
+
+/* dlaždica vypnutá inou voľbou (napr. zver, keď je zvolená Havária) */
+.tile.disabled {
+  opacity: .45;
+  cursor: not-allowed;
+  filter: grayscale(1);
+}
+.tile.disabled:hover { border-color: var(--border); background: transparent; }
+.tile.disabled .tile-chk { display: none; }
+.tile.disabled .tile-price { display: none; }
+.tile-note { display: none; }
+.tile.disabled .tile-note {
+  display: inline-block;
+  font-size: 11px; font-weight: 600;
+  color: rgba(255,255,255,.55);
+  background: rgba(255,255,255,.06);
+  border-radius: 6px; padding: 4px 9px;
+}
 
 .calc-cta {
   background: var(--grad);
@@ -723,7 +759,8 @@ footer {
           </div>
           <div class="entry-field-sm">
             <div class="entry-label">Obec</div>
-            <input class="entry-input" id="f-obec-fo" placeholder="Bratislava" oninput="onFieldInput()">
+            <input class="entry-input" id="f-obec-fo" placeholder="Bratislava" autocomplete="off" oninput="onFieldInput()">
+            <input type="hidden" id="f-psc-fo">
           </div>
           <div class="entry-field-sm">
             <div class="entry-label">EČV</div>
@@ -773,6 +810,7 @@ footer {
       </div>
 
       <div class="entry-loader" id="entry-loader"><div class="entry-spinner"></div><div class="entry-loader-text">Zisťujeme údaje a posielame na ocenenie...</div></div>
+      <div id="entry-error" style="display:none;color:#dc2626;font-size:14px;font-weight:600;margin-top:12px;text-align:center;"></div>
       </div>
 
       <div class="calc-label" id="tiles-label" style="margin-top:24px;">Vyberte pripoistenia, ktoré chcete:</div>
@@ -790,6 +828,7 @@ footer {
           <div class="tile-name">Zrážka so zverou</div>
           <div class="tile-desc">Cielená ochrana pre tých, čo nepotrebujú plnú havárku.</div>
           <div class="tile-price">€3,9 <span>/mes</span></div>
+          <div class="tile-note">Už zahrnuté v „Havárii"</div>
         </div>
         <div class="tile" data-id="kradez" data-price="8.2" onclick="toggleTile(this)">
           <div class="tile-chk"></div>
@@ -1098,6 +1137,2522 @@ window.addEventListener('scroll', () => {
   document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 40);
 });
 
+/* ═══════════════════ PILLOW / BCRM INTEGRÁCIA ═══════════════════ */
+/* Lokálne (localhost) ide cez proxy.py, na prod priamo na api.pripoisti.sk */
+const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? ''                              // same-origin → proxy.py passthrough
+  : 'https://api.pripoisti.sk';
+
+const PILLOW_CONFIG = {
+  BASE_URL:  API_BASE + '/pillow',
+  USER:      'automanager_ws_sk',
+  PASS:      '7Qvmfpiz5o6J',
+  AGENT_ID1: '771',
+};
+
+/* tile data-id → jedno alebo VIAC Pillow rizík.
+   Havária (HP2) vyžaduje v Pillow zároveň stret so zverou (SZ2) — preto dlaždica
+   „Havária a zrážka so zverou" nesie HP2 aj SZ2 (cena = súčet). Samostatná dlaždica
+   „zver" (len SZ2) ostáva pre tých, čo nechcú plnú havárku. */
+const TILE_RISKS = {
+  havaria:     [{ risk: 'HP2', variant: 'HP2_150' }, { risk: 'SZ2', variant: 'SZ2_0' }],
+  zver:        [{ risk: 'SZ2', variant: 'SZ2_0'        }],
+  kradez:      [{ risk: 'OV2', variant: 'OV2_0'        }],
+  priroda:     [{ risk: 'ZV2', variant: 'ZV2_0'        }],  // živel
+  skla:        [{ risk: 'SK2', variant: 'SK2_STANDARD' }],
+  vandalizmus: [{ risk: 'VA2', variant: 'VA2_150'      }],
+  asistencia:  [{ risk: 'AS2', variant: 'AS2_L'        }],
+  uraz:        [{ risk: 'UR2', variant: 'UR2_2'        }],
+  batozina:    [{ risk: 'ZA2', variant: 'ZA2_750'      }],
+};
+/* jedinečné riziká (SZ2 je v dvoch dlaždiciach → do Pillow ho pošleme raz) */
+const ALL_VARIANTS = (() => {
+  const seen = new Set(), out = [];
+  Object.values(TILE_RISKS).flat().forEach(r => { if (!seen.has(r.risk)) { seen.add(r.risk); out.push(r); } });
+  return out;
+})();
+const OUR_RISKS = new Set(ALL_VARIANTS.map(r => r.risk));
+
+/* cena dlaždice = súčet cien jej rizík (len ak sú dostupné VŠETKY) */
+function tilePricesFromRisks(byRisk) {
+  const out = {};
+  for (const [tile, arr] of Object.entries(TILE_RISKS)) {
+    if (arr.every(r => byRisk[r.risk] != null)) {
+      out[tile] = arr.reduce((s, r) => s + byRisk[r.risk], 0);
+    }
+  }
+  return out;
+}
+
+const PILLOW_FUEL_MAP = {
+  benzin:'BA', BA:'BA', diesel:'NM', nafta:'NM', NM:'NM',
+  elektro:'EP', elektrina:'EP', EP:'EP', hybrid:'HY', HY:'HY',
+  lpg:'PB', cng:'PB', plyn:'PB', PB:'PB',
+};
+const PILLOW_VEHICLETYPE_VALID = new Set(['OA','MO','NA','OBY','AB','ABM','4K','TAH','PN','PV','SAN','SPS','TBM','TRA','VZV','EB','EK','EV']);
+const PILLOW_PARTYTYPE_MAP = { fo:'FORC', po:'PO', szco:'OSVC' };
+const PILLOW_BRAND_MAP = {
+  'Alfa Romeo':'ALFA_ROMEO','Aston Martin':'ASTON_MART','Audi':'AUDI',
+  'BMW':'BMW','Bentley':'BENTLEY','Citroen':'CITROEN','Citroën':'CITROEN',
+  'Cupra':'CUPRA','Dacia':'DACIA','Daewoo':'DAEWOO','Daihatsu':'DAIHATSU',
+  'Dodge':'DODGE','DS':'DS','Ferrari':'FERRARI','Fiat':'FIAT','Ford':'FORD',
+  'Genesis':'GENESIS','Honda':'HONDA','Hummer':'HUMMER','Hyundai':'HYUNDAI',
+  'Chevrolet':'CHEVROLET','Chrysler':'CHRYSLER','Infiniti':'INFINITI',
+  'Jaguar':'JAGUAR','Jeep':'JEEP','Kia':'KIA','Lada':'LADA',
+  'Lamborghini':'LAMBORGHIN','Lancia':'LANCIA','Land Rover':'LAND_ROVER',
+  'Lexus':'LEXUS','Maserati':'MASERATI','Mazda':'MAZDA',
+  'Mercedes-Benz':'MERCEDES_B','Mercedes':'MERCEDES_B','Mercedes-AMG':'MERCEDES_AMG',
+  'MG':'MG','Mini':'MINI','Mitsubishi':'MITSUBISHI','Nissan':'NISSAN',
+  'Opel':'OPEL','Peugeot':'PEUGEOT','Porsche':'PORSCHE','Range Rover':'RANGE_ROV',
+  'Renault':'RENAULT','Rolls-Royce':'ROLLS_ROYC','Saab':'SAAB','Seat':'SEAT',
+  'Smart':'SMART','Subaru':'SUBARU','Suzuki':'SUZUKI','Ssangyong':'SSANGYONG',
+  'SsangYong':'SSANGYONG','Škoda':'SKODA','Skoda':'SKODA','Tesla':'TESLA',
+  'Toyota':'TOYOTA','Volkswagen':'VOLKSWAGEN','VW':'VOLKSWAGEN',
+  'Volvo':'VOLVO','Yamaha':'YAMAHA',
+};
+
+const PILLOW_MODELS = {
+  "NEUVEDENA":[
+    ["529","Neuveden\u00fd"]],
+  "ABARTH":[
+    ["9869","Punto evo"],
+    ["9867","500"],
+    ["9868","500 c"],
+    ["3179","124 Spider"],
+    ["10260","500 595"],
+    ["10261","500 695"],
+    ["10262","500 C 595"],
+    ["10263","500 C 695"],
+    ["10741","=C30"],
+    ["10742","=C31"],
+    ["10743","=C32"],
+    ["10233","Ostatn\u00ed"]],
+  "ALFA_ROMEO":[
+    ["1721","Brera"],
+    ["9717","Giulietta"],
+    ["1696","Gt"],
+    ["5","Gtv"],
+    ["1752","Mito"],
+    ["8","Spider"],
+    ["9","145"],
+    ["10","146"],
+    ["1487","147"],
+    ["7","Ostatn\u00ed"],
+    ["11","156"],
+    ["1719","159"],
+    ["1720","159 sportwagon"],
+    ["12","164"],
+    ["13","166"],
+    ["15","33"],
+    ["3176","4C Coup\u00e9"],
+    ["3180","4C Spider"],
+    ["3169","Giulia"],
+    ["3158","Stelvio"],
+    ["10264","156 Crosswagon"],
+    ["10265","156 Sportwagon"],
+    ["10557","Tonale"],
+    ["10719","Junior"]],
+  "ALPINA":[
+    ["9877","B3"],
+    ["9883","B3 cabriolet"],
+    ["9881","B3 coup\u00e9"],
+    ["9874","B3 touring"],
+    ["9878","B5"],
+    ["9873","B5 touring"],
+    ["9884","B6 cabriolet"],
+    ["9882","B6 coup\u00e9"],
+    ["9879","B7"],
+    ["9876","D3"],
+    ["9880","D3 coup\u00e9"],
+    ["9871","D3 touring"],
+    ["9875","D5"],
+    ["9872","D5 touring"],
+    ["9885","Xd3"],
+    ["3173","B4 Cabriolet"],
+    ["3172","B4 Coup\u00e9"],
+    ["3177","B6 Gran Coup\u00e9"],
+    ["3183","D4 Cabriolet"],
+    ["3174","D4 Coup\u00e9"],
+    ["10558","XB7"],
+    ["10559","XD4"],
+    ["10588","B4 Gran Coup\u00e9"],
+    ["10589","B8 Gran Coup\u00e9"],
+    ["10590","D4 Gran Coup\u00e9"],
+    ["10234","Ostatn\u00ed"]],
+  "ANDORIA_MOT":[
+    ["9886","Lublin 3"],
+    ["10235","Ostatn\u00ed"]],
+  "INEOS":[
+    ["10654","Grenadier Quartermaster"],
+    ["10570","Grenadier"],
+    ["10571","Ostatn\u00ed"]],
+  "ARO":[
+    ["29","10"],
+    ["1490","24"],
+    ["9887","32"],
+    ["9888","33"],
+    ["28","Ostatn\u00ed"]],
+  "ASTON_MART":[
+    ["9889","Cygnet"],
+    ["9890","Dbs coup\u00e9"],
+    ["9892","Dbs volante"],
+    ["9891","Db9 coup\u00e9"],
+    ["9893","Db9 volante"],
+    ["9894","Rapide"],
+    ["9900","Vantage coup\u00e9"],
+    ["9899","Vantage roadster"],
+    ["9895","Vantage s coup\u00e9"],
+    ["9896","Vantage s roadster"],
+    ["9897","Virage coup\u00e9"],
+    ["9898","Virage volante"],
+    ["10774","=C105"],
+    ["10775","=C106"],
+    ["10776","=C107"],
+    ["10777","=C108"],
+    ["10778","=C109"],
+    ["1204","Ostatn\u00ed"]],
+  "AUDI":[
+    ["987","Allroad"],
+    ["9718","A1"],
+    ["9719","A1 sportback"],
+    ["34","A2"],
+    ["35","A3"],
+    ["1904","A3 cabriolet"],
+    ["9901","A3 limousine"],
+    ["1905","A3 sportback"],
+    ["36","A4"],
+    ["9902","A4 allroad"],
+    ["1906","A4 avant"],
+    ["1907","A4 cabriolet"],
+    ["1753","A5"],
+    ["9907","A5 cabriolet"],
+    ["9905","A5 sportback"],
+    ["37","A6"],
+    ["9906","A6 allroad"],
+    ["1908","A6 avant"],
+    ["9720","A7 sportback"],
+    ["38","A8"],
+    ["9904","Q3"],
+    ["1754","Q5"],
+    ["1697","Q7"],
+    ["10179","Rs q3"],
+    ["40","Ostatn\u00ed"],
+    ["9722","Rs3 sportback"],
+    ["1570","Rs4"],
+    ["1909","Rs4 avant"],
+    ["9909","Rs5"],
+    ["9903","Rs5 cabriolet"],
+    ["1491","Rs6"],
+    ["1911","Rs6 avant"],
+    ["10177","Rs7 sportback"],
+    ["1755","R8"],
+    ["9723","R8 spyder"],
+    ["9908","Sq5"],
+    ["10220","S1 sportback"],
+    ["41","S3"],
+    ["10178","S3 limousine"],
+    ["1912","S3 sportback"],
+    ["42","S4"],
+    ["1913","S4 avant"],
+    ["1914","S4 cabriolet"],
+    ["1756","S5"],
+    ["9724","S5 cabriolet"],
+    ["9725","S5 sportback"],
+    ["43","S6"],
+    ["1915","S6 avant"],
+    ["9726","S7 sportback"],
+    ["44","S8"],
+    ["1916","Tt coup\u00e9"],
+    ["1917","Tt roadster"],
+    ["9727","Tt rs coup\u00e9"],
+    ["9728","Tt rs roadster"],
+    ["1918","Tts coup\u00e9"],
+    ["1919","Tts roadster"],
+    ["1567","V8"],
+    ["46","100"],
+    ["1902","100 avant"],
+    ["47","80"],
+    ["1903","80 avant"],
+    ["3186","SQ7"],
+    ["3163","Q2"],
+    ["10227","S3 cabriolet"],
+    ["3181","RS3 Limousine"],
+    ["3189","Q8"],
+    ["10236","E-tron"],
+    ["10266","A8 L"],
+    ["10267","Q3 Sportback"],
+    ["10268","RS5 Sportback"],
+    ["10269","SQ8"],
+    ["10392","SQ2"],
+    ["10401","RS Q3 Sportback"],
+    ["10402","RS Q8"],
+    ["10414","e-tron Sportback"],
+    ["10415","Q5 Sportback"],
+    ["10416","SQ5 Sportback"],
+    ["10502","Q4 e-tron Sportback"],
+    ["10503","Q4 e-tron"],
+    ["10504","A1 citycarver"],
+    ["10505","e-tron GT"],
+    ["10506","RS e-tron GT"],
+    ["10562","A1 allstreet"],
+    ["10591","Q8 Sportback"],
+    ["10621","A5 Coup\u00e9"],
+    ["10622","RS5 Coup\u00e9"],
+    ["10623","S5 Coup\u00e9"],
+    ["10624","SQ8 Sportback"],
+    ["10648","A3 allstreet"],
+    ["10709","SQ6 Sportback"],
+    ["10710","SQ6"],
+    ["10711","S6 Sportback"],
+    ["10712","S5 Avant"],
+    ["10713","S e-tron GT"],
+    ["10714","Q6 Sportback"],
+    ["10715","Q6"],
+    ["10716","A6 Sportback"],
+    ["10717","A5 Avant"]],
+  "BENTLEY":[
+    ["9915","Arnage"],
+    ["1207","Azure"],
+    ["9916","Azure t"],
+    ["1725","Brooklands"],
+    ["9913","Continental flying spur"],
+    ["9914","Continental gt"],
+    ["9912","Continental gtc"],
+    ["9911","Continental supersports"],
+    ["9910","Continental supersports convertible"],
+    ["3168","Flying Spur"],
+    ["9917","Mulsanne"],
+    ["3175","Bentayga"],
+    ["1211","Ostatn\u00ed"]],
+  "BMW":[
+    ["3171","i3"],
+    ["1920","Rad 1"],
+    ["1921","Rad 1 cabriolet"],
+    ["1926","Rad 1 coup\u00e9"],
+    ["3157","\u0159ada 2 Active Tourer"],
+    ["3160","\u0159ada 2 Cabriolet"],
+    ["10180","Rad 2 coup\u00e9"],
+    ["3165","\u0159ada 2 Gran Tourer"],
+    ["1758","Rad 3"],
+    ["1927","Rad 3 cabriolet"],
+    ["1929","Rad 3 compact"],
+    ["1928","Rad 3 coup\u00e9"],
+    ["9920","Rad 3 gran turismo"],
+    ["1930","Rad 3 touring"],
+    ["10181","Rad 4 cabriolet"],
+    ["9919","Rad 4 coup\u00e9"],
+    ["10226","Rad 4 gran coup\u00e9"],
+    ["1759","Rad 5"],
+    ["9918","Rad 5 gran turismo"],
+    ["1931","Rad 5 touring"],
+    ["1932","Rad 6 cabriolet"],
+    ["1933","Rad 6 coup\u00e9"],
+    ["9730","Rad 6 gran coup\u00e9"],
+    ["1760","Rad 7"],
+    ["9729","X1"],
+    ["1493","X3"],
+    ["10230","X4"],
+    ["991","X5"],
+    ["1757","X6"],
+    ["1922","Z3 coup\u00e9"],
+    ["1923","Z3 roadster"],
+    ["1924","Z4 coup\u00e9"],
+    ["1925","Z4 roadster"],
+    ["993","Z8"],
+    ["3166","\u0159ada 6 Gran Turismo"],
+    ["3159","X2"],
+    ["3182","i8 Coup\u00e9"],
+    ["3167","i8 Roadster"],
+    ["10270","\u0159ada 7 L"],
+    ["10271","\u0159ada 8 Cabriolet"],
+    ["10272","\u0159ada 8 Coup\u00e9"],
+    ["10273","X7"],
+    ["10393","\u0159ada 8 Gran Coup\u00e9"],
+    ["10403","\u0159ada 2 Gran Coup\u00e9"],
+    ["10507","iX3"],
+    ["10508","iX3"],
+    ["10531","i4"],
+    ["10563","i7"],
+    ["10592","XM"],
+    ["10625","i5"],
+    ["10626","iX2"],
+    ["10649","i5 Touring"],
+    ["10747","=C276"],
+    ["83","Ostatn\u00ed"]],
+  "CADILLAC":[
+    ["9921","Ats"],
+    ["3170","ATS Coupe"],
+    ["1762","Bls"],
+    ["1766","Bls wagon"],
+    ["995","Cts"],
+    ["9731","Cts coupe"],
+    ["9732","Cts sport wagon"],
+    ["9733","Cts-v"],
+    ["9734","Cts-v coupe"],
+    ["9735","Cts-v sport wagon"],
+    ["996","Escalade"],
+    ["1763","Srx"],
+    ["1764","Sts"],
+    ["1765","Xlr"],
+    ["3161","ATS-V"],
+    ["3185","ATS-V Coupe"],
+    ["3187","CT6"],
+    ["3178","XT5"],
+    ["10417","XT4"],
+    ["10787","=C297"],
+    ["10788","=C298"],
+    ["104","Ostatn\u00ed"]],
+  "CITROEN":[
+    ["140","Ax"],
+    ["141","Berlingo"],
+    ["142","Bx"],
+    ["1773","C-crosser"],
+    ["9922","C-elys\u00e9e"],
+    ["9923","C-zero"],
+    ["1774","C1"],
+    ["1591","C15"],
+    ["1592","C2"],
+    ["1496","C3"],
+    ["9736","C3 picasso"],
+    ["1934","C3 pluriel"],
+    ["1593","C4"],
+    ["9737","C4 aircross"],
+    ["10228","C4 cactus"],
+    ["1935","C4 coup\u00e9"],
+    ["1936","C4 grand picasso"],
+    ["9738","C4 picasso"],
+    ["1497","C5"],
+    ["1937","C5 break"],
+    ["1938","C5 tourer"],
+    ["1733","C6"],
+    ["1498","C8"],
+    ["5121","Ds3"],
+    ["9924","Ds3 cabrio"],
+    ["9925","Ds3 racing"],
+    ["9739","Ds4"],
+    ["9740","Ds5"],
+    ["144","Evasion"],
+    ["145","Jumper"],
+    ["146","Jumpy"],
+    ["1775","Nemo"],
+    ["149","Saxo"],
+    ["150","Xantia"],
+    ["1940","Xantia break"],
+    ["151","Xm"],
+    ["1939","Xm break"],
+    ["152","Xsara"],
+    ["9741","Xsara break"],
+    ["1594","Xsara picasso"],
+    ["153","Zx"],
+    ["1941","Zx break"],
+    ["3057","SpaceTourer"],
+    ["3064","C3 Aircross"],
+    ["3069","C4 Grand SpaceTourer"],
+    ["3074","C4 SpaceTourer"],
+    ["10274","Berlingo Van"],
+    ["10275","Berlingo XL"],
+    ["10276","C5 Aircross"],
+    ["10277","C5 CrossTourer"],
+    ["10278","C5 Tourer XTR"],
+    ["10564","C5 X"],
+    ["10593","C4 X"],
+    ["10650","Jumpy Furgon"],
+    ["10708","C3 Cargo"],
+    ["148","Ostatn\u00ed"]],
+  "CORVETTE":[
+    ["9927","C6 convertible"],
+    ["9926","C6 coupe"],
+    ["10223","C7 stingray convertible"],
+    ["10224","C7 stingray coupe"],
+    ["9929","Grand sport convertible"],
+    ["9930","Grand sport coupe"],
+    ["9928","Zr1"],
+    ["9931","Z06"],
+    ["10509","C8 Stingray Coupe"],
+    ["10510","C8 Stingray Coupe"],
+    ["10237","Ostatn\u00ed"]],
+  "DACIA":[
+    ["9934","Dokker"],
+    ["9933","Dokker van"],
+    ["2122","Duster"],
+    ["9742","Lodgy"],
+    ["1595","Logan"],
+    ["1942","Logan mcv"],
+    ["9936","Logan pick up"],
+    ["9935","Logan van"],
+    ["1776","Sandero"],
+    ["1500","Solenza"],
+    ["1007","Supernova"],
+    ["166","1304"],
+    ["167","1307"],
+    ["168","1310"],
+    ["9932","1310 break"],
+    ["1734","1410"],
+    ["10280","Dokker Stepway"],
+    ["10281","Lodgy Stepway"],
+    ["10282","Logan MCV Stepway"],
+    ["10283","Sandero Stepway"],
+    ["10511","Spring"],
+    ["10533","Jogger"],
+    ["10706","Bigster"],
+    ["164","Ostatn\u00ed"]],
+  "DAEWOO":[
+    ["169","Chairman"],
+    ["170","Espero"],
+    ["1502","Evanda"],
+    ["1468","Kalos"],
+    ["1777","Korando"],
+    ["171","Lanos"],
+    ["9939","Lanos ii"],
+    ["172","Leganza"],
+    ["1736","Lublin ii"],
+    ["1738","Lublin 3"],
+    ["174","Matiz"],
+    ["9937","Matiz ii"],
+    ["1737","Musso"],
+    ["176","Nexia"],
+    ["177","Nubira"],
+    ["9938","Nubira combi"],
+    ["179","Racer"],
+    ["1008","Tacuma"],
+    ["180","Tico"],
+    ["178","Ostatn\u00ed"]],
+  "DAF":[
+    ["186","Ostatn\u00ed"]],
+  "DAIHATSU":[
+    ["188","Charade"],
+    ["9940","Copen"],
+    ["189","Cuore"],
+    ["9942","Materia"],
+    ["1469","Sirion"],
+    ["1011","Terios"],
+    ["9941","Trevis"],
+    ["193","Ostatn\u00ed"]],
+  "DFM":[
+    ["9943","Mini"],
+    ["10238","Ostatn\u00ed"]],
+  "DODGE":[
+    ["1778","Avenger"],
+    ["1744","Caliber"],
+    ["1779","Journey"],
+    ["1780","Nitro"],
+    ["10791","=C427"],
+    ["10792","=C428"],
+    ["10793","=C429"],
+    ["10794","=C430"],
+    ["10795","=C431"],
+    ["10796","=C432"],
+    ["205","Ostatn\u00ed"]],
+  "DS":[
+    ["3075","DS 3"],
+    ["3070","DS 3 Cabrio"],
+    ["3084","DS 3 Racing"],
+    ["3078","DS 4"],
+    ["3054","DS 5"],
+    ["10284","DS 3 Crossback"],
+    ["10285","DS 4 Crossback"],
+    ["10286","DS 7 Crossback"],
+    ["10512","DS 9"],
+    ["10599","DS 7"],
+    ["10629","DS 4 Cross"],
+    ["10753","=C445"],
+    ["10239","Ostatn\u00ed"]],
+  "FERRARI":[
+    ["3077","California"],
+    ["9954","Ff"],
+    ["9944","142"],
+    ["9947","149"],
+    ["9952","355"],
+    ["9953","360"],
+    ["9948","456m"],
+    ["3051","458"],
+    ["9950","550"],
+    ["3073","488 Spider"],
+    ["3076","GTC4 Lusso"],
+    ["10287","458 Italia"],
+    ["10288","458 Speciale"],
+    ["10289","458 Spider"],
+    ["10290","488 GTB"],
+    ["10291","575M Maranello"],
+    ["10292","575M Maranello F1"],
+    ["10293","599 GTB Fiorano"],
+    ["10294","599 GTB Fiorano F1"],
+    ["10295","599 GTO"],
+    ["10296","612 Scaglietti"],
+    ["10297","612 Scaglietti F1"],
+    ["10298","California T"],
+    ["10299","F12 Berlinetta"],
+    ["10300","F12 tdf"],
+    ["10301","F430"],
+    ["10302","F430 F1"],
+    ["10303","F430 Scuderia F1"],
+    ["10304","F430 Spider"],
+    ["10305","F430 Spider F1"],
+    ["10306","GTC4 Lusso T"],
+    ["10394","488 Pista"],
+    ["214","Ostatn\u00ed"]],
+  "FIAT":[
+    ["1036","Barchetta"],
+    ["215","Brava"],
+    ["216","Bravo"],
+    ["217","Cinquecento"],
+    ["218","Coup\u00e9"],
+    ["219","Croma"],
+    ["1034","Doblo"],
+    ["9960","Dobl\u00f3 cargo"],
+    ["9959","Dobl\u00f3 cargo combi"],
+    ["9963","Dobl\u00f3 cargo combi xl"],
+    ["9962","Dobl\u00f3 cargo van"],
+    ["9958","Dobl\u00f3 cargo work up"],
+    ["9961","Dobl\u00f3 panorama"],
+    ["220","Ducato"],
+    ["9964","Fiorino combi"],
+    ["9965","Fiorino van"],
+    ["9743","Freemont"],
+    ["1781","Grande punto"],
+    ["1596","Idea"],
+    ["1782","Linea"],
+    ["222","Marea"],
+    ["1943","Marea weekend"],
+    ["223","Multipla"],
+    ["1944","Palio weekend"],
+    ["227","Panda"],
+    ["9744","Panda classic"],
+    ["9966","Panda van"],
+    ["228","Punto"],
+    ["9745","Punto actual"],
+    ["1945","Punto cabrio"],
+    ["9746","Punto evo"],
+    ["9957","Punto van"],
+    ["9747","Qubo"],
+    ["9968","Scudo combi"],
+    ["1946","Scudo panorama"],
+    ["9969","Scudo van"],
+    ["1783","Sedici"],
+    ["232","Seicento"],
+    ["1033","Stilo"],
+    ["1947","Stilo multi wagon"],
+    ["9967","Stilo multi wagon van"],
+    ["1750","Strada"],
+    ["233","Tempra"],
+    ["1948","Tempra sw"],
+    ["234","Tipo"],
+    ["235","Ulysse"],
+    ["236","Uno"],
+    ["242","500"],
+    ["3080","500C"],
+    ["3058","500L"],
+    ["3053","500L Living"],
+    ["3055","500X"],
+    ["3056","Fullback"],
+    ["3063","Talento"],
+    ["3072","Talento Combi"],
+    ["3066","Talento Crew Cab"],
+    ["3060","Talento Panorama"],
+    ["3062","Talento Van"],
+    ["3190","124 Spider"],
+    ["3067","Tipo Combi"],
+    ["3071","500L Combi"],
+    ["10307","Dobl\u00f3 Cargo Combi Maxi"],
+    ["10308","Dobl\u00f3 Cargo Maxi"],
+    ["10309","Dobl\u00f3 Cargo Van Maxi"],
+    ["10537","500 3+1"],
+    ["10565","Scudo"],
+    ["10566","Scudo Crew Cab"],
+    ["10600","Dobl\u00f3 Combi"],
+    ["10601","Dobl\u00f3 Crew Cab"],
+    ["10602","Dobl\u00f3 Van"],
+    ["10630","Dobl\u00f3 Cargo Van XL"],
+    ["243","600"],
+    ["10701","Panda Pandina"],
+    ["10702","Grande Panda"],
+    ["10703","Dobl\u00f3 Panorama Maxi"],
+    ["225","Ostatn\u00ed"]],
+  "FORD":[
+    ["9972","B-max"],
+    ["1784","C-max"],
+    ["9748","C-max grand"],
+    ["246","Escort"],
+    ["1952","Escort kombi"],
+    ["9973","Escort van"],
+    ["1040","Explorer"],
+    ["247","Fiesta"],
+    ["10188","Fiesta courier"],
+    ["9974","Fiesta van"],
+    ["248","Focus"],
+    ["9749","Focus c-max"],
+    ["1953","Focus coup\u00e9-cabriolet"],
+    ["1954","Focus kombi"],
+    ["1510","Fusion"],
+    ["250","Galaxy"],
+    ["251","Ka"],
+    ["1785","Kuga"],
+    ["1039","Maverick"],
+    ["252","Mondeo"],
+    ["1955","Mondeo kombi"],
+    ["3059","Mustang Convertible"],
+    ["3061","Mustang Fastback"],
+    ["254","Orion"],
+    ["256","Probe"],
+    ["1038","Puma"],
+    ["1042","Ranger"],
+    ["257","Scorpio"],
+    ["1956","Scorpio kombi"],
+    ["1957","Scorpio wagon"],
+    ["258","Sierra"],
+    ["1786","S-max"],
+    ["1509","Streetka"],
+    ["9975","Tourneo connect"],
+    ["3065","Tourneo Courier"],
+    ["9977","Tourneo custom"],
+    ["262","Transit"],
+    ["9971","Transit connect"],
+    ["3052","Transit Courier"],
+    ["9979","Transit custom"],
+    ["9978","Transit kombi van"],
+    ["9976","Transit tourneo"],
+    ["9970","Transit van"],
+    ["1041","Windstar"],
+    ["3068","Edge"],
+    ["3079","Ka+"],
+    ["3083","Ecosport"],
+    ["10310","Fiesta Active"],
+    ["10311","Focus Active"],
+    ["10312","Focus Kombi Active"],
+    ["10313","Grand Tourneo Connect"],
+    ["10314","Ka+ Active"],
+    ["10315","Ranger Raptor"],
+    ["10316","Transit Custom Nugget"],
+    ["10317","Transit Custom Van"],
+    ["10421","Grand Tourneo Connect Active"],
+    ["10422","Tourneo Connect Active"],
+    ["10423","Tourneo Custom Active"],
+    ["10424","Transit Custom Trail"],
+    ["10513","Mustang Mach"],
+    ["10514","Transit Connect Active"],
+    ["10538","Transit Kombi Trail"],
+    ["10539","Transit Van Trail"],
+    ["10603","Bronco"],
+    ["10631","Tourneo Courier Active"],
+    ["10632","Transit Courier Active"],
+    ["10653","Kuga Active"],
+    ["10698","Transit Custom Nugget Active"],
+    ["10699","Mustang Mach Rally"],
+    ["10700","Capri"],
+    ["255","Ostatn\u00ed"]],
+  "GAZ":[
+    ["1788","Gazelle"],
+    ["9980","Gazterra"],
+    ["1787","Sobol"],
+    ["270","Ostatn\u00ed"]],
+  "GONOW":[
+    ["9995","Ga200"],
+    ["9994","Gx6"],
+    ["3121","Troy"],
+    ["3148","Victory"],
+    ["10240","Ostatn\u00ed"]],
+  "GORDON":[
+    ["1790","Gordon"],
+    ["10241","Ostatn\u00ed"]],
+  "HONDA":[
+    ["284","Accord"],
+    ["9997","Accord tourer"],
+    ["1791","City"],
+    ["286","Civic"],
+    ["10189","Civic tourer"],
+    ["1052","Cr-v"],
+    ["9998","Cr-z"],
+    ["1610","Fr-v"],
+    ["287","Hr-v"],
+    ["1053","Insight"],
+    ["288","Integra"],
+    ["1051","Jazz"],
+    ["289","Legend"],
+    ["292","Prelude"],
+    ["293","Shuttle"],
+    ["1056","Stream"],
+    ["1054","S2000"],
+    ["10425","e"],
+    ["10449","Jazz Crosstar"],
+    ["10633","ZR-V"],
+    ["291","Ostatn\u00ed"]],
+  "HONKER":[
+    ["9983","2000"],
+    ["10242","Ostatn\u00ed"]],
+  "HUMMER":[
+    ["1225","H1"],
+    ["10001","H1 alpha"],
+    ["1226","H2"],
+    ["9999","H2 sut"],
+    ["1676","H3"],
+    ["10000","H3t"],
+    ["1227","Ostatn\u00ed"]],
+  "HYUNDAI":[
+    ["308","Accent"],
+    ["309","Atos"],
+    ["1964","Atos prime"],
+    ["310","Coup\u00e9"],
+    ["311","Elantra"],
+    ["312","Galloper"],
+    ["10221","Genesis"],
+    ["10007","Genesis coupe"],
+    ["1472","Getz"],
+    ["10190","Grand santa fe"],
+    ["1792","Grandeur"],
+    ["1965","H1 bus"],
+    ["1966","H1 tour"],
+    ["10006","H1 truck"],
+    ["10005","H100"],
+    ["3100","H350"],
+    ["3150","H350 Bus"],
+    ["3112","H350 Van"],
+    ["9754","Ix20"],
+    ["10004","Ix35"],
+    ["1795","Ix55"],
+    ["1793","I10"],
+    ["2124","I20"],
+    ["3114","i20 Coupe"],
+    ["1794","I30"],
+    ["9750","I30 cw"],
+    ["9751","I30 wagon"],
+    ["9752","I40"],
+    ["9753","I40 wagon"],
+    ["315","Lantra"],
+    ["1967","Lantra combi"],
+    ["1069","Matrix"],
+    ["318","Pony"],
+    ["1071","Santa fe"],
+    ["319","Sonata"],
+    ["1070","Terracan"],
+    ["1073","Trajet"],
+    ["1615","Tucson"],
+    ["10003","Veloster"],
+    ["1072","Xg"],
+    ["3118","i20 Active"],
+    ["3110","Ioniq"],
+    ["3087","H1 Van"],
+    ["3106","i30 Fastback"],
+    ["3113","Kona"],
+    ["10515","Bayon"],
+    ["10516","Ioniq 5"],
+    ["10540","Staria Tour"],
+    ["10568","Nexo"],
+    ["10569","Staria Van"],
+    ["10604","Ioniq 6"],
+    ["10696","Inster Cross"],
+    ["10697","Inster"],
+    ["10755","=C725"],
+    ["317","Ostatn\u00ed"]],
+  "CHEVROLET":[
+    ["1727","Aveo"],
+    ["9755","Camaro convertible"],
+    ["9756","Camaro coupe"],
+    ["1767","Captiva"],
+    ["1968","Corvette convertible"],
+    ["1969","Corvette coupe"],
+    ["9757","Cruze"],
+    ["9758","Cruze sw"],
+    ["1768","Epica"],
+    ["1585","Evanda"],
+    ["1769","Hhr"],
+    ["1580","Kalos"],
+    ["1581","Lacetti"],
+    ["9759","Lacetti sw"],
+    ["1001","Malibu"],
+    ["1586","Matiz"],
+    ["9760","Orlando"],
+    ["1698","Spark"],
+    ["1588","Tacuma"],
+    ["10008","Trax"],
+    ["10426","Silverado"],
+    ["125","Ostatn\u00ed"]],
+  "CHRYSLER":[
+    ["1971","Crossfire coup\u00e9"],
+    ["1972","Crossfire roadster"],
+    ["1006","Grand voyager"],
+    ["1973","Le baron cabriolet"],
+    ["130","Neon"],
+    ["1729","New yorker"],
+    ["1005","Pt cruiser"],
+    ["10011","Pt cruiser cabriolet"],
+    ["1772","Saratoga"],
+    ["1004","Sebring"],
+    ["10009","Sebring cabriolet"],
+    ["133","Stratus"],
+    ["10010","Stratus cabriolet"],
+    ["135","Viper"],
+    ["136","Vision"],
+    ["137","Voyager"],
+    ["1589","300 c"],
+    ["1970","300 c touring"],
+    ["1728","300 m"],
+    ["132","Ostatn\u00ed"]],
+  "INFINITI":[
+    ["9985","Ex"],
+    ["9986","Fx"],
+    ["9987","G"],
+    ["9988","G cabrio"],
+    ["9989","G coup\u00e9"],
+    ["9990","M"],
+    ["3093","QX50"],
+    ["9991","Qx70"],
+    ["3108","Q30"],
+    ["9984","Q50"],
+    ["9993","Q60 cabrio"],
+    ["9992","Q60 coup\u00e9"],
+    ["3097","Q70"],
+    ["10243","Ostatn\u00ed"]],
+  "INTRALL":[
+    ["10012","Lublin 3 mi"],
+    ["10244","Ostatn\u00ed"]],
+  "ISUZU":[
+    ["10013","D-max"],
+    ["331","Ostatn\u00ed"]],
+  "IVECO":[
+    ["332","Daily"],
+    ["1797","Massif"],
+    ["339","Ostatn\u00ed"]],
+  "JAGUAR":[
+    ["1701","Daimler"],
+    ["10192","F-type convertible"],
+    ["10193","F-type coup\u00e9"],
+    ["343","Sovereign"],
+    ["1618","S-type"],
+    ["3092","XE"],
+    ["10014","Xf"],
+    ["10015","Xf sportbrake"],
+    ["9761","Xfr"],
+    ["10194","Xfr-s"],
+    ["10229","Xfr-s sportbrake"],
+    ["344","Xj"],
+    ["1799","Xjr"],
+    ["1800","Xjs convertible"],
+    ["1976","Xjs coup\u00e9"],
+    ["1975","Xj12"],
+    ["1702","Xj6"],
+    ["1703","Xj8"],
+    ["1977","Xk convertible"],
+    ["1978","Xk coup\u00e9"],
+    ["1979","Xkr convertible"],
+    ["1980","Xkr coup\u00e9"],
+    ["9764","Xkr-s convertible"],
+    ["9765","Xkr-s coupe"],
+    ["9762","Xk8 convertible"],
+    ["9763","Xk8 coupe"],
+    ["1617","X-type"],
+    ["1974","X-type estate"],
+    ["3098","F-Pace"],
+    ["3105","E-Pace"],
+    ["3145","I-Pace"],
+    ["10318","XJ L"],
+    ["341","Ostatn\u00ed"]],
+  "JAWA":[
+    ["346","Ostatn\u00ed"]],
+  "JEEP":[
+    ["356","Cherokee"],
+    ["1801","Commander"],
+    ["1802","Compass"],
+    ["1079","Grand cherokee"],
+    ["1803","Patriot"],
+    ["3101","Renegade"],
+    ["361","Wrangler"],
+    ["1981","Wrangler unlimited"],
+    ["10517","Gladiator"],
+    ["10636","Avenger"],
+    ["360","Ostatn\u00ed"]],
+  "KAIPAN":[
+    ["10020","14"],
+    ["10018","15"],
+    ["10019","16"],
+    ["10017","57"],
+    ["3144","57a"],
+    ["10245","Ostatn\u00ed"]],
+  "KIA":[
+    ["377","Besta"],
+    ["1089","Carens"],
+    ["1090","Carnival"],
+    ["1804","Cee\u00b4d"],
+    ["9767","Cee\u00b4d sportswagon"],
+    ["1985","Cee\u00b4d sporty wagon"],
+    ["1620","Cerato"],
+    ["378","Clarus"],
+    ["1982","Clarus wagon"],
+    ["1087","Joice"],
+    ["1807","K2500"],
+    ["1806","K2700"],
+    ["1086","Magentis"],
+    ["1518","Opirus"],
+    ["9766","Optima"],
+    ["1619","Picanto"],
+    ["381","Pregio"],
+    ["382","Pride"],
+    ["1983","Pride wagon"],
+    ["1805","Pro_cee\u00b4d"],
+    ["1085","Rio"],
+    ["1984","Rio combi"],
+    ["384","Sephia"],
+    ["10023","Sephia ii"],
+    ["10024","Sephia leo"],
+    ["385","Shuma"],
+    ["10021","Shuma ii"],
+    ["1519","Sorento"],
+    ["2128","Soul"],
+    ["386","Sportage"],
+    ["2130","Venga"],
+    ["3117","Optima SW"],
+    ["3099","Niro"],
+    ["3089","Stinger"],
+    ["3086","Stonic"],
+    ["10395","Xceed"],
+    ["10518","EV6"],
+    ["10637","EV9"],
+    ["10695","EV3"],
+    ["10756","=C886"],
+    ["380","Ostatn\u00ed"]],
+  "LADA":[
+    ["10027","Granta"],
+    ["1808","Kalina"],
+    ["399","Niva"],
+    ["1809","Priora"],
+    ["401","Samara"],
+    ["10026","Samara 2109"],
+    ["10025","Samara 21099"],
+    ["1091","110"],
+    ["1092","111"],
+    ["1093","112"],
+    ["1100","2104"],
+    ["1813","2105"],
+    ["1102","2107"],
+    ["10319","Kalina Kombi"],
+    ["10320","Priora Kombi"],
+    ["400","Ostatn\u00ed"]],
+  "LAMBORGHIN":[
+    ["10030","Aventador"],
+    ["3116","Aventador Roadster"],
+    ["10031","Gallardo"],
+    ["10029","Gallardo spyder"],
+    ["3102","Hurac\u00e1n"],
+    ["10028","Murci\u00e9lago"],
+    ["10032","Murci\u00e9lago roadster"],
+    ["3119","Hurac\u00e1n Spyder"],
+    ["10427","Urus"],
+    ["10572","Hurac\u00e1n STO"],
+    ["10573","Hurac\u00e1n Tecnica"],
+    ["409","Ostatn\u00ed"]],
+  "LANCIA":[
+    ["411","Delta"],
+    ["1621","Kappa"],
+    ["10033","Kappa sw"],
+    ["1815","Musa"],
+    ["1816","Phedra"],
+    ["415","Thema"],
+    ["9768","Voyager"],
+    ["1105","Ypsilon"],
+    ["414","Ostatn\u00ed"]],
+  "LAND_ROVER":[
+    ["10035","Defender 110"],
+    ["10040","Defender 130"],
+    ["10034","Defender 90"],
+    ["417","Discovery"],
+    ["10037","Discovery ii"],
+    ["3103","Discovery Sport"],
+    ["10038","Discovery 3"],
+    ["10039","Discovery 4"],
+    ["418","Freelander"],
+    ["10036","Freelander 2"],
+    ["421","Range rover"],
+    ["9769","Range rover evoque"],
+    ["1986","Range rover sport"],
+    ["3107","Range Rover Evoque Cabriolet"],
+    ["3095","Discovery 5"],
+    ["3091","Range Rover Velar"],
+    ["10321","Range Rover L"],
+    ["416","Defender"],
+    ["420","Ostatn\u00ed"]],
+  "LDV":[
+    ["428","Convoy"],
+    ["430","Ostatn\u00ed"]],
+  "LEXUS":[
+    ["9770","Ct"],
+    ["431","Gs"],
+    ["432","Is"],
+    ["10041","Is c"],
+    ["1817","Is f"],
+    ["1818","Is sportcross"],
+    ["433","Ls"],
+    ["3104","NX"],
+    ["3146","RC F"],
+    ["1110","Rx"],
+    ["1112","Sc"],
+    ["3111","GS F"],
+    ["3094","RC"],
+    ["3120","LC"],
+    ["3147","RX L"],
+    ["10322","ES"],
+    ["10323","LS L"],
+    ["10324","UX"],
+    ["10428","LC Convertible"],
+    ["10638","LBX"],
+    ["10639","LM"],
+    ["10640","RZ"],
+    ["435","Ostatn\u00ed"]],
+  "MAGMA":[
+    ["10042","Alficar"],
+    ["10246","Ostatn\u00ed"]],
+  "MASERATI":[
+    ["1622","Coupe"],
+    ["3088","Ghibli"],
+    ["10043","Grancabrio"],
+    ["1623","Gransport"],
+    ["10044","Granturismo"],
+    ["1624","Quattroporte"],
+    ["1625","Spyder"],
+    ["3109","Levante"],
+    ["455","Ostatn\u00ed"]],
+  "MAZDA":[
+    ["1118","B-fighter"],
+    ["10046","Bt-50"],
+    ["3096","CX-3"],
+    ["9771","Cx-5"],
+    ["1820","Cx-7"],
+    ["3122","CX-9"],
+    ["457","Demio"],
+    ["10045","E 2000"],
+    ["459","Mpv"],
+    ["1993","Mx-3"],
+    ["1994","Mx-5"],
+    ["1995","Mx-6"],
+    ["463","Premacy"],
+    ["1996","Rx-7"],
+    ["1997","Rx-8"],
+    ["1117","Tribute"],
+    ["1998","Xedos 6"],
+    ["1999","Xedos 9"],
+    ["468","121"],
+    ["1474","2"],
+    ["1708","3"],
+    ["469","323"],
+    ["1987","323 coup\u00e9"],
+    ["1988","323 f"],
+    ["1989","323 wagon"],
+    ["1819","5"],
+    ["1473","6"],
+    ["1990","6 wagon"],
+    ["470","626"],
+    ["1991","626 wagon"],
+    ["3115","MX-5 RF"],
+    ["10396","CX-30"],
+    ["10429","MX-30"],
+    ["10574","Cx-60"],
+    ["10693","CX-80"],
+    ["462","Ostatn\u00ed"]],
+  "MERCEDES_B":[
+    ["3085","A t\u0159\u00edda"],
+    ["3090","B t\u0159\u00edda"],
+    ["3028","C t\u0159\u00edda"],
+    ["3037","C t\u0159\u00edda Coup\u00e9"],
+    ["3038","C t\u0159\u00edda Sportcoup\u00e9"],
+    ["3029","C t\u0159\u00edda T"],
+    ["10051","Citan"],
+    ["1120","Cl"],
+    ["10047","Cla"],
+    ["3014","CLA Shooting Brake"],
+    ["2000","Clc sportcoupe"],
+    ["2001","Clk cabriolet"],
+    ["2002","Clk coup\u00e9"],
+    ["1627","Cls"],
+    ["9773","Cls shooting brake"],
+    ["3034","E t\u0159\u00edda"],
+    ["3031","E t\u0159\u00edda Cabriolet"],
+    ["3039","E t\u0159\u00edda Coup\u00e9"],
+    ["3030","E t\u0159\u00edda T"],
+    ["3035","G t\u0159\u00edda"],
+    ["10197","Gla"],
+    ["3008","GLC"],
+    ["3009","GLE"],
+    ["3017","GLE Coup\u00e9"],
+    ["1823","Glk"],
+    ["3032","R t\u0159\u00edda"],
+    ["3033","S t\u0159\u00edda"],
+    ["3043","S t\u0159\u00edda Coup\u00e9"],
+    ["1122","Sl"],
+    ["1121","Slk"],
+    ["9774","Sls amg"],
+    ["9775","Sls amg roadster"],
+    ["483","Sprinter"],
+    ["3022","V t\u0159\u00edda"],
+    ["1124","Vaneo"],
+    ["1630","Viano"],
+    ["486","Vito"],
+    ["3016","GLS"],
+    ["3044","S t\u0159\u00edda Cabriolet"],
+    ["3027","SLC"],
+    ["3042","C t\u0159\u00edda Cabriolet"],
+    ["3011","GLC Coup\u00e9"],
+    ["3041","E t\u0159\u00edda All-Terrain"],
+    ["3013","X"],
+    ["10331","A t\u0159\u00edda Limousine"],
+    ["10413","G t\u0159\u00edda 4x4x4"],
+    ["10332","GL"],
+    ["10333","ML"],
+    ["10334","R t\u0159\u00edda L"],
+    ["10335","S t\u0159\u00edda L"],
+    ["10404","GLB"],
+    ["10430","Citan Tourer"],
+    ["10431","EQC"],
+    ["10432","EQV"],
+    ["10433","Sprinter Tourer"],
+    ["10434","Vito Tourer"],
+    ["10435","Vito Mixto"],
+    ["10519","Marco Polo"],
+    ["10520","EQA"],
+    ["10542","C t\u0159\u00edda All-Terrain"],
+    ["10543","EQB"],
+    ["10544","EQS"],
+    ["10575","EQE"],
+    ["10576","EQS SUV"],
+    ["10586","T t\u0159\u00edda"],
+    ["10605","EQE SUV"],
+    ["10641","CLE Coup\u00e9"],
+    ["10642","EQT"],
+    ["10655","Citan Mixto"],
+    ["10656","CLE Cabriolet"],
+    ["10760","=C1088"],
+    ["10761","=C1089"],
+    ["481","Ostatn\u00ed"]],
+  "MERCEDES_AMG":[
+    ["3195","A"],
+    ["3196","C"],
+    ["3197","C Coup\u00e9"],
+    ["3010","C T"],
+    ["3198","CLA"],
+    ["3204","CLA Shooting Brake"],
+    ["3199","CLS"],
+    ["3200","CLS Shooting Brake"],
+    ["3201","E"],
+    ["3006","E T"],
+    ["3202","G"],
+    ["3203","GLA"],
+    ["3205","GLE"],
+    ["3206","GLE Coup\u00e9"],
+    ["3208","S"],
+    ["3209","S Coup\u00e9"],
+    ["3210","SL"],
+    ["3211","SLK"],
+    ["3212","GLS"],
+    ["3012","S Cabriolet"],
+    ["3213","SLC"],
+    ["3214","GLC"],
+    ["3215","GLC Coup\u00e9"],
+    ["3007","GT Coup\u00e9"],
+    ["3018","GT Roadster"],
+    ["10336","C Cabriolet"],
+    ["10337","E Cabriolet"],
+    ["10338","E Coup\u00e9"],
+    ["10339","GT"],
+    ["10341","S L"],
+    ["10340","ML"],
+    ["10436","GLB"],
+    ["10521","A Limousine"],
+    ["10545","EQS"],
+    ["10577","EQE"],
+    ["10606","EQE SUV"],
+    ["10657","CLE Coup\u00e9"],
+    ["10692","CLE Cabrio"],
+    ["3216","Ostatn\u00ed"]],
+  "MAYBACH":[
+    ["3218","S"],
+    ["10437","GLS"],
+    ["10658","EQS SUV"],
+    ["10691","SL"],
+    ["3219","Ostatn\u00ed"]],
+  "MG":[
+    ["10053","Mgf"],
+    ["10578","EHS"],
+    ["10579","ZS"],
+    ["10607","HS"],
+    ["10643","MG4"],
+    ["10644","MG5"],
+    ["10689","MG3"],
+    ["10690","Cyberster"],
+    ["10762","=C1143"],
+    ["10247","Ostatn\u00ed"]],
+  "MINI":[
+    ["1465","Cooper"],
+    ["2006","Cooper cabrio"],
+    ["2007","Cooper clubman"],
+    ["9776","Cooper countryman"],
+    ["9777","Cooper coup\u00e9"],
+    ["2008","Cooper d"],
+    ["10055","Cooper d cabrio"],
+    ["2009","Cooper d clubman"],
+    ["9779","Cooper d countryman"],
+    ["10057","Cooper d paceman"],
+    ["10059","Cooper paceman"],
+    ["9778","Cooper roadster"],
+    ["2010","Cooper s"],
+    ["2011","Cooper s cabrio"],
+    ["2012","Cooper s clubman"],
+    ["9780","Cooper s countryman"],
+    ["9781","Cooper s coup\u00e9"],
+    ["10054","Cooper s paceman"],
+    ["9782","Cooper s roadster"],
+    ["9783","Cooper sd"],
+    ["9784","Cooper sd cabrio"],
+    ["9785","Cooper sd clubman"],
+    ["9786","Cooper sd countryman"],
+    ["9787","Cooper sd coup\u00e9"],
+    ["10056","Cooper sd paceman"],
+    ["9788","Cooper sd roadster"],
+    ["1824","John cooper works"],
+    ["9791","John cooper works cabrio"],
+    ["2013","John cooper works clubman"],
+    ["10058","John cooper works countryman"],
+    ["9789","John cooper works coup\u00e9"],
+    ["3023","John Cooper Works Paceman"],
+    ["9790","John cooper works roadster"],
+    ["1464","One"],
+    ["2014","One cabrio"],
+    ["9792","One clubman"],
+    ["9793","One countryman"],
+    ["2015","One d"],
+    ["9794","One d clubman"],
+    ["9795","One d countryman"],
+    ["10645","Cooper SE"],
+    ["10680","Aceman SE"],
+    ["10681","John Cooper Works Aceman"],
+    ["10682","Aceman"],
+    ["10683","Cooper SE Countryman"],
+    ["10684","Cooper E Countryman"],
+    ["10685","Cooper E"],
+    ["10686","Cooper C Countryman"],
+    ["10687","Cooper C Cabrio"],
+    ["10688","Cooper C"],
+    ["1466","Ostatn\u00ed"]],
+  "MITSUBISHI":[
+    ["9796","Asx"],
+    ["10162","Canter 35"],
+    ["488","Carisma"],
+    ["489","Colt"],
+    ["10167","Colt czc"],
+    ["10163","Colt czt"],
+    ["10169","Colt cz3"],
+    ["490","Eclipse"],
+    ["491","Galant"],
+    ["2016","Galant station"],
+    ["1633","Grandis"],
+    ["10166","L 200"],
+    ["10168","L 300"],
+    ["10165","L 400"],
+    ["494","Lancer"],
+    ["2017","Lancer evolution"],
+    ["2018","Lancer sportback"],
+    ["2019","Lancer sportsedan"],
+    ["2020","Lancer station"],
+    ["1522","Outlander"],
+    ["497","Pajero"],
+    ["2024","Pajero pinin"],
+    ["2025","Pajero sport"],
+    ["2026","Pajero wagon"],
+    ["498","Sigma"],
+    ["2027","Sigma station"],
+    ["2028","Space gear"],
+    ["2029","Space runner"],
+    ["2030","Space star"],
+    ["2031","Space wagon"],
+    ["10164","3000"],
+    ["3020","Eclipse Cross"],
+    ["10764","=C1228"],
+    ["496","Ostatn\u00ed"]],
+  "MITSUBISHI_FUSO":[
+    ["10170","Canter"],
+    ["10248","Ostatn\u00ed"]],
+  "NISSAN":[
+    ["530","Almera"],
+    ["2034","Almera tino"],
+    ["531","Atleon"],
+    ["532","Cabstar"],
+    ["9800","Cube"],
+    ["3021","e-NV200 Combi"],
+    ["3019","e-NV200 Evalia"],
+    ["3025","e-NV200 Van"],
+    ["9802","Gt-r"],
+    ["10173","Interstar"],
+    ["2133","Juke"],
+    ["1828","Kubistar"],
+    ["10198","Leaf"],
+    ["2035","Maxima qx"],
+    ["539","Micra"],
+    ["2036","Micra c+c"],
+    ["1644","Murano"],
+    ["1637","Navara"],
+    ["1825","Note"],
+    ["9803","Nv200 combi"],
+    ["10174","Nv200 van"],
+    ["1141","Pathfinder"],
+    ["542","Patrol"],
+    ["3024","Pick Up"],
+    ["2037","Primastar combi"],
+    ["10171","Primastar van"],
+    ["543","Primera"],
+    ["2038","Primera wagon"],
+    ["1639","Pulsar"],
+    ["1826","Qashqai"],
+    ["10172","Qashqai+2"],
+    ["544","Serena"],
+    ["545","Sunny"],
+    ["2039","Sunny wagon"],
+    ["546","Terrano"],
+    ["1827","Tiida"],
+    ["548","Urvan"],
+    ["2040","Vanette cargo"],
+    ["1140","X-trail"],
+    ["1634","100"],
+    ["2032","350z coup\u00e9"],
+    ["2033","350z roadster"],
+    ["9798","370z coup\u00e9"],
+    ["9799","370z roadster"],
+    ["3026","NP300 Navara"],
+    ["10342","NP300 Pick Up"],
+    ["10343","NT400"],
+    ["10344","NV200 Evalia"],
+    ["10580","Ariya"],
+    ["10581","Townstar"],
+    ["541","Ostatn\u00ed"]],
+  "OLTCIT":[
+    ["10175","11 r"],
+    ["10176","14 r"],
+    ["558","Ostatn\u00ed"]],
+  "OPEL":[
+    ["10156","Adam"],
+    ["559","Agila"],
+    ["9805","Ampera"],
+    ["1829","Antara"],
+    ["561","Astra"],
+    ["2041","Astra cabrio"],
+    ["2042","Astra caravan"],
+    ["9807","Astra classic"],
+    ["2046","Astra classic caravan"],
+    ["2043","Astra coup\u00e9"],
+    ["2044","Astra gtc"],
+    ["9806","Astra sports tourer"],
+    ["3151","Astra TwinTop"],
+    ["562","Calibra"],
+    ["563","Campo"],
+    ["10152","Cascada"],
+    ["564","Combo"],
+    ["9808","Combo tour"],
+    ["565","Corsa"],
+    ["10153","Corsa van"],
+    ["566","Frontera"],
+    ["10155","Frontera van"],
+    ["1830","Gt"],
+    ["2125","Insignia"],
+    ["9809","Insignia sports tourer"],
+    ["1478","Meriva"],
+    ["9866","Mokka"],
+    ["569","Monterey"],
+    ["1647","Movano"],
+    ["2047","Movano bus"],
+    ["9810","Movano combi"],
+    ["10159","Movano crew van"],
+    ["10199","Movano trabus"],
+    ["10150","Movano van"],
+    ["571","Omega"],
+    ["9811","Omega caravan"],
+    ["1523","Signum"],
+    ["574","Sintra"],
+    ["1524","Speedster"],
+    ["575","Tigra"],
+    ["3124","Tigra TwinTop"],
+    ["576","Vectra"],
+    ["2049","Vectra caravan"],
+    ["1648","Vivaro"],
+    ["3127","Vivaro Crew Van"],
+    ["10151","Vivaro life"],
+    ["10157","Vivaro tour"],
+    ["10154","Vivaro van"],
+    ["577","Zafira"],
+    ["9813","Zafira classic"],
+    ["9812","Zafira tourer"],
+    ["3125","Mokka X"],
+    ["3154","Crossland X"],
+    ["3152","Insignia Grand Sport"],
+    ["3153","Grandland X"],
+    ["3126","Vivaro Tourer"],
+    ["10345","Adam Rocks"],
+    ["10346","Combo L"],
+    ["10347","Combo Life"],
+    ["10348","Combo Life XL"],
+    ["10349","Combo Tour L"],
+    ["10350","Combo XL"],
+    ["10351","Insignia Country Tourer"],
+    ["10352","Zafira Life"],
+    ["10405","Combo Crew Van"],
+    ["10438","Crossland"],
+    ["10530","Grandland"],
+    ["10582","Combo Life Pro"],
+    ["10646","Combo Life Pro XL"],
+    ["572","Ostatn\u00ed"]],
+  "PEUGEOT":[
+    ["10148","Bipper furgon"],
+    ["582","Boxer"],
+    ["9823","Expert combi"],
+    ["10147","Expert furgon"],
+    ["2067","Expert tepee"],
+    ["10145","Ion"],
+    ["588","Partner"],
+    ["10149","Partner furgon"],
+    ["2068","Partner tepee"],
+    ["9824","Rcz"],
+    ["1831","1007"],
+    ["589","106"],
+    ["1832","107"],
+    ["3128","108"],
+    ["10146","2008"],
+    ["590","205"],
+    ["591","206"],
+    ["9814","206 +"],
+    ["2052","206 cc"],
+    ["2053","206 sw"],
+    ["1833","207"],
+    ["2054","207 cc"],
+    ["2055","207 sw"],
+    ["9815","208"],
+    ["2118","3008"],
+    ["9864","301"],
+    ["593","306"],
+    ["2056","306 break"],
+    ["2057","306 cabrio"],
+    ["594","307"],
+    ["2060","307 break"],
+    ["2059","307 cc"],
+    ["2058","307 sw"],
+    ["1834","308"],
+    ["9816","308 cc"],
+    ["2061","308 sw"],
+    ["595","309"],
+    ["1835","4007"],
+    ["596","405"],
+    ["2062","405 break"],
+    ["597","406"],
+    ["2063","406 break"],
+    ["2064","406 coup\u00e9"],
+    ["1649","407"],
+    ["2065","407 coup\u00e9"],
+    ["9817","407 sw"],
+    ["2119","5008"],
+    ["9819","508"],
+    ["9820","508 rxh"],
+    ["9821","508 sw"],
+    ["598","605"],
+    ["599","607"],
+    ["600","806"],
+    ["1479","807"],
+    ["3123","Traveller"],
+    ["583","Expert"],
+    ["3129","Rifter"],
+    ["10353","Rifter Long"],
+    ["10608","408"],
+    ["587","Ostatn\u00ed"]],
+  "PGO":[
+    ["10144","Cevennes"],
+    ["10143","Speedster ii"],
+    ["10249","Ostatn\u00ed"]],
+  "PIAGGIO":[
+    ["9825","Ape"],
+    ["604","Porter"],
+    ["10141","Porter maxxi 2.2"],
+    ["10142","Quargo"],
+    ["603","Ostatn\u00ed"]],
+  "PORSCHE":[
+    ["618","Boxster"],
+    ["1526","Cayenne"],
+    ["1839","Cayman"],
+    ["10222","Macan"],
+    ["9826","Panamera"],
+    ["2069","911 cabriolet"],
+    ["2070","911 coupe"],
+    ["3141","918 Spyder"],
+    ["1837","928"],
+    ["1838","968"],
+    ["3133","718 Boxster"],
+    ["3131","718 Cayman"],
+    ["3130","Panamera Sport Turismo"],
+    ["10354","Cayenne Coup\u00e9"],
+    ["10397","911 Targa"],
+    ["10398","Boxster Spyder"],
+    ["10399","Panamera Executive"],
+    ["10400","Taycan"],
+    ["10439","718 Spyder"],
+    ["10529","Taycan Cross Turismo"],
+    ["10546","Taycan Sport Turismo"],
+    ["621","Ostatn\u00ed"]],
+  "PROTON":[
+    ["1841","300"],
+    ["1842","400"],
+    ["629","Ostatn\u00ed"]],
+  "RENAULT":[
+    ["1652","Avantime"],
+    ["10133","Captur"],
+    ["630","Clio"],
+    ["2071","Clio grandtour"],
+    ["631","Espace"],
+    ["10134","Espace grand"],
+    ["9827","Espace long"],
+    ["632","Express"],
+    ["2132","Fluence"],
+    ["3140","Kadjar"],
+    ["634","Kangoo"],
+    ["10139","Kangoo express"],
+    ["10137","Kangoo express maxi"],
+    ["10135","Kangoo maxi"],
+    ["1849","Koleos"],
+    ["636","Laguna"],
+    ["2072","Laguna coup\u00e9"],
+    ["2073","Laguna grandtour"],
+    ["9828","Latitude"],
+    ["10140","Mascott"],
+    ["10136","Mascott privilege"],
+    ["638","Master"],
+    ["639","Megane"],
+    ["2080","M\u00e9gane coup\u00e9"],
+    ["2081","M\u00e9gane coup\u00e9-cabriolet"],
+    ["2082","M\u00e9gane grandtour"],
+    ["2085","M\u00e9gane sedan"],
+    ["1653","Modus"],
+    ["2077","Modus grand"],
+    ["644","Rapid"],
+    ["645","Safrane"],
+    ["646","Scenic"],
+    ["9829","Sc\u00e9nic grand"],
+    ["10138","Sc\u00e9nic xmod"],
+    ["647","Spider"],
+    ["648","Thalia"],
+    ["649","Trafic"],
+    ["650","Twingo"],
+    ["1481","Vel satis"],
+    ["9831","Wind"],
+    ["652","19"],
+    ["654","21"],
+    ["3136","Talisman"],
+    ["3134","Talisman Grandtour"],
+    ["3132","M\u00e9gane GrandCoup\u00e9"],
+    ["3138","Trafic SpaceClass"],
+    ["3137","Alaskan"],
+    ["3139","Twizy"],
+    ["3143","Zoe"],
+    ["10231","Trafic Grand Passenger"],
+    ["10232","Trafic Grand SpaceClass"],
+    ["3135","Trafic Passenger"],
+    ["10526","Trafic Combi"],
+    ["10527","Trafic Grand Combi"],
+    ["10528","Arkana"],
+    ["10547","Trafic Grand"],
+    ["10609","Austral"],
+    ["10659","Rafale"],
+    ["10677","Symbioz"],
+    ["10678","Kangoo Grand"],
+    ["10679","5"],
+    ["656","4"],
+    ["2076","Master minibus"],
+    ["10202","Maxity"],
+    ["642","Ostatn\u00ed"]],
+  "ROVER":[
+    ["666","200"],
+    ["1482","25"],
+    ["668","400"],
+    ["1483","45"],
+    ["9832","600"],
+    ["671","75"],
+    ["665","Ostatn\u00ed"]],
+  "SAAB":[
+    ["675","900"],
+    ["2093","900 cabrio"],
+    ["676","9000"],
+    ["2088","9-3 cabrio"],
+    ["2090","9-3 sport sedan"],
+    ["2091","9-3 sport wagon"],
+    ["9833","9-3x"],
+    ["678","9-5"],
+    ["2092","9-5 wagon"],
+    ["10132","9-7x"],
+    ["674","Ostatn\u00ed"]],
+  "SANTANA":[
+    ["10129","Ps-10"],
+    ["10130","Ps300"],
+    ["10131","Ps350"],
+    ["10250","Ostatn\u00ed"]],
+  "SCAM":[
+    ["10127","Sm"],
+    ["10128","Smt"],
+    ["10251","Ostatn\u00ed"]],
+  "SEAT":[
+    ["690","Alhambra"],
+    ["1657","Altea"],
+    ["2096","Altea freetrack"],
+    ["2095","Altea xl"],
+    ["691","Arosa"],
+    ["692","Cordoba"],
+    ["2123","Exeo"],
+    ["10126","Exeo st"],
+    ["693","Ibiza"],
+    ["2098","Ibiza sportcoup\u00e9"],
+    ["9834","Ibiza st"],
+    ["2099","Inca kombi"],
+    ["10124","Inca van"],
+    ["695","Leon"],
+    ["10125","Leon sportcoup\u00e9"],
+    ["10203","Leon st"],
+    ["10123","Mii"],
+    ["698","Terra"],
+    ["699","Toledo"],
+    ["3142","Ateca"],
+    ["3155","Arona"],
+    ["10252","Tarraco"],
+    ["10355","Leon X-Perience"],
+    ["697","Ostatn\u00ed"]],
+  "SKODA":[
+    ["9835","Citigo"],
+    ["782","Fabia"],
+    ["1193","Fabia combi"],
+    ["10121","Fabia praktik"],
+    ["1535","Fabia sedan"],
+    ["783","Favorit"],
+    ["784","Felicia"],
+    ["785","Felicia combi"],
+    ["10117","Felicia van plus"],
+    ["786","Forman"],
+    ["788","Octavia"],
+    ["789","Octavia combi"],
+    ["793","Rapid"],
+    ["10122","Rapid spaceback"],
+    ["2127","Roomster"],
+    ["10120","Roomster praktik"],
+    ["1192","Superb"],
+    ["9838","Superb combi"],
+    ["2679","Yeti"],
+    ["797","105"],
+    ["799","120"],
+    ["801","125"],
+    ["802","130"],
+    ["10118","135"],
+    ["10119","136"],
+    ["KODIAQ","Kodiaq"],
+    ["KAROQ","Karoq"],
+    ["10253","Scala"],
+    ["10356","Fabia Combi Scout"],
+    ["10357","Fabia Scout"],
+    ["10358","Kamiq"],
+    ["10359","Karoq Scout"],
+    ["10360","Kodiaq Scout"],
+    ["10361","Octavia Scout"],
+    ["10362","Roomster Scout"],
+    ["10363","Superb Scout"],
+    ["10440","Enyaq"],
+    ["10548","Enyaq Coup\u00e9"],
+    ["10676","Elroq"],
+    ["790","Ostatn\u00ed"]],
+  "SMART":[
+    ["1540","Cabrio"],
+    ["1542","City-coup\u00e9"],
+    ["1545","Forfour"],
+    ["2101","Fortwo cabrio"],
+    ["1851","Fortwo coup\u00e9"],
+    ["1543","Roadster"],
+    ["1544","Roadster coup\u00e9"],
+    ["1223","Ostatn\u00ed"]],
+  "SPYKER":[
+    ["10116","C12"],
+    ["10115","C8"],
+    ["10254","Ostatn\u00ed"]],
+  "SSANGYONG":[
+    ["1852","Actyon"],
+    ["10114","Actyon sports"],
+    ["717","Korando"],
+    ["1853","Kyron"],
+    ["10113","Musso sports"],
+    ["1854","Rexton"],
+    ["10112","Rexton w"],
+    ["1855","Rodius"],
+    ["10364","Musso Grand"],
+    ["10365","Rexton G4"],
+    ["10366","Tivoli"],
+    ["10367","XLV"],
+    ["10549","Tivoli Grand"],
+    ["10620","Torres"],
+    ["720","Ostatn\u00ed"]],
+  "SUBARU":[
+    ["10111","Baja"],
+    ["9839","Brz"],
+    ["725","Forester"],
+    ["726","Impreza"],
+    ["727","Justy"],
+    ["728","Legacy"],
+    ["3194","Levorg"],
+    ["1860","Libero"],
+    ["1164","Outback"],
+    ["1857","Svx"],
+    ["9840","Trezia"],
+    ["1858","Tribeca"],
+    ["9841","Wrx sti"],
+    ["9842","Xv"],
+    ["10368","Impreza Wagon"],
+    ["10369","Impreza XV"],
+    ["10370","Legacy Wagon"],
+    ["10610","Solterra"],
+    ["10660","Crosstrek"],
+    ["730","Ostatn\u00ed"]],
+  "SUZUKI":[
+    ["731","Alto"],
+    ["735","Baleno"],
+    ["736","Carry"],
+    ["741","Grand vitara"],
+    ["1167","Ignis"],
+    ["747","Jimny"],
+    ["9844","Kizashi"],
+    ["1166","Liana"],
+    ["9845","Liana kombi"],
+    ["756","Samurai"],
+    ["1861","Splash"],
+    ["760","Swift"],
+    ["2129","Sx4"],
+    ["10110","Sx4 s-cross"],
+    ["767","Vitara"],
+    ["772","Wagon r+"],
+    ["3005","Celerio"],
+    ["10441","Across"],
+    ["10525","Swace"],
+    ["10550","S-Cross"],
+    ["752","Ostatn\u00ed"]],
+  "TATRA":[
+    ["817","613"],
+    ["1862","700"],
+    ["812","Ostatn\u00ed"]],
+  "TESLA":[
+    ["10406","Model 3"],
+    ["10407","Model S"],
+    ["10408","Model X"],
+    ["10524","Model Y"],
+    ["10255","Ostatn\u00ed"]],
+  "TOYOTA":[
+    ["1865","Auris"],
+    ["10102","Auris touring sports"],
+    ["823","Avensis"],
+    ["2106","Avensis combi"],
+    ["2105","Avensis verso"],
+    ["1711","Aygo"],
+    ["824","Camry"],
+    ["825","Carina"],
+    ["826","Celica"],
+    ["827","Corolla"],
+    ["2107","Corolla combi"],
+    ["2108","Corolla verso"],
+    ["10103","Corolla verso van"],
+    ["1866","Fj cruiser"],
+    ["9846","Gt86"],
+    ["828","Hiace"],
+    ["10109","Hiace wagon"],
+    ["829","Hilux"],
+    ["9850","Iq"],
+    ["10105","Land cruiser 100"],
+    ["830","Land cruiser"],
+    ["10104","Land cruiser 75"],
+    ["10108","Land cruiser 90"],
+    ["833","Previa"],
+    ["1172","Prius"],
+    ["9847","Prius+"],
+    ["10100","Proace"],
+    ["1171","Rav4"],
+    ["1661","Supra"],
+    ["10106","Tundra"],
+    ["9848","Urban cruiser"],
+    ["9849","Verso"],
+    ["835","Yaris"],
+    ["10256","4 Runner"],
+    ["3003","C-HR"],
+    ["3001","Proace Verso"],
+    ["10371","Corolla Touring Sports"],
+    ["10372","Land Cruiser 120"],
+    ["10373","Land Cruiser 150"],
+    ["10374","Land Cruiser 200"],
+    ["10409","Corolla Trek"],
+    ["10410","Proace City"],
+    ["10411","Proace City Verso"],
+    ["10412","Proace City Verso Long"],
+    ["10442","Highlander"],
+    ["10522","Yaris Cross"],
+    ["10523","Mirai"],
+    ["10551","Aygo X"],
+    ["10552","GR 86"],
+    ["10583","bZ4X"],
+    ["10584","Corolla Cross"],
+    ["10585","GR86"],
+    ["10661","Land Cruiser 250"],
+    ["10675","Proace Max"],
+    ["832","Ostatn\u00ed"]],
+  "UAZ":[
+    ["10098","2360 amc cargo"],
+    ["10091","2360 amc rancher"],
+    ["10092","2363 amc pickup"],
+    ["10094","3151 amc hunter"],
+    ["10093","3160 amc combat"],
+    ["10096","3162 amc simbir"],
+    ["10099","3163 amc patriot"],
+    ["10097","3164 amc combat"],
+    ["10095","3164 amc patriot sport"],
+    ["10567","2924 AMC Hunter"],
+    ["10611","3162 Simbir AMC"],
+    ["851","Ostatn\u00ed"]],
+  "VOLHA":[
+    ["1891","Gaz "],
+    ["884","Ostatn\u00ed"]],
+  "VOLKSWAGEN":[
+    ["10086","Amarok"],
+    ["1665","Beetle"],
+    ["10068","Beetle cabriolet"],
+    ["887","Bora"],
+    ["888","Caddy"],
+    ["10066","Caddy kasten"],
+    ["9852","Caddy kombi"],
+    ["10075","Caddy kombi special"],
+    ["10089","Caddy life"],
+    ["10080","Caddy life special"],
+    ["9851","Cc"],
+    ["10082","Crafter 30"],
+    ["10070","Crafter 30 kombi special"],
+    ["10076","Crafter 35"],
+    ["10064","Crafter 35 kombi special"],
+    ["1868","Eos"],
+    ["1869","Fox"],
+    ["891","Golf"],
+    ["3004","Golf Alltrack"],
+    ["9854","Golf cabriolet"],
+    ["9855","Golf plus"],
+    ["10225","Golf sportsvan"],
+    ["2109","Golf variant"],
+    ["892","Jetta"],
+    ["10073","Lt 28"],
+    ["10072","Lt 35"],
+    ["10090","Lt 35 kombi special"],
+    ["2110","New beetle"],
+    ["900","Passat"],
+    ["9856","Passat alltrack"],
+    ["2112","Passat cc"],
+    ["2113","Passat variant"],
+    ["1533","Phaeton"],
+    ["901","Polo"],
+    ["1667","Scirocco"],
+    ["902","Sharan"],
+    ["1870","Tiguan"],
+    ["1534","Touareg"],
+    ["1532","Touran"],
+    ["10077","T4 caravelle van"],
+    ["10074","T4 transporter"],
+    ["10085","T4 transporter kombi special"],
+    ["10081","T4 transporter kombi van"],
+    ["10087","T5 california"],
+    ["10078","T5 caravelle"],
+    ["10079","T5 caravelle special"],
+    ["10065","T5 multivan"],
+    ["10083","T5 multivan california"],
+    ["10084","T5 multivan special"],
+    ["10063","T5 transporter"],
+    ["10088","T5 transporter kombi special"],
+    ["10067","T5 transporter shuttle"],
+    ["10069","T5 transporter shuttle special"],
+    ["3048","T6 California"],
+    ["3049","T6 Caravelle"],
+    ["3050","T6 Multivan"],
+    ["3047","T6 Transporter"],
+    ["9859","Up!"],
+    ["906","Vento"],
+    ["3002","Caddy Alltrack"],
+    ["3000","Arteon"],
+    ["3045","Tiguan Allspace"],
+    ["3046","T-Roc"],
+    ["10257","T-Cross"],
+    ["10375","Beetle Dune"],
+    ["10376","Caddy Kasten Maxi"],
+    ["10377","Caddy Kombi Maxi"],
+    ["10378","Caddy Kombi Special Maxi"],
+    ["10379","Caddy Life Maxi"],
+    ["10380","Caddy Life Special Maxi"],
+    ["10381","Caddy Maxi"],
+    ["10382","e-Crafter"],
+    ["10383","Golf Plus Cross"],
+    ["10384","New Beetle Cabriolet"],
+    ["10385","Phaeton Long"],
+    ["10386","Polo Cross"],
+    ["10387","Touran Cross"],
+    ["10388","up! cross up!"],
+    ["10443","Arteon Shooting Brake"],
+    ["10444","Grand California 600"],
+    ["10445","Grand California 680"],
+    ["10446","ID.3"],
+    ["10447","ID.4"],
+    ["10448","T-Roc Cabriolet"],
+    ["10500","Caddy Cargo"],
+    ["10501","Caddy Cargo Maxi"],
+    ["10553","ID.5"],
+    ["10554","T7 Multivan"],
+    ["10555","Taigo"],
+    ["10612","ID. Buzz"],
+    ["10613","ID. Buzz Cargo"],
+    ["10617","T6 California Beach"],
+    ["10618","T5 California Beach"],
+    ["10619","ID.7"],
+    ["10662","ID.7 Tourer"],
+    ["10668","Tayron"],
+    ["10669","T7 Transporter"],
+    ["10670","T7 Caravelle"],
+    ["10671","T7 California Beach"],
+    ["10672","T7 California"],
+    ["10673","Caddy Flexicab Maxi"],
+    ["10674","Caddy Flexicab"],
+    ["889","Caravelle"],
+    ["896","Multivan"],
+    ["904","Transporter"],
+    ["1867","Crafter"],
+    ["10772","California"],
+    ["10773","=C1882"],
+    ["899","Ostatn\u00ed"]],
+  "VOLVO":[
+    ["1872","C30"],
+    ["907","C70"],
+    ["2116","C70 cabrio"],
+    ["2117","C70 coup\u00e9"],
+    ["914","S40"],
+    ["1484","S60"],
+    ["3192","S60 Cross Country"],
+    ["10062","S60 r"],
+    ["915","S70"],
+    ["916","S80"],
+    ["917","S90"],
+    ["918","V40"],
+    ["10061","V40 cross country"],
+    ["1712","V50"],
+    ["9860","V60"],
+    ["3191","V60 Cross Country"],
+    ["919","V70"],
+    ["10060","V70 r"],
+    ["1873","V90"],
+    ["1874","Xc60"],
+    ["1485","Xc70"],
+    ["1486","Xc90"],
+    ["920","440"],
+    ["921","460"],
+    ["922","480"],
+    ["923","850"],
+    ["924","940"],
+    ["1871","960"],
+    ["3193","V90 Cross Country"],
+    ["3156","XC40"],
+    ["10389","S90 L"],
+    ["10556","C40"],
+    ["10614","EX90"],
+    ["10647","EX30"],
+    ["10664","EX40"],
+    ["10665","EX30 Cross Country"],
+    ["10666","ES90"],
+    ["10667","EC40"],
+    ["913","Ostatn\u00ed"]],
+  "WIESMANN":[
+    ["9981","Gt"],
+    ["9982","Roadster"],
+    ["10258","Ostatn\u00ed"]],
+  "GENESIS":[
+    ["3149","G80"],
+    ["10799","=C1930"],
+    ["10800","=C1931"],
+    ["10801","=C1932"],
+    ["10259","Ostatn\u00ed"]],
+  "ROLLS_ROYC":[
+    ["662","Ostatn\u00ed"]],
+  "CUPRA":[
+    ["10279","Ateca"],
+    ["10418","Formentor"],
+    ["10419","Leon"],
+    ["10420","Leon Sportstourer"],
+    ["10532","Born"],
+    ["10707","Terramar"],
+    ["10789","=C1941"],
+    ["10391","Ostatn\u00ed"]],
+  "MAN":[
+    ["10325","TGE 2.100"],
+    ["10326","TGE 2.140"],
+    ["10327","TGE 2.180"],
+    ["10328","TGE 3.100"],
+    ["10329","TGE 3.140"],
+    ["10330","TGE 3.180"],
+    ["10541","TGE 3.120"],
+    ["10770","TGE"],
+    ["10390","Ostatn\u00ed"]],
+  "LINCOLN":[
+    ["441","Continental"],
+    ["1113","Ls"],
+    ["443","Ostatn\u00ed"]],
+  "DONGFENG":[
+    ["10534","Fengon 5"],
+    ["10535","Glory 580"],
+    ["10536","Seres 3"],
+    ["10594","DF 6"],
+    ["10595","EV200"],
+    ["10596","Glory 500"],
+    ["10597","Rich 6"],
+    ["10598","T5 EVO"],
+    ["10627","Forthing T5 EVO"],
+    ["10628","U-Tour"],
+    ["10651","M-Hero 917"],
+    ["10652","Shine"],
+    ["10704","Forthing S7"],
+    ["10705","Box"],
+    ["10768","=C1969"],
+    ["10790","=C1970"],
+    ["10797","=C1971"],
+    ["10587","Ostatn\u00ed"]],
+  "ALPINE":[
+    ["10560","A110"],
+    ["10718","A290"],
+    ["10561","Ostatn\u00ed"]],
+  "VOYAH":[
+    ["10615","Free"],
+    ["10663","Dream"],
+    ["10720","Courage"],
+    ["10721","Passion"],
+    ["10616","Ostatn\u00ed"]],
+  "JAC":[
+    ["10634","iEV7S"],
+    ["10635","Ostatn\u00ed"]],
+  "KGM":[
+    ["10722","Torres"],
+    ["10723","Tivoli"],
+    ["10724","Rexton G4"],
+    ["10725","Musso Grand"],
+    ["10726","Korando"],
+    ["10727","Actyon"],
+    ["10728","Torres"],
+    ["10729","Ostatn\u00ed"]],
+  "JAECOO":[
+    ["10730","J7"],
+    ["10731","Ostatn\u00ed"]],
+  "OMODA":[
+    ["10732","5"],
+    ["10733","Ostatn\u00ed"]],
+  "FARIZON_AUTO":[
+    ["10734","V6"],
+    ["10735","SV"],
+    ["10736","Ostatn\u00ed"]],
+  "EVO":[
+    ["10737","Cross 4"],
+    ["10738","7"],
+    ["10739","5"],
+    ["10798","=C2003"],
+    ["10740","Ostatn\u00ed"]],
+  "OSTATNE":[
+    ["579","Ostatn\u00ed"]],
+  "BAIC":[
+    ["10744","=C2006"],
+    ["10745","=C2007"],
+    ["10746","=C2008"],
+    ["10802","=C2009"]],
+  "BYD":[
+    ["10748","=C2010"],
+    ["10749","=C2011"],
+    ["10750","=C2012"],
+    ["10751","=C2013"],
+    ["10779","=C2014"],
+    ["10780","=C2015"],
+    ["10781","=C2016"],
+    ["10782","=C2017"],
+    ["10783","=C2018"],
+    ["10784","=C2019"],
+    ["10785","=C2020"],
+    ["10786","=C2021"],
+    ["10803","=C2022"]],
+  "LEAPMOTOR":[
+    ["10757","=C2023"],
+    ["10758","=C2024"],
+    ["10804","=C2025"]],
+  "LEVC":[
+    ["10769","=C2026"],
+    ["10805","=C2027"]],
+  "LOTUS":[
+    ["10759","=C2028"],
+    ["10806","=C2029"]],
+  "MAXUS":[
+    ["10771","=C2030"],
+    ["10807","=C2031"]],
+  "MHERO":[
+    ["10763","=C2032"],
+    ["10808","=C2033"]],
+  "SWM":[
+    ["10765","=C2034"],
+    ["10766","=C2035"],
+    ["10767","=C2036"],
+    ["10809","=C2037"]]
+};
+
+function getModelCode(brandCode, modelName) {
+  if (!brandCode || !modelName) return '';
+  const models = PILLOW_MODELS[brandCode] || [];
+  const norm = modelName.trim().toLowerCase();
+  let found = models.find(([, name]) => name.toLowerCase() === norm);          // presná zhoda
+  if (found) return found[0];
+  found = models.find(([, name]) => {                                          // začiatok reťazca
+    const n = name.toLowerCase();
+    return n.startsWith(norm) || norm.startsWith(n);
+  });
+  if (found) return found[0];
+  const first = norm.split(/\s+/)[0];                                          // prvé slovo
+  found = first ? models.find(([, name]) => name.toLowerCase().includes(first)) : null;
+  return found ? found[0] : '';
+}
+
+/* BCRM kategória → Pillow vehicleType */
+const BCRM_KAT_MAP = {
+  M1:'OA', M2:'AB', M3:'AB', N1:'OA', N2:'NA', N3:'NA',
+  L1e:'MO', L2e:'MO', L3e:'MO', L4e:'MO', L5e:'MO', L6e:'MO', L7e:'MO',
+  O1:'PV', O2:'PV', O3:'PN', O4:'PN', T:'TRA', C:'TRA', R:'PN', S:'SPS',
+};
+/* BCRM palivo → naše hodnoty */
+const BCRM_PALIVO_MAP = {
+  'benzín':'benzin', 'benzin':'benzin', 'nafta':'diesel', 'diesel':'diesel',
+  'elektrina':'elektro', 'elektrický':'elektro', 'hybrid':'hybrid', 'hybridný':'hybrid',
+  'plyn':'lpg', 'lpg':'lpg', 'cng':'cng', 'vodík':'h2',
+};
+
+/* údaje získané z lookupov */
+const lookup = { vehicle: {}, poistnik: {} };
+
+function xe(tag, val) {
+  if (val === null || val === undefined || val === '') return '';
+  const s = String(val).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return `<${tag}>${s}</${tag}>`;
+}
+function cleanPsc(psc) { return (psc || '').replace(/\s/g, ''); }
+function getBrandCode(znacka) {
+  if (!znacka) return 'OSTATNE';
+  if (PILLOW_BRAND_MAP[znacka]) return PILLOW_BRAND_MAP[znacka];
+  const norm = znacka.toLowerCase();
+  for (const [k, v] of Object.entries(PILLOW_BRAND_MAP)) {
+    if (k.toLowerCase() === norm) return v;
+  }
+  return 'OSTATNE';
+}
+function todayISO() { return new Date().toISOString().slice(0, 10); }
+function fieldVal(id) { return (document.getElementById(id)?.value || '').trim(); }
+
+/* ── BCRM lookupy ── */
+async function apiLookupVehicle(ecv) {
+  let raw;
+  try {
+    const res = await fetch(`${API_BASE}/bcrm/vehicle?ecv=${encodeURIComponent(ecv)}`);
+    raw = await res.json();
+  } catch (e) { return { found: false }; }
+  if (!raw.found) return { found: false };
+  const palivo  = BCRM_PALIVO_MAP[(raw.palivo || '').toLowerCase()] || raw.palivo || '';
+  const katCode = (raw.kat || '').match(/^([A-Z0-9]+)/)?.[1] || '';
+  const typ     = BCRM_KAT_MAP[katCode] || 'OA';
+  const pohon   = raw.nahon === true || raw.nahon === '4x4' || raw.nahon === 'AWD' || raw.nahon === '4WD';
+  return {
+    found: true,
+    ecvWarning: !!raw.ecv_warning,
+    data: {
+      vin:      raw.vin || '', ecv: raw.ecv || ecv,
+      znacka:   raw.znacka || '', model: raw.model || '', typ,
+      datumReg: raw.reg || '', palivo,
+      vykon:    raw.vykon    != null ? String(Math.round(raw.vykon))    : '',
+      objem:    raw.objem    != null ? String(Math.round(raw.objem))    : '',
+      hmotnost: raw.hmotnost != null ? String(Math.round(raw.hmotnost)) : '',
+      farba:    raw.farba || '', pohon, tp: raw.cislo_tp || '',
+    }
+  };
+}
+async function apiLookupCompany(ico) {
+  try {
+    const res = await fetch(`${API_BASE}/bcrm/company?ico=${encodeURIComponent(ico)}&stat=SK`);
+    return await res.json();
+  } catch (e) { return { found: false }; }
+}
+
+/* ── Pillow HTTP vrstva ── */
+async function pillowAuth() {
+  const res = await fetch(`${PILLOW_CONFIG.BASE_URL}/authorize`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `user=${encodeURIComponent(PILLOW_CONFIG.USER)}&password=${encodeURIComponent(PILLOW_CONFIG.PASS)}`,
+  });
+  if (!res.ok) throw new Error('Prihlásenie do Pillow zlyhalo (HTTP ' + res.status + ')');
+  const doc = new DOMParser().parseFromString(await res.text(), 'text/xml');
+  const uid = doc.querySelector('uid')?.textContent;
+  if (!uid) throw new Error('Pillow: UID sa nepodarilo získať');
+  return uid;
+}
+async function pillowLogout(uid) {
+  try {
+    await fetch(`${PILLOW_CONFIG.BASE_URL}/logout`, {
+      method: 'POST', headers: { 'Content-Type': 'text/xml; charset=utf-8', 'RestUid': uid },
+    });
+  } catch (e) { /* tichý fail */ }
+}
+async function pillowCall(uid, endpoint, xmlBody) {
+  const res = await fetch(`${PILLOW_CONFIG.BASE_URL}/${endpoint}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/xml; charset=utf-8', 'RestUid': uid },
+    body: xmlBody,
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    const doc  = new DOMParser().parseFromString(text, 'text/xml');
+    const msgs = [...doc.querySelectorAll('msgText')].map(e => e.textContent).join('\n');
+    throw new Error(msgs || `Pillow API chyba HTTP ${res.status}`);
+  }
+  return text;
+}
+
+/* ── Rate XML (cenotvorba) — pošle všetkých 9 rizík naraz ── */
+/* Pri NEUVEDENA (neidentifikované vozidlo) idú len riziká nezávislé od hodnoty vozidla */
+const FALLBACK_RISKS = ['AS2', 'UR2', 'ZA2'];
+
+/* Zistí brand/model kódy a či ide o fallback (neznáme vozidlo) */
+function resolveVehicleCodes() {
+  const v = lookup.vehicle;
+  let brandCode = getBrandCode(v.znacka);
+  let modelCode = getModelCode(brandCode, v.model);
+  if (!brandCode || brandCode === 'OSTATNE' || !modelCode) {
+    return { brandCode: 'NEUVEDENA', modelCode: '529', fallback: true };
+  }
+  return { brandCode, modelCode, fallback: false };
+}
+
+/* riskList = pole risk kódov (napr. ['HP2','SK2',...]); ak null → všetky z TILE_RISK */
+function buildRateXML(freq = 12, codes = null, riskList = null) {
+  const v = lookup.vehicle, p = lookup.poistnik;
+  codes = codes || resolveVehicleCodes();
+  const brandCode = codes.brandCode, modelCode = codes.modelCode;
+  const fuelCode  = PILLOW_FUEL_MAP[v.palivo] || 'JI';
+  const vtCode    = PILLOW_VEHICLETYPE_VALID.has(v.typ) ? v.typ : 'OA';
+  const partyType = PILLOW_PARTYTYPE_MAP[p.typ] || 'FORC';
+  const isCompany = (partyType === 'PO' || partyType === 'OSVC');
+
+  const variants = ALL_VARIANTS.filter(r => !riskList || riskList.includes(r.risk));
+  const variantsXml = variants
+    .map(r => `  <variantOfSubject><xml-par-ap2-variant-of-subject-req>${xe('risk', r.risk)}${xe('variant', r.variant)}</xml-par-ap2-variant-of-subject-req></variantOfSubject>`)
+    .join('\n');
+
+  return `<?xml version="1.0" encoding="utf-8"?>
+<xml-par-ap2-rate-policy-req xmlns="www.ais.cz" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="www.ais.cz XmlParAp2RatePolicyReq.xsd">
+  ${xe('agentId1', PILLOW_CONFIG.AGENT_ID1)}
+  ${xe('policyBeginning', todayISO())}
+  ${xe('paymentFrequency', String(freq))}
+  <vehicle><xml-par-ap2-vehicle>
+    ${xe('vehicleType', vtCode)}
+    ${xe('vehicleUse', '10')}
+    ${xe('brand', brandCode)}
+    ${xe('model', modelCode)}
+    ${xe('engineVolume', parseInt(v.objem) || 0)}
+    ${xe('enginePower',  parseInt(v.vykon) || 0)}
+    ${xe('weight',       parseInt(v.hmotnost) || 0)}
+    ${xe('fuel', fuelCode)}
+    ${xe('noLicensePlate', v.ecv ? 'false' : 'true')}
+    ${v.ecv ? xe('licensePlate', v.ecv) : ''}
+    ${v.vin ? xe('VIN', v.vin) : ''}
+    ${v.datumReg ? xe('firstRegistrationDate', v.datumReg) : ''}
+    ${xe('notRegistered', 'false')}
+    ${xe('garaged', 'false')}
+    ${xe('contractualService', 'false')}
+    ${xe('equipment', v.pohon ? 'A' : 'NA')}
+    ${xe('x4x4', v.pohon ? 'true' : 'false')}
+    ${xe('expectedKm', parseInt(v.najazd) || 15000)}
+    ${xe('vehicleName', [v.znacka, v.model].filter(Boolean).join(' '))}
+    ${xe('noTechnicalCertificate', v.tp ? 'false' : 'true')}
+    ${v.tp ? xe('technicalCertificateNumber', v.tp) : ''}
+    ${v.farba ? xe('colour', v.farba) : ''}
+    ${xe('withoutRegistration', 'false')}
+  </xml-par-ap2-vehicle></vehicle>
+  ${xe('partyType', partyType)}
+  ${partyType === 'FORC' ? xe('personalIdentification', p.rc) : ''}
+  ${isCompany ? xe('companyIdentification', p.ico) : ''}
+  <address><xml-par-address>
+    ${xe('country', 'SVK')}
+    ${xe('zipCode', cleanPsc(p.psc))}
+    ${xe('city', p.obec)}
+  </xml-par-address></address>
+${variantsXml}
+</xml-par-ap2-rate-policy-req>`;
+}
+
+/* ── Parser rate odpovede → { byRisk: {risk: monthPremium}, ... } ── */
+function parseRateResponse(xmlText) {
+  const doc = new DOMParser().parseFromString(xmlText, 'text/xml');
+  const calcId = doc.querySelector('calculationId')?.textContent || null;
+  const byRisk = {};
+  doc.querySelectorAll('variantOfSubject').forEach(vs => {
+    const inner = vs.querySelector('xml-par-ap2-variant-of-subject-resp');
+    if (!inner) return;
+    const risk   = inner.querySelector('risk')?.textContent;
+    if (!OUR_RISKS.has(risk)) return;
+    const chosen = inner.querySelector('chosenVariant')?.textContent === 'true';
+    const month  = parseFloat(inner.querySelector('monthPremium')?.textContent || '0');
+    if (chosen || byRisk[risk] === undefined) byRisk[risk] = month;
+  });
+  const errors = [...doc.querySelectorAll('error'), ...doc.querySelectorAll('msgText')]
+    .map(e => e.textContent).filter(Boolean);
+  // riziká, ktoré Pillow odmietol (napr. "Riziko HP2 není možné...")
+  const failedRisks = [...new Set(errors.flatMap(t =>
+    [...t.matchAll(/Riziko\s+([A-Z]{2}\d)/g)].map(m => m[1])))];
+  return { calcId, byRisk, pricedRisks: Object.keys(byRisk), errors, failedRisks };
+}
+
+/* Reálne ceny zo Pillow pre všetky frekvencie (podľa dlaždice):
+   { 12:{tile:monthEq}, 4:{...}, 2:{...}, 1:{...} }  (Pillow paymentFrequency) */
+let pillowFreqPrices = {};
+
+/* Jeden rate pokus — nikdy nevyhodí; chyby vráti v errors/failedRisks.
+   (Pillow vracia validačné chyby ako HTTP 400, čiže pillowCall vyhodí výnimku.) */
+async function rateAttempt(uid, codes, risks, freq) {
+  try {
+    const xml = await pillowCall(uid, 'par/policies/rate/AP2', buildRateXML(freq, codes, risks));
+    return parseRateResponse(xml);
+  } catch (e) {
+    const msg = e?.message || String(e);
+    const failedRisks = [...new Set([...msg.matchAll(/Riziko\s+([A-Z]{2}\d)/g)].map(m => m[1]))];
+    return { calcId: null, byRisk: {}, pricedRisks: [], errors: [msg], failedRisks };
+  }
+}
+
+/* ── Hlavné volanie: auth → rate (4 frekvencie) → ceny ──
+   Pillow je all-or-nothing: jedno odmietnuté riziko (alebo závislosť, napr.
+   HP2 vyžaduje SZ2) zhodí celý výpočet. Pri freq=12 odmietnuté riziká
+   postupne zahadzujeme; zvyšné frekvencie použijú funkčnú množinu rizík. */
+async function fetchPillowPrices() {
+  let uid;
+  try {
+    uid = await pillowAuth();
+    const codes = resolveVehicleCodes();
+    let risks = codes.fallback ? FALLBACK_RISKS.slice() : ALL_VARIANTS.map(r => r.risk);
+
+    // 1) mesačne (freq=12) s retry na zahodenie odmietnutých rizík
+    let byRiskMonthly = {}, workingRisks = [];
+    for (let attempt = 0; attempt < 8 && risks.length; attempt++) {
+      const res = await rateAttempt(uid, codes, risks, 12);
+      if (res.pricedRisks.length) { byRiskMonthly = res.byRisk; workingRisks = res.pricedRisks; break; }
+      if (!res.failedRisks.length) { console.warn('Pillow rate:', res.errors); break; }
+      console.warn('Pillow odmietol riziká, skúšam bez nich:', res.failedRisks);
+      risks = risks.filter(r => !res.failedRisks.includes(r));
+    }
+
+    // 2) ostatné frekvencie paralelne s funkčnou množinou rizík
+    pillowFreqPrices = { 12: tilePricesFromRisks(byRiskMonthly) };
+    if (workingRisks.length) {
+      const others = await Promise.all([4, 2, 1].map(async f => {
+        const res = await rateAttempt(uid, codes, workingRisks, f);
+        return [f, tilePricesFromRisks(res.byRisk)];
+      }));
+      others.forEach(([f, p]) => { pillowFreqPrices[f] = p; });
+    }
+    return pillowFreqPrices[12];
+  } finally {
+    if (uid) await pillowLogout(uid);
+  }
+}
+
+/* ═══════════ ČÍSELNÍK OBCÍ → PSČ (autocomplete pre FO) ═══════════ */
+/* Záložný zoznam pre prípad, že dataset sa nenačíta */
+let OBCE_DATA = [
+  ['Bratislava','811 01'], ['Košice','040 01'], ['Prešov','080 01'],
+  ['Žilina','010 01'], ['Nitra','949 01'], ['Banská Bystrica','974 01'],
+  ['Trnava','917 01'], ['Trenčín','911 01'], ['Martin','036 01'], ['Poprad','058 01'],
+];
+(async function loadObceData() {
+  const formatPsc = p => { const s = String(p).replace(/\s/g, ''); return s.length === 5 ? s.slice(0,3)+' '+s.slice(3) : s; };
+  try {
+    const res  = await fetch('https://raw.githubusercontent.com/OpenDataSk/datasets/master/municipalities_sk.json');
+    const data = await res.json();
+    const full = [];
+    Object.entries(data).forEach(([obec, pscs]) => {
+      if (!obec) return;
+      const codes = Array.isArray(pscs) ? pscs : (pscs.postalCodes || [pscs]);
+      codes.forEach(p => { if (p) full.push([obec, formatPsc(p)]); });
+    });
+    if (full.length) OBCE_DATA = full;
+  } catch (e) { console.warn('Číselník obcí sa nenačítal, používa sa záložný zoznam.', e); }
+})();
+
+function normalizeStr(s) { return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+
+/* PSČ pre presne zadanú obec (fallback ak používateľ nevyberie z dropdownu) */
+function pscForObec(obec) {
+  if (!obec) return '';
+  const norm = normalizeStr(obec.trim());
+  const hit = OBCE_DATA.find(([o]) => normalizeStr(o) === norm);
+  return hit ? hit[1] : '';
+}
+
+function setupObecAutocomplete(inputId, pscInputId) {
+  const input = document.getElementById(inputId);
+  const pscEl = document.getElementById(pscInputId);
+  if (!input || !pscEl) return;
+  const field = input.parentElement;
+  field.classList.add('ac-wrap');
+  let dropdown = null, items = [], activeIdx = -1;
+
+  const closeDropdown = () => { dropdown?.remove(); dropdown = null; activeIdx = -1; };
+  function setActive(i) {
+    if (!dropdown) return;
+    activeIdx = i;
+    Array.from(dropdown.children).forEach((el, idx) => el.classList.toggle('ac-active', idx === i));
+    dropdown.children[i]?.scrollIntoView({ block: 'nearest' });
+  }
+  function selectItem(item) {
+    input.value = item[0]; pscEl.value = item[1];
+    input.classList.add('ready');
+    closeDropdown();
+    if (typeof onFieldInput === 'function') onFieldInput();
+  }
+  function showDropdown(results) {
+    closeDropdown();
+    if (!results.length) return;
+    items = results;
+    dropdown = document.createElement('div');
+    dropdown.className = 'ac-dropdown';
+    results.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'ac-item';
+      div.innerHTML = `<span>${item[0]}</span><span class="ac-psc">${item[1]}</span>`;
+      div.addEventListener('mousedown', e => { e.preventDefault(); selectItem(item); });
+      dropdown.appendChild(div);
+    });
+    field.appendChild(dropdown);
+  }
+  input.addEventListener('input', function () {
+    pscEl.value = '';                       // manuálna zmena ruší predtým vybrané PSČ
+    const val = this.value.trim();
+    if (val.length < 2) { closeDropdown(); return; }
+    const norm = normalizeStr(val);
+    const results = OBCE_DATA
+      .filter(([o]) => normalizeStr(o).includes(norm))
+      .sort((a, b) => {
+        const aS = normalizeStr(a[0]).startsWith(norm) ? 0 : 1;
+        const bS = normalizeStr(b[0]).startsWith(norm) ? 0 : 1;
+        return aS - bS || normalizeStr(a[0]).localeCompare(normalizeStr(b[0]));
+      })
+      .slice(0, 20);
+    showDropdown(results);
+  });
+  input.addEventListener('keydown', function (e) {
+    if (!dropdown) return;
+    if (e.key === 'ArrowDown')      { e.preventDefault(); setActive(Math.min(activeIdx + 1, items.length - 1)); }
+    else if (e.key === 'ArrowUp')   { e.preventDefault(); setActive(Math.max(activeIdx - 1, 0)); }
+    else if (e.key === 'Enter')     { if (activeIdx >= 0) { e.preventDefault(); selectItem(items[activeIdx]); } }
+    else if (e.key === 'Escape')    closeDropdown();
+  });
+  input.addEventListener('blur', () => setTimeout(closeDropdown, 150));
+}
+
+document.addEventListener('DOMContentLoaded', () => setupObecAutocomplete('f-obec-fo', 'f-psc-fo'));
+
 /* ─── TYPE SWITCHER + ENTRY FIELDS ─── */
 let currentType = 'po';
 
@@ -1143,17 +3698,62 @@ function hideEntryLoader() {
   document.getElementById('entry-loader').classList.remove('show');
 }
 
-function triggerLookup() {
+function showEntryError(msg) {
+  const el = document.getElementById('entry-error');
+  if (el) { el.textContent = msg; el.style.display = msg ? '' : 'none'; }
+}
+
+async function triggerLookup() {
+  showEntryError('');
   showEntryLoader();
-  // Placeholder for future API call — simulate lookup
-  setTimeout(() => {
-    hideEntryLoader();
-    // TODO: napojiť na reálne API a aktualizovať ceny dlaždíc
-    const tilesLabel = document.getElementById('tiles-label');
-    if (tilesLabel) {
-      tilesLabel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  try {
+    const t = currentType;
+    let ecv, najazd;
+    if (t === 'po')        { ecv = fieldVal('f-ecv-po');   najazd = fieldVal('f-km-po');   }
+    else if (t === 'fo')   { ecv = fieldVal('f-ecv-fo');   najazd = fieldVal('f-km-fo');   }
+    else                   { ecv = fieldVal('f-ecv-szco'); najazd = fieldVal('f-km-szco'); }
+
+    // 1. Vozidlo podľa EČV
+    const veh = await apiLookupVehicle(ecv);
+    lookup.vehicle = veh.found ? veh.data : {};
+    lookup.vehicle.ecv = ecv;
+    lookup.vehicle.najazd = najazd;
+
+    // 2. Poistník
+    if (t === 'po' || t === 'szco') {
+      const ico  = t === 'po' ? fieldVal('f-ico') : fieldVal('f-ico-szco');
+      const obec = t === 'po' ? '' : fieldVal('f-obec-szco');
+      const c = await apiLookupCompany(ico);
+      lookup.poistnik = { typ: t, ico, nazov: c.nazov || '', obec: c.mesto || obec, psc: c.psc || '' };
+    } else {
+      const obec = fieldVal('f-obec-fo');
+      const psc  = fieldVal('f-psc-fo') || pscForObec(obec);   // z číselníka obcí
+      lookup.poistnik = { typ: 'fo', rc: fieldVal('f-rc'), obec, psc };
     }
-  }, 1200);
+
+    // 3. Pillow ceny
+    const prices = await fetchPillowPrices();
+
+    // 4. Naplniť dlaždice reálnymi cenami
+    let applied = 0;
+    document.querySelectorAll('.tile').forEach(tile => {
+      const p = prices[tile.dataset.id];
+      if (p != null && p > 0) { tile.dataset.price = p.toFixed(2); applied++; }
+    });
+    renderTilePrices();
+    updateCalc();
+
+    hideEntryLoader();
+    if (!applied) {
+      showEntryError('Ceny sa nepodarilo načítať. Skontrolujte zadané údaje a skúste znova.');
+      return;
+    }
+    document.getElementById('tiles-label')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (e) {
+    console.error(e);
+    hideEntryLoader();
+    showEntryError('Nepodarilo sa získať ceny: ' + (e.message || e));
+  }
 }
 
 /* Initialize default visible row for PO */
@@ -1166,11 +3766,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /* ─── TILE TOGGLE ─── */
 /* ─── FREQUENCY ───
-   TODO: data-surcharge-pct na .freq-price-card sú zatiaľ PLACEHOLDER hodnoty (5/3/1.5/0).
-   Po napojení API nahradiť reálnym príplatkom z Pillow oproti ročnej platbe. */
+   UI mult (mesiace/splátka) → Pillow paymentFrequency:
+   1→12 (mesačne), 3→4 (štvrťročne), 6→2 (polročne), 12→1 (ročne) */
 let currentMult = 1;
 let currentFreqLabel = 'mesačne';
 const FREQS = [1, 3, 6, 12];
+const pillowFreqForMult = m => 12 / m;
+
+/* mesačný ekvivalent rizika pri danej Pillow frekvencii (fallback na statickú data-price) */
+function monthEqFor(tileId, pillowFreq) {
+  const fp = pillowFreqPrices[pillowFreq];
+  if (fp && fp[tileId] != null) return fp[tileId];
+  const el = document.querySelector(`.tile[data-id="${tileId}"]`);
+  return parseFloat(el?.dataset.price) || 0;
+}
 
 function setFreq(mult, label, el) {
   currentMult = mult;
@@ -1182,28 +3791,37 @@ function setFreq(mult, label, el) {
 }
 
 function renderTilePrices() {
-  const card = document.querySelector(`.freq-price-card[data-mult="${currentMult}"]`);
-  const surchargePct = parseFloat(card.dataset.surchargePct);
+  const pf = pillowFreqForMult(currentMult);
   document.querySelectorAll('.tile').forEach(tile => {
-    const base = parseFloat(tile.dataset.price);
     const priceEl = tile.querySelector('.tile-price');
-    const val = (base * currentMult * (1 + surchargePct / 100)).toFixed(2).replace('.', ',');
+    const val = (monthEqFor(tile.dataset.id, pf) * currentMult).toFixed(2).replace('.', ',');
     priceEl.innerHTML = `€${val} <span>/${currentFreqLabel}</span>`;
   });
 }
 
 function toggleTile(el) {
+  if (el.classList.contains('disabled')) return;   // vypnutá inou voľbou
   el.classList.toggle('sel');
+  syncTileConstraints();
   updateCalc();
+}
+
+/* Vzájomne sa vylučujúce dlaždice: Havária (HP2+SZ2) vs. samostatná Zrážka so zverou (SZ2).
+   Keď je zvolená Havária, „zver" sa odznačí a zošedne (SZ2 je už v Havárii). */
+function syncTileConstraints() {
+  const havaria = document.querySelector('.tile[data-id="havaria"]');
+  const zver    = document.querySelector('.tile[data-id="zver"]');
+  if (!havaria || !zver) return;
+  if (havaria.classList.contains('sel')) {
+    zver.classList.remove('sel');      // havária vyhráva
+    zver.classList.add('disabled');
+  } else {
+    zver.classList.remove('disabled');
+  }
 }
 
 function updateCalc() {
   const tiles = document.querySelectorAll('.tile.sel');
-  let baseTotal = 0;
-  tiles.forEach(t => {
-    baseTotal += parseFloat(t.dataset.price);
-  });
-
   const stickyBar = document.getElementById('sticky-summary');
 
   if (!tiles.length) {
@@ -1211,23 +3829,23 @@ function updateCalc() {
     return;
   }
 
-  const annualBase = baseTotal * 12;
+  const selIds = [...tiles].map(t => t.dataset.id);
+  // ročný súčet pri ročnej platbe (referencia — najlacnejšia)
+  const annualYearly = selIds.reduce((s, id) => s + monthEqFor(id, 1) * 12, 0);
 
   FREQS.forEach(mult => {
+    const pf = pillowFreqForMult(mult);
     const priceEl = document.getElementById('fpc-price-' + mult);
     const extraEl = document.getElementById('fpc-extra-' + mult);
-    const card = document.querySelector(`.freq-price-card[data-mult="${mult}"]`);
-    const surchargePct = parseFloat(card.dataset.surchargePct);
 
-    const periodPrice = baseTotal * mult * (1 + surchargePct / 100);
-    priceEl.textContent = '€ ' + periodPrice.toFixed(2).replace('.', ',');
+    const installment = selIds.reduce((s, id) => s + monthEqFor(id, pf) * mult, 0);
+    priceEl.textContent = '€ ' + installment.toFixed(2).replace('.', ',');
 
     if (mult === 12) {
       extraEl.textContent = '';
     } else {
-      const extra = periodPrice - annualBase * (mult / 12);
-      const fairShareAnnual = annualBase * (mult / 12);
-      const diff = periodPrice - fairShareAnnual;
+      const fairInstallment = annualYearly * (mult / 12);
+      const diff = installment - fairInstallment;
       extraEl.textContent = diff > 0.005 ? `+€${diff.toFixed(2).replace('.', ',')} oproti ročnej` : '';
     }
   });
