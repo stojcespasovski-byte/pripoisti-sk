@@ -331,29 +331,53 @@ function getParam(name) {
   return params.get(name) || '';
 }
 
-const typ = getParam('typ') || 'po';
+/* ── Objednávka + konfigurácia ── */
+let order = {};
+try { order = JSON.parse(localStorage.getItem('pripoisti_order')) || {}; } catch (e) {}
+const typ = order.typ || getParam('typ') || 'po';
+const V = order.vehicle || {};
+const P = order.poistnik || {};
 
-const poistenieOd = getParam('poistenieod');
-if (poistenieOd) {
-  const [y, m, d] = poistenieOd.split('-');
-  document.getElementById('s-poistenie-od').textContent = `${d}.${m}.${y}`;
-} else {
-  document.getElementById('s-poistenie-od').textContent = new Date().toLocaleDateString('sk-SK');
+const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? '' : 'https://api.pripoisti.sk';
+const PILLOW = { BASE: API_BASE + '/pillow', AGENT: '771' };
+const BCRM_ZMLUVA = API_BASE + '/bcrm/zmluva';
+
+const xe = (t, v) => { if (v === '' || v == null) return ''; const s = String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); return `<${t}>${s}</${t}>`; };
+const dDot = iso => { if (!iso) return '–'; const [y, m, d] = iso.split('-'); return d ? `${d}.${m}.${y}` : iso; };
+const cleanPsc = p => (p || '').replace(/\s/g, '');
+const PALIVO_LABEL = { benzin: 'Benzín', diesel: 'Nafta', nafta: 'Nafta', elektrina: 'Elektrina', hybrid: 'Hybrid', plyn: 'LPG/CNG' };
+const PILLOW_FUEL = { benzin:'BA', BA:'BA', diesel:'NM', nafta:'NM', NM:'NM', elektrina:'EP', EP:'EP', hybrid:'HY', HY:'HY', plyn:'PB', PB:'PB' };
+const VT_VALID = new Set(['OA','MO','NA','OBY','AB','ABM','4K','TAH','PN','PV','SAN','SPS','TBM','TRA','VZV','EB','EK','EV']);
+const PARTYTYPE = { fo:'FORC', po:'PO', szco:'OSVC', cudzinec:'FODN' };
+
+/* Pillow číselník farieb — save vyžaduje kód, nie voľný text (BCRM vracia text) */
+const COLOUR_CODES = {'BIELA':'1', 'BIELA METALÍZA':'87', 'ČERVENÁ':'2', 'ČERVENÁ METALÍZA':'3', 'ČERVENÁ METALÍZA PASTELOVÁ':'4', 'ČERVENÁ METALÍZA SVETLÁ':'5', 'ČERVENÁ METALÍZA TMAVÁ':'6', 'ČERVENÁ PASTELOVÁ':'7', 'ČERVENÁ SVETLÁ':'8', 'ČERVENÁ TMAVÁ':'9', 'ČIERNA':'10', 'ČIERNA METALÍZA':'11', 'FIALOVÁ':'12', 'FIALOVÁ METALÍZA':'13', 'FIALOVÁ METALÍZA PASTELOVÁ':'14', 'FIALOVÁ METALÍZA SVETLÁ':'15', 'FIALOVÁ METALÍZA TMAVÁ':'16', 'FIALOVÁ PASTELOVÁ':'17', 'FIALOVÁ SVETLÁ':'18', 'FIALOVÁ TMAVÁ':'19', 'HNEDÁ':'20', 'HNEDÁ METALÍZA':'21', 'HNEDÁ METALÍZA PASTELOVÁ':'22', 'HNEDÁ METALÍZA SVETLÁ':'23', 'HNEDÁ METALÍZA TMAVÁ':'24', 'HNEDÁ PASTELOVÁ':'25', 'HNEDÁ SVETLÁ':'26', 'HNEDÁ TMAVÁ':'27', 'MODRÁ':'28', 'MODRÁ METALÍZA':'29', 'MODRÁ METALÍZA PASTELOVÁ':'30', 'MODRÁ METALÍZA SVETLÁ':'31', 'MODRÁ METALÍZA TMAVÁ':'32', 'MODRÁ PASTELOVÁ':'33', 'MODRÁ SVETLÁ':'34', 'MODRÁ TMAVÁ':'35', 'MODROZELENÁ':'36', 'MODROZELENÁ METALÍZA':'37', 'MODROZELENÁ METALÍZA PASTELOVÁ':'38', 'MODROZELENÁ METALÍZA SVETLÁ':'39', 'MODROZELENÁ METALÍZA TMAVÁ':'40', 'MODROZELENÁ PASTELOVÁ':'41', 'MODROZELENÁ SVETLÁ':'42', 'MODROZELENÁ TMAVÁ':'43', 'ORANŽOVÁ':'44', 'ORANŽOVÁ METALÍZA - ZLATÁ':'45', 'ORANŽOVÁ METALÍZA PASTELOVÁ':'46', 'ORANŽOVÁ METALÍZA SVETLÁ':'47', 'ORANŽOVÁ METALÍZA TMAVÁ':'48', 'ORANŽOVÁ PASTELOVÁ':'49', 'ORANŽOVÁ SVETLÁ':'50', 'ORANŽOVÁ TMAVÁ':'51', 'RUŽOVÁ':'52', 'RUŽOVÁ METALÍZA':'1000000', 'RUŽOVÁ METALÍZA PASTELOVÁ':'1000002', 'RUŽOVÁ METALÍZA SVETLÁ':'1000004', 'RUŽOVÁ METALÍZA TMAVÁ':'1000003', 'RUŽOVÁ PASTELOVÁ':'1000005', 'RUŽOVÁ SVETLÁ':'1000001', 'RUŽOVÁ TMAVÁ':'1000006', 'ŠEDÁ':'53', 'ŠEDÁ METALÍZA':'56', 'ŠEDÁ METALÍZA TMAVÁ':'57', 'ŠEDÁ PASTELOVÁ':'58', 'ŠEDÁ SVETLÁ':'59', 'ŠEDÁ TMAVÁ':'60', 'ŠEDOMODRÁ':'61', 'ŠEDOZELENÁ':'62', 'ŠEDOZELENÁ METALÍZA':'1000007', 'STRIEBORNÁ':'53', 'STRIEBORNÁ METALÍZA PASTELOVÁ':'55', 'STRIEBORNÁ METALÍZA SVETLÁ':'54', 'ZELENÁ':'63', 'ZELENÁ METALÍZA':'64', 'ZELENÁ METALÍZA PASTELOVÁ':'65', 'ZELENÁ METALÍZA SVETLÁ':'66', 'ZELENÁ METALÍZA TMAVÁ':'67', 'ZELENÁ PASTELOVÁ':'68', 'ZELENÁ SVETLÁ':'69', 'ZELENÁ TMAVÁ':'70', 'ZELENOŽLTÁ':'71', 'ZELENOŽLTÁ METALÍZA':'72', 'ZELENOŽLTÁ METALÍZA PASTELOVÁ':'73', 'ZELENOŽLTÁ METALÍZA SVETLÁ':'74', 'ZELENOŽLTÁ METALÍZA TMAVÁ':'75', 'ZELENOŽLTÁ PASTELOVÁ':'76', 'ZELENOŽLTÁ SVETLÁ':'77', 'ZELENOŽLTÁ TMAVÁ':'78', 'ŽLTÁ':'79', 'ŽLTÁ METALÍZA - ZLATÁ':'80', 'ŽLTÁ METALÍZA PASTELOVÁ':'81', 'ŽLTÁ METALÍZA SVETLÁ':'82', 'ŽLTÁ METALÍZA TMAVÁ':'83', 'ŽLTÁ PASTELOVÁ':'84', 'ŽLTÁ SVETLÁ':'85', 'ŽLTÁ TMAVÁ':'86'};
+function mapColour(farba) {
+  if (!farba) return '10';                                  // default ČIERNA (save vyžaduje kód)
+  const n = farba.trim().toUpperCase().replace(/\s+/g, ' ');
+  if (COLOUR_CODES[n]) return COLOUR_CODES[n];              // presná zhoda ("MODRÁ METALÍZA TMAVÁ")
+  const w = n.split(' ');                                   // inak skús kratšie (zahoď posledné slová) → základná farba
+  for (let k = w.length - 1; k >= 1; k--) { const key = w.slice(0, k).join(' '); if (COLOUR_CODES[key]) return COLOUR_CODES[key]; }
+  return '10';
 }
 
-/* VOZIDLO — z URL parametrov (rovnaké ako v step3, placeholder ak chýba) */
-document.getElementById('s-vin').textContent = getParam('vin') || 'TMBJJ7NE5J0123456';
-document.getElementById('s-ecv').textContent = getParam('ecv') || 'BA123AB';
-document.getElementById('s-tp').textContent = getParam('tp') || 'AB123456';
-document.getElementById('s-farba').textContent = getParam('farba') || 'Sivá';
-document.getElementById('s-typ').textContent = getParam('typvoz') || 'OA';
-document.getElementById('s-znacka').textContent = getParam('znacka') || 'Škoda';
-document.getElementById('s-model').textContent = getParam('model') || 'Octavia';
-document.getElementById('s-datum').textContent = getParam('datum') || '15.03.2021';
-document.getElementById('s-palivo').textContent = getParam('palivo') || 'Benzín';
-document.getElementById('s-objem').textContent = getParam('objem') || '1598 cm³';
-document.getElementById('s-vykon').textContent = getParam('vykon') || '85 kW';
-document.getElementById('s-hmotnost').textContent = getParam('hmotnost') || '1650 kg';
+document.getElementById('s-poistenie-od').textContent = order.poistenieOd
+  ? dDot(order.poistenieOd) : new Date().toLocaleDateString('sk-SK');
+
+/* VOZIDLO — reálne z objednávky */
+const sv = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = (val != null && val !== '') ? val : '–'; };
+sv('s-vin', V.vin);
+sv('s-ecv', V.ecv);
+sv('s-tp', V.tp);
+sv('s-farba', V.farba);
+sv('s-typ', V.typ || 'OA');
+sv('s-znacka', V.znacka);
+sv('s-model', V.model);
+sv('s-datum', dDot(V.datumReg));
+sv('s-palivo', PALIVO_LABEL[V.palivo] || V.palivo);
+sv('s-objem', V.objem ? V.objem + ' cm³' : '');
+sv('s-vykon', V.vykon ? V.vykon + ' kW' : '');
+sv('s-hmotnost', V.hmotnost ? V.hmotnost + ' kg' : '');
 
 /* KLIENT — dynamicky podľa typu */
 const klientTitles = { po: 'Klient — Firma', fo: 'Klient — Fyzická osoba', szco: 'Klient — SZČO', cudzinec: 'Klient — Cudzinec' };
@@ -370,135 +394,307 @@ function fv(label, value, mono) {
 if (typ === 'po') {
   klientFields.innerHTML = `
     <div class="row c4">
-      ${fv('IČO', getParam('ico') || '12345678', true)}
-      ${fv('Názov firmy', getParam('nazov') || 'Firma s.r.o.')}
-      ${fv('Telefón', getParam('telefon') || '+421 900 000 000', true)}
-      ${fv('E-mail', getParam('email') || 'firma@email.sk')}
+      ${fv('IČO', P.ico, true)}
+      ${fv('Názov firmy', P.nazov)}
+      ${fv('Kontakt — meno', P.meno)}
+      ${fv('Kontakt — priezvisko', P.priezvisko)}
     </div>
     <div class="row c4">
-      ${fv('Ulica', getParam('ulica') || 'Hlavná')}
-      ${fv('Číslo domu', getParam('cislo') || '1')}
-      ${fv('Obec', getParam('obec') || 'Bratislava')}
-      ${fv('PSČ', getParam('psc') || '81101', true)}
+      ${fv('Telefón', P.tel, true)}
+      ${fv('E-mail', P.email)}
+      ${fv('Ulica', P.ulica)}
+      ${fv('Číslo domu', P.cislo)}
+    </div>
+    <div class="row c4">
+      ${fv('Obec', P.obec)}
+      ${fv('PSČ', P.psc, true)}
+      ${fv('', '')}
+      ${fv('', '')}
     </div>`;
 } else if (typ === 'szco') {
   klientFields.innerHTML = `
     <div class="row c4">
-      ${fv('IČO', getParam('ico') || '12345678', true)}
-      ${fv('Názov živnosti', getParam('nazov') || 'Živnosť')}
-      ${fv('Meno', getParam('meno') || 'Ján')}
-      ${fv('Priezvisko', getParam('priezvisko') || 'Novák')}
+      ${fv('IČO', P.ico, true)}
+      ${fv('Názov živnosti', P.nazov)}
+      ${fv('Meno', P.meno)}
+      ${fv('Priezvisko', P.priezvisko)}
     </div>
     <div class="row c4">
-      ${fv('Rodné číslo', getParam('rc') || '900101/1234', true)}
-      ${fv('Telefón', getParam('telefon') || '+421 900 000 000', true)}
-      ${fv('E-mail', getParam('email') || 'meno@email.sk')}
-      ${fv('PSČ', getParam('psc') || '81101', true)}
+      ${fv('Rodné číslo', P.rc, true)}
+      ${fv('Telefón', P.tel, true)}
+      ${fv('E-mail', P.email)}
+      ${fv('PSČ', P.psc, true)}
     </div>
     <div class="row c4">
-      ${fv('Ulica', getParam('ulica') || 'Hlavná')}
-      ${fv('Číslo domu', getParam('cislo') || '1')}
-      ${fv('Obec', getParam('obec') || 'Bratislava')}
+      ${fv('Ulica', P.ulica)}
+      ${fv('Číslo domu', P.cislo)}
+      ${fv('Obec', P.obec)}
       ${fv('', '')}
     </div>`;
 } else if (typ === 'cudzinec') {
   klientFields.innerHTML = `
     <div class="row c4">
-      ${fv('Meno', getParam('meno') || 'John')}
-      ${fv('Priezvisko', getParam('priezvisko') || 'Smith')}
-      ${fv('Dátum narodenia', getParam('datumnar') || '25.07.1982')}
-      ${fv('Číslo dokladu', getParam('doklad') || 'EA000000', true)}
+      ${fv('Meno', P.meno)}
+      ${fv('Priezvisko', P.priezvisko)}
+      ${fv('Dátum narodenia', dDot(P.datumNar))}
+      ${fv('Telefón', P.tel, true)}
     </div>
     <div class="row c4">
-      ${fv('Telefón', getParam('telefon') || '+421 900 000 000', true)}
-      ${fv('E-mail', getParam('email') || 'meno@email.com')}
-      ${fv('Ulica', getParam('ulica') || 'Hlavná')}
-      ${fv('Číslo domu', getParam('cislo') || '1')}
+      ${fv('E-mail', P.email)}
+      ${fv('Ulica', P.ulica)}
+      ${fv('Číslo domu', P.cislo)}
+      ${fv('Obec', P.obec)}
     </div>
     <div class="row c4">
-      ${fv('Obec', getParam('obec') || 'Bratislava')}
-      ${fv('PSČ', getParam('psc') || '81101', true)}
+      ${fv('PSČ', P.psc, true)}
+      ${fv('', '')}
       ${fv('', '')}
       ${fv('', '')}
     </div>`;
 } else {
   klientFields.innerHTML = `
     <div class="row c4">
-      ${fv('Meno', getParam('meno') || 'Ján')}
-      ${fv('Priezvisko', getParam('priezvisko') || 'Novák')}
-      ${fv('Rodné číslo', getParam('rc') || '900101/1234', true)}
-      ${fv('Telefón', getParam('telefon') || '+421 900 000 000', true)}
+      ${fv('Meno', P.meno)}
+      ${fv('Priezvisko', P.priezvisko)}
+      ${fv('Rodné číslo', P.rc, true)}
+      ${fv('Telefón', P.tel, true)}
     </div>
     <div class="row c4">
-      ${fv('E-mail', getParam('email') || 'meno@email.sk')}
-      ${fv('Ulica', getParam('ulica') || 'Hlavná')}
-      ${fv('Číslo domu', getParam('cislo') || '1')}
-      ${fv('Obec', getParam('obec') || 'Bratislava')}
+      ${fv('E-mail', P.email)}
+      ${fv('Ulica', P.ulica)}
+      ${fv('Číslo domu', P.cislo)}
+      ${fv('Obec', P.obec)}
     </div>
     <div class="row c4">
-      ${fv('PSČ', getParam('psc') || '81101', true)}
+      ${fv('PSČ', P.psc, true)}
       ${fv('', '')}
       ${fv('', '')}
       ${fv('', '')}
     </div>`;
 }
 
-/* VYBRATÉ POISTENIA — z localStorage */
-let selection = null;
-try {
-  selection = JSON.parse(localStorage.getItem('pripoisti_selection'));
-} catch(e) {}
-
+/* VYBRATÉ POISTENIA — reálne ceny z objednávky (Pillow, zvolená frekvencia) */
 const listEl = document.getElementById('poistenia-list');
 const freqLabelEl = document.getElementById('s-freq-label');
 const celkomEl = document.getElementById('s-celkom');
 
-if (selection && selection.tiles && selection.tiles.length) {
-  const mult = selection.freq.mult;
-  const pct = selection.freq.surchargePct || 0;
-  const label = selection.freq.label;
+const mult = order.freq?.mult || 1;
+const pf = order.freq?.pillowFreq || 12;
+const fp = (order.freqPrices && order.freqPrices[pf]) || {};
+let orderTotal = 0;
 
+if (order.tiles && order.tiles.length) {
+  const label = order.freq?.label || 'mesačne';
   freqLabelEl.textContent = label.charAt(0).toUpperCase() + label.slice(1);
 
-  let total = 0;
   let html = '';
-  selection.tiles.forEach(t => {
-    const price = t.base * mult * (1 + pct / 100);
-    total += price;
+  order.tiles.forEach(t => {
+    const monthEq = (fp[t.id] != null) ? fp[t.id] : (t.priceMonthly || 0);
+    const price = monthEq * mult;
+    orderTotal += price;
     html += `<div class="poistenie-row">
       <div><div class="poistenie-name">${t.name}</div>${t.desc ? `<div class="poistenie-desc">${t.desc}</div>` : ''}</div>
       <div class="poistenie-price">€${price.toFixed(2).replace('.', ',')}</div>
     </div>`;
   });
   listEl.innerHTML = html;
-  celkomEl.textContent = '€ ' + total.toFixed(2).replace('.', ',');
+  celkomEl.textContent = '€ ' + orderTotal.toFixed(2).replace('.', ',');
 } else {
   listEl.innerHTML = '<div class="empty-state">Žiadne pripoistenia neboli vybrané. <a href="app.html" style="color:var(--o);">Vrátiť sa na výber</a></div>';
   freqLabelEl.textContent = '';
 }
 
-/* SUBMIT */
-function submitOrder() {
-  const required = document.querySelectorAll('.suh-required');
-  let allChecked = true;
-  required.forEach(c => { if (!c.checked) allChecked = false; });
-
-  if (!allChecked) {
-    alert('Pre pokračovanie musíte odsúhlasiť všetky povinné súhlasy.');
-    return;
+/* ═══════════ PILLOW SAVE VRSTVA ═══════════ */
+async function pillowAuth() {
+  const r = await fetch(`${PILLOW.BASE}/authorize`, { method: 'POST' });   // bez creds — backend doplní
+  if (!r.ok) throw new Error('Prihlásenie do Pillow zlyhalo (HTTP ' + r.status + ')');
+  const uid = new DOMParser().parseFromString(await r.text(), 'text/xml').querySelector('uid')?.textContent;
+  if (!uid) throw new Error('Pillow: UID sa nepodarilo získať');
+  return uid;
+}
+async function pillowLogout(uid) { try { await fetch(`${PILLOW.BASE}/logout`, { method: 'POST', headers: { 'RestUid': uid } }); } catch (e) {} }
+async function pillowCall(uid, endpoint, xml) {
+  const r = await fetch(`${PILLOW.BASE}/${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'text/xml; charset=utf-8', 'RestUid': uid }, body: xml });
+  const txt = await r.text();
+  if (!r.ok) {
+    const msgs = [...new DOMParser().parseFromString(txt, 'text/xml').querySelectorAll('msgText')].map(e => e.textContent).join('\n');
+    throw new Error(msgs || `Pillow chyba HTTP ${r.status}`);
   }
+  return txt;
+}
 
+/* vybrané riziká (dedup — SZ2 môže byť vo viacerých dlaždiciach) */
+function selectedVariants() {
+  return (order.tiles || []).flatMap(t => t.risks || [])
+    .filter((r, i, a) => a.findIndex(x => x.risk === r.risk) === i);
+}
+function variantsXML() {
+  return selectedVariants().map(r =>
+    `  <variantOfSubject><xml-par-ap2-variant-of-subject-req>${xe('risk', r.risk)}${xe('variant', r.variant)}</xml-par-ap2-variant-of-subject-req></variantOfSubject>`
+  ).join('\n');
+}
+function vehicleXML() {
+  const codes = order.vehicleCodes || {};
+  return `<vehicle><xml-par-ap2-vehicle>
+    ${xe('vehicleType', VT_VALID.has(V.typ) ? V.typ : 'OA')}
+    ${xe('vehicleUse', '10')}
+    ${xe('brand', codes.brandCode || 'NEUVEDENA')}
+    ${xe('model', codes.modelCode || '529')}
+    ${xe('engineVolume', parseInt(V.objem) || 0)}
+    ${xe('enginePower', parseInt(V.vykon) || 0)}
+    ${xe('weight', parseInt(V.hmotnost) || 0)}
+    ${xe('fuel', PILLOW_FUEL[V.palivo] || 'JI')}
+    ${xe('noLicensePlate', V.ecv ? 'false' : 'true')}
+    ${V.ecv ? xe('licensePlate', V.ecv) : ''}
+    ${V.vin ? xe('VIN', V.vin) : ''}
+    ${V.datumReg ? xe('firstRegistrationDate', V.datumReg) : ''}
+    ${xe('notRegistered', 'false')}${xe('garaged', 'false')}${xe('contractualService', 'false')}
+    ${xe('equipment', V.pohon ? 'A' : 'NA')}${xe('x4x4', V.pohon ? 'true' : 'false')}
+    ${xe('expectedKm', parseInt(V.najazd) || 15000)}
+    ${xe('vehicleName', [V.znacka, V.model].filter(Boolean).join(' '))}
+    ${xe('noTechnicalCertificate', V.tp ? 'false' : 'true')}
+    ${V.tp ? xe('technicalCertificateNumber', V.tp) : ''}
+    ${xe('colour', mapColour(V.farba))}
+    ${xe('withoutRegistration', 'false')}
+  </xml-par-ap2-vehicle></vehicle>`;
+}
+function partyXML() {
+  const pt = PARTYTYPE[typ] || 'FORC';
+  const isCo = pt === 'PO' || pt === 'OSVC';
+  const hasName = 'FORC FODN OSVC PO'.includes(pt);   // Pillow vyžaduje meno kontaktnej osoby aj pri firme
+  return `<xml-par-party>
+    ${xe('partyType', pt)}
+    ${isCo ? xe('companyIdentification', P.ico) : ''}
+    ${isCo ? xe('companyName', P.nazov) : ''}
+    ${pt === 'FORC' ? xe('personalIdentification', P.rc) : ''}
+    ${hasName ? xe('forename', P.meno) : ''}
+    ${hasName ? xe('surname', P.priezvisko) : ''}
+    ${P.datumNar ? xe('birthdate', P.datumNar) : ''}
+    ${xe('email', P.email)}${xe('phone', P.tel)}
+    ${xe('marketingApproval', 'false')}
+    <address><xml-par-address>
+      ${xe('country', 'SVK')}${xe('zipCode', cleanPsc(P.psc))}${xe('city', P.obec)}
+      ${xe('street', P.ulica)}${xe('landRegistryNumber', P.cislo)}
+    </xml-par-address></address>
+  </xml-par-party>`;
+}
+function buildRateXML(freq) {
+  const pt = PARTYTYPE[typ] || 'FORC';
+  const isCo = pt === 'PO' || pt === 'OSVC';
+  return `<?xml version="1.0" encoding="utf-8"?>
+<xml-par-ap2-rate-policy-req xmlns="www.ais.cz" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="www.ais.cz XmlParAp2RatePolicyReq.xsd">
+  ${xe('agentId1', PILLOW.AGENT)}
+  ${xe('policyBeginning', order.poistenieOd || new Date().toISOString().slice(0, 10))}
+  ${xe('paymentFrequency', String(freq))}
+  ${vehicleXML()}
+  ${xe('partyType', pt)}
+  ${pt === 'FORC' ? xe('personalIdentification', P.rc) : ''}
+  ${isCo ? xe('companyIdentification', P.ico) : ''}
+  <address><xml-par-address>${xe('country', 'SVK')}${xe('zipCode', cleanPsc(P.psc))}${xe('city', P.obec)}</xml-par-address></address>
+${variantsXML()}
+</xml-par-ap2-rate-policy-req>`;
+}
+function buildSaveXML(calcId, createPolicy, freq) {
+  const party = partyXML();
+  return `<?xml version="1.0" encoding="utf-8"?>
+<xml-par-ap2-save-policy-req xmlns="www.ais.cz" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="www.ais.cz XmlParAp2SavePolicyReq.xsd">
+  ${xe('calculationId', calcId)}
+  ${xe('agentId1', PILLOW.AGENT)}
+  ${xe('policyBeginning', order.poistenieOd || new Date().toISOString().slice(0, 10))}
+  ${xe('firstPaymentMethod', 'BANK')}${xe('paymentMethod', 'BANK')}
+  ${xe('paymentFrequency', String(freq))}
+  ${xe('greenCard', 'false')}
+  ${xe('createPolicy', createPolicy ? 'true' : 'false')}
+  ${vehicleXML()}
+  <policyHolder>${party}</policyHolder>
+  ${xe('policyHolderSameAsVehicleOwner', 'true')}
+  ${xe('policyHolderSameAsVehicleHolder', 'true')}
+  <vehicleHolder>${party}</vehicleHolder>
+${variantsXML()}
+</xml-par-ap2-save-policy-req>`;
+}
+function parseRate(xml) {
+  const d = new DOMParser().parseFromString(xml, 'text/xml');
+  const errors = [...d.querySelectorAll('error'), ...d.querySelectorAll('msgText')].map(e => e.textContent).filter(Boolean);
+  return { calcId: d.querySelector('calculationId')?.textContent || null, errors };
+}
+function parseSave(xml) {
+  const d = new DOMParser().parseFromString(xml, 'text/xml');
+  return {
+    policyId: d.querySelector('policyId')?.textContent || null,
+    varSym: d.querySelector('varSym')?.textContent || null,
+    calcId: d.querySelector('calculationId')?.textContent || null,
+    errors: [...d.querySelectorAll('error'), ...d.querySelectorAll('msgText')].map(e => e.textContent).filter(Boolean),
+  };
+}
+
+/* ── BCRM zmluva (best-effort — neblokuje success) ── */
+async function sendBcrm(policyId, varSym) {
+  const payload = {
+    klient: { typ, ico: P.ico || '', nazov: P.nazov || '', rc: P.rc || '', meno: P.meno || '', priezvisko: P.priezvisko || '', email: P.email || '', telefon: P.tel || '', obec: P.obec || '', psc: P.psc || '', ulica: P.ulica || '', cislo: P.cislo || '' },
+    vozidlo: { ecv: V.ecv || '', vin: V.vin || '', znacka: V.znacka || '', model: V.model || '', typ: (VT_VALID.has(V.typ) ? V.typ : 'OA'), palivo: V.palivo || '', vykon: parseInt(V.vykon) || 0, objem: parseInt(V.objem) || 0 },
+    zmluva: { cisloZmluvy: policyId, datumOd: order.poistenieOd || '', frekvencia: pf, cena: orderTotal, varSym: varSym || '', produkty: (order.tiles || []).map(t => t.id) },
+    brand: 'pripoisti',
+  };
+  const r = await fetch(BCRM_ZMLUVA, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+  if (!r.ok) throw new Error('BCRM zmluva HTTP ' + r.status);
+  return r.json().catch(() => ({}));
+}
+
+/* ── SUBMIT ── */
+async function submitOrder() {
+  const required = document.querySelectorAll('.suh-required');
+  if (![...required].every(c => c.checked)) { alert('Pre pokračovanie musíte odsúhlasiť všetky povinné súhlasy.'); return; }
+  if (!order.tiles || !order.tiles.length) { alert('Neboli vybrané žiadne pripoistenia.'); return; }
+
+  const btn = document.getElementById('submit-btn');
+  const orig = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.style.opacity = '.7'; btn.innerHTML = 'Odosielam…'; }
+
+  let uid;
+  try {
+    const freq = order.freq?.pillowFreq || 12;
+    uid = await pillowAuth();
+    // 1) rate → calcId pre vybrané riziká
+    const rate = parseRate(await pillowCall(uid, 'par/policies/rate/AP2', buildRateXML(freq)));
+    if (!rate.calcId) throw new Error(rate.errors[0] || 'Nepodarilo sa vypočítať cenu.');
+    // 2) kontrolný návrh (createPolicy=false)
+    const check = parseSave(await pillowCall(uid, 'par/policies/save/AP2', buildSaveXML(rate.calcId, false, freq)));
+    if (check.errors.length && !check.calcId && !check.policyId) throw new Error(check.errors[0]);
+    // 3) finálne uzatvorenie (createPolicy=true)
+    const final = parseSave(await pillowCall(uid, 'par/policies/save/AP2', buildSaveXML(check.calcId || rate.calcId, true, freq)));
+    if (!final.policyId) throw new Error(final.errors[0] || 'Uzatvorenie zmluvy zlyhalo.');
+    await pillowLogout(uid); uid = null;
+
+    // 4) BCRM (best-effort)
+    let bcrmOk = true;
+    try { await sendBcrm(final.policyId, final.varSym); } catch (e) { bcrmOk = false; console.error('BCRM zmluva:', e); }
+
+    localStorage.removeItem('pripoisti_order');
+    showSuccess(final.policyId, final.varSym, bcrmOk);
+  } catch (e) {
+    console.error(e);
+    if (uid) pillowLogout(uid);
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; btn.innerHTML = orig; }
+    alert('Nepodarilo sa odoslať zmluvu: ' + (e.message || e));
+  }
+}
+
+function showSuccess(policyId, varSym, bcrmOk) {
   document.querySelector('.page-wrap').innerHTML = `
     <div style="text-align:center;padding:80px 20px;">
       <div style="width:72px;height:72px;border-radius:50%;background:rgba(232,130,26,.1);display:flex;align-items:center;justify-content:center;margin:0 auto 24px;">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
       </div>
-      <h2 style="font-size:28px;font-weight:900;margin-bottom:12px;">Žiadosť odoslaná!</h2>
-      <p style="font-size:15px;color:rgba(255,255,255,.5);line-height:1.6;">Potvrdenie sme zaslali na váš e-mail.<br>Čoskoro vás budeme kontaktovať s ďalšími krokmi.</p>
+      <h2 style="font-size:28px;font-weight:900;margin-bottom:12px;">Zmluva uzatvorená!</h2>
+      <p style="font-size:15px;color:rgba(255,255,255,.5);line-height:1.6;">
+        Číslo zmluvy: <strong style="color:var(--o);font-family:monospace;">${policyId}</strong>${varSym ? `<br>Variabilný symbol: <strong style="font-family:monospace;">${varSym}</strong>` : ''}<br>
+        Potvrdenie a platobné údaje vám pošleme e-mailom.
+      </p>
+      ${bcrmOk ? '' : '<p style="font-size:12px;color:rgba(255,180,80,.7);margin-top:12px;">Poznámka: záznam do CRM sa nepodarilo uložiť, kontaktujte podporu.</p>'}
       <br>
       <a href="index.html" style="display:inline-block;margin-top:16px;background:var(--grad);color:white;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:700;">Späť na úvod</a>
     </div>`;
-  localStorage.removeItem('pripoisti_selection');
 }
 </script>
 </body>
