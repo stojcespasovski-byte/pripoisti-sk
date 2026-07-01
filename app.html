@@ -459,7 +459,9 @@ select.entry-input option { background: #1a1a1a; color: white; }
   gap: 8px;
   flex: 1;
 }
-.summary-empty { flex: 1; font-size: 15px; font-weight: 600; color: rgba(255,255,255,.5); }
+.summary-empty { flex: 1; font-size: 16px; font-weight: 700; color: rgba(255,255,255,.9); }
+.se-arrow { color: var(--o); display: inline-block; font-weight: 800; margin-left: 2px; animation: seBounce 1.2s ease-in-out infinite; }
+@keyframes seBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 .calc-cta.disabled { opacity: .4; pointer-events: none; filter: grayscale(.3); }
 .freq-price-card {
   flex: 1;
@@ -1027,7 +1029,7 @@ footer {
 <!-- STICKY SUMMARY BAR -->
 <div class="sticky-summary" id="sticky-summary">
   <div class="sticky-summary-inner">
-    <div class="summary-empty" id="summary-empty" style="display:none;">Vyberte aspoň jedno pripoistenie ↑</div>
+    <div class="summary-empty" id="summary-empty" style="display:none;">Vyberte aspoň jedno pripoistenie <span class="se-arrow">↑</span></div>
     <div class="freq-price-cards" id="freq-price-cards">
       <div class="freq-price-card active" data-mult="1" data-label="mesačne" data-surcharge-pct="5" onclick="setFreq(1,'mesačne',this)">
         <div class="fpc-label">Mesačne</div>
