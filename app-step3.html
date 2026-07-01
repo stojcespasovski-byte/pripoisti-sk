@@ -291,7 +291,7 @@ select option { background: #1a1a1a; color: white; }
         <div class="row c4">
           <div class="field"><label>VIN</label><input class="mono" id="v-vin" value="" readonly style="font-size:12px;"></div>
           <div class="field"><label>EČV</label><input class="mono" id="v-ecv" value="" readonly></div>
-          <div class="field"><label>Číslo TP</label><input class="mono" id="v-tp" value="" readonly></div>
+          <div class="field"><label>Číslo TP</label><input class="mono" id="v-tp" value="" placeholder="Doplňte, ak chýba"></div>
           <div class="field"><label>Farba vozidla</label><input id="v-farba" value="" readonly></div>
         </div>
 
@@ -547,6 +547,9 @@ function goToSummary() {
   const g = id => (document.getElementById(id)?.value || '').trim();
 
   order.poistenieOd = document.getElementById('poistenie-od').value || today;
+
+  // Číslo TP je editovateľné (lookup ho nemusí vrátiť) → doplniť do vozidla pre Pillow save
+  if (order.vehicle) order.vehicle.tp = g('v-tp');
 
   // Doplniť poistníka o kontakt / adresu / meno (readonly polia už sú v order.poistnik z kroku 1)
   const pk = order.poistnik || (order.poistnik = {});
