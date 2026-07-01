@@ -4104,6 +4104,7 @@ function updateCalc() {
 
   if (!tiles.length) {
     stickyBar.classList.remove('show');
+    document.body.style.paddingBottom = '';
     return;
   }
 
@@ -4129,6 +4130,8 @@ function updateCalc() {
   });
 
   stickyBar.classList.add('show');
+  // aby sticky pás neprekryl posledný rad dlaždíc
+  document.body.style.paddingBottom = (stickyBar.offsetHeight + 16) + 'px';
 }
 
 /* ─── GO TO STEP 3 ─── */
