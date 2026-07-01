@@ -466,46 +466,45 @@ function getParam(name) {
   return params.get(name) || '';
 }
 
-const typ = getParam('typ') || 'po';
+// Zdroj pravdy = objednávka z kroku 1/2 (reálne dáta z lookupu)
+let order = {};
+try { order = JSON.parse(localStorage.getItem('pripoisti_order')) || {}; } catch (e) {}
+const typ = order.typ || getParam('typ') || 'po';
+const V = order.vehicle || {};
+const P = order.poistnik || {};
+
+const dDot = iso => { if (!iso) return ''; const [y, m, d] = iso.split('-'); return (d && m && y) ? `${d}.${m}.${y}` : iso; };
+const PALIVO_LABEL = { benzin: 'Benzín', diesel: 'Nafta', nafta: 'Nafta', elektrina: 'Elektrina', hybrid: 'Hybrid', plyn: 'LPG/CNG' };
+const setV = (id, val) => { const el = document.getElementById(id); if (el) el.value = (val != null ? val : ''); };
 
 const today = new Date().toISOString().split('T')[0];
-document.getElementById('poistenie-od').value = getParam('poistenieod') || today;
+document.getElementById('poistenie-od').value = order.poistenieOd || today;
 
 document.getElementById('block-' + typ).style.display = 'block';
 
-document.getElementById('v-vin').value = getParam('vin') || 'TMBJJ7NE5J0123456';
-document.getElementById('v-ecv').value = getParam('ecv') || 'BA123AB';
-document.getElementById('v-tp').value = getParam('tp') || 'AB123456';
-document.getElementById('v-farba').value = getParam('farba') || 'Sivá';
-document.getElementById('v-znacka').value = getParam('znacka') || 'Škoda';
-document.getElementById('v-model').value = getParam('model') || 'Octavia';
-document.getElementById('v-datum').value = getParam('datum') || '15.03.2021';
-document.getElementById('v-palivo').value = getParam('palivo') || 'Benzín';
-document.getElementById('v-objem').value = getParam('objem') || '1598 cm³';
-document.getElementById('v-vykon').value = getParam('vykon') || '85 kW';
-document.getElementById('v-hmotnost').value = getParam('hmotnost') || '1650 kg';
+// Vozidlo (readonly) — reálne z EČV lookupu
+setV('v-vin', V.vin);
+setV('v-ecv', V.ecv);
+setV('v-tp', V.tp);
+setV('v-farba', V.farba);
+setV('v-znacka', V.znacka);
+setV('v-model', V.model);
+setV('v-datum', dDot(V.datumReg));
+setV('v-palivo', PALIVO_LABEL[V.palivo] || V.palivo);
+setV('v-objem', V.objem ? V.objem + ' cm³' : '');
+setV('v-vykon', V.vykon ? V.vykon + ' kW' : '');
+setV('v-hmotnost', V.hmotnost ? V.hmotnost + ' kg' : '');
+setV('v-typ', V.typ || 'OA');
 
+// Poistník — readonly polia z lookupu
 if (typ === 'po') {
-  document.getElementById('po-ico').value = getParam('ico') || '12345678';
-  document.getElementById('po-nazov').value = getParam('nazov') || 'Firma s.r.o.';
-  document.getElementById('po-obec').value = getParam('obec') || 'Bratislava';
-  document.getElementById('po-psc').value = getParam('psc') || '81101';
-}
-if (typ === 'szco') {
-  document.getElementById('szco-ico').value = getParam('ico') || '12345678';
-  document.getElementById('szco-nazov').value = getParam('nazov') || 'Živnosť';
-  document.getElementById('szco-rc').value = getParam('rc') || '900101/1234';
-  document.getElementById('szco-obec').value = getParam('obec') || 'Bratislava';
-  document.getElementById('szco-psc').value = getParam('psc') || '81101';
-}
-if (typ === 'fo') {
-  document.getElementById('fo-rc').value = getParam('rc') || '900101/1234';
-  document.getElementById('fo-obec').value = getParam('obec') || 'Bratislava';
-  document.getElementById('fo-psc').value = getParam('psc') || '81101';
-}
-if (typ === 'cudzinec') {
-  document.getElementById('cz-obec').value = getParam('obec') || 'Bratislava';
-  document.getElementById('cz-psc').value = getParam('psc') || '81101';
+  setV('po-ico', P.ico); setV('po-nazov', P.nazov); setV('po-obec', P.obec); setV('po-psc', P.psc);
+} else if (typ === 'szco') {
+  setV('szco-ico', P.ico); setV('szco-nazov', P.nazov); setV('szco-rc', P.rc); setV('szco-obec', P.obec); setV('szco-psc', P.psc);
+} else if (typ === 'fo') {
+  setV('fo-rc', P.rc); setV('fo-obec', P.obec); setV('fo-psc', P.psc);
+} else if (typ === 'cudzinec') {
+  setV('cz-obec', P.obec); setV('cz-psc', P.psc);
 }
 
 function validateForm() {
@@ -540,57 +539,28 @@ document.querySelectorAll('input[data-required="true"]').forEach(input => {
 
 function goToSummary() {
   if (!validateForm()) return;
+  const g = id => (document.getElementById(id)?.value || '').trim();
 
-  const params = new URLSearchParams(window.location.search);
+  order.poistenieOd = document.getElementById('poistenie-od').value || today;
 
-  params.set('poistenieod', document.getElementById('poistenie-od').value);
-
-  // Vozidlo
-  params.set('vin', document.getElementById('v-vin').value);
-  params.set('tp', document.getElementById('v-tp').value);
-  params.set('farba', document.getElementById('v-farba').value);
-  params.set('typvoz', document.getElementById('v-typ').value);
-  params.set('znacka', document.getElementById('v-znacka').value);
-  params.set('model', document.getElementById('v-model').value);
-  params.set('datum', document.getElementById('v-datum').value);
-  params.set('palivo', document.getElementById('v-palivo').value);
-  params.set('objem', document.getElementById('v-objem').value);
-  params.set('vykon', document.getElementById('v-vykon').value);
-  params.set('hmotnost', document.getElementById('v-hmotnost').value);
-
-  // Klient — podľa typu
+  // Doplniť poistníka o kontakt / adresu / meno (readonly polia už sú v order.poistnik z kroku 1)
+  const pk = order.poistnik || (order.poistnik = {});
+  pk.typ = typ;
   if (typ === 'po') {
-    params.set('nazov', document.getElementById('po-nazov').value);
-    params.set('telefon', document.getElementById('po-telefon').value);
-    params.set('email', document.getElementById('po-email').value);
-    params.set('ulica', document.getElementById('po-ulica').value);
-    params.set('cislo', document.getElementById('po-cislo').value);
+    pk.email = g('po-email'); pk.tel = g('po-telefon'); pk.ulica = g('po-ulica'); pk.cislo = g('po-cislo');
   } else if (typ === 'szco') {
-    params.set('nazov', document.getElementById('szco-nazov').value);
-    params.set('meno', document.getElementById('szco-meno').value);
-    params.set('priezvisko', document.getElementById('szco-priezvisko').value);
-    params.set('telefon', document.getElementById('szco-telefon').value);
-    params.set('email', document.getElementById('szco-email').value);
-    params.set('ulica', document.getElementById('szco-ulica').value);
-    params.set('cislo', document.getElementById('szco-cislo').value);
+    pk.meno = g('szco-meno'); pk.priezvisko = g('szco-priezvisko');
+    pk.email = g('szco-email'); pk.tel = g('szco-telefon'); pk.ulica = g('szco-ulica'); pk.cislo = g('szco-cislo');
   } else if (typ === 'cudzinec') {
-    params.set('meno', document.getElementById('cz-meno').value);
-    params.set('priezvisko', document.getElementById('cz-priezvisko').value);
-    params.set('datumnar', document.getElementById('cz-datum-narodenia').value);
-    params.set('telefon', document.getElementById('cz-telefon').value);
-    params.set('email', document.getElementById('cz-email').value);
-    params.set('ulica', document.getElementById('cz-ulica').value);
-    params.set('cislo', document.getElementById('cz-cislo').value);
-  } else {
-    params.set('meno', document.getElementById('fo-meno').value);
-    params.set('priezvisko', document.getElementById('fo-priezvisko').value);
-    params.set('telefon', document.getElementById('fo-telefon').value);
-    params.set('email', document.getElementById('fo-email').value);
-    params.set('ulica', document.getElementById('fo-ulica').value);
-    params.set('cislo', document.getElementById('fo-cislo').value);
+    pk.meno = g('cz-meno'); pk.priezvisko = g('cz-priezvisko'); pk.datumNar = g('cz-datum-narodenia');
+    pk.email = g('cz-email'); pk.tel = g('cz-telefon'); pk.ulica = g('cz-ulica'); pk.cislo = g('cz-cislo');
+  } else { // fo
+    pk.meno = g('fo-meno'); pk.priezvisko = g('fo-priezvisko');
+    pk.email = g('fo-email'); pk.tel = g('fo-telefon'); pk.ulica = g('fo-ulica'); pk.cislo = g('fo-cislo');
   }
 
-  window.location.href = 'app-step4.html?' + params.toString();
+  localStorage.setItem('pripoisti_order', JSON.stringify(order));
+  window.location.href = 'app-step4.html?typ=' + encodeURIComponent(typ);
 }
 </script>
 </body>
