@@ -161,6 +161,8 @@ h1 {
   color: rgba(255,255,255,.35);
   margin-bottom: 14px;
 }
+/* aby fixná navigácia neprekryla nadpis pri scrollnutí na dlaždice */
+#tiles-label { scroll-margin-top: 120px; }
 /* TYPE TABS */
 .type-tabs {
   display: flex;
@@ -3700,14 +3702,9 @@ function showEntryError(msg) {
   if (el) { el.textContent = msg; el.style.display = msg ? '' : 'none'; }
 }
 
-/* Scroll na dlaždice tak, aby ich neprekryla fixná navigácia (zarovnať pod ňu + odstup) */
+/* Scroll na dlaždice — #tiles-label má scroll-margin-top, takže sa zastaví pod fixnou navigáciou */
 function scrollToTiles() {
-  const label = document.getElementById('tiles-label');
-  if (!label) return;
-  const nav = document.getElementById('nav');
-  const navH = nav ? nav.offsetHeight : 70;
-  const y = label.getBoundingClientRect().top + window.scrollY - navH - 24;
-  window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+  document.getElementById('tiles-label')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 async function triggerLookup() {
