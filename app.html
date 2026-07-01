@@ -459,6 +459,8 @@ select.entry-input option { background: #1a1a1a; color: white; }
   gap: 8px;
   flex: 1;
 }
+.summary-empty { flex: 1; font-size: 15px; font-weight: 600; color: rgba(255,255,255,.5); }
+.calc-cta.disabled { opacity: .4; pointer-events: none; filter: grayscale(.3); }
 .freq-price-card {
   flex: 1;
   text-align: center;
@@ -1025,6 +1027,7 @@ footer {
 <!-- STICKY SUMMARY BAR -->
 <div class="sticky-summary" id="sticky-summary">
   <div class="sticky-summary-inner">
+    <div class="summary-empty" id="summary-empty" style="display:none;">Vyberte aspoň jedno pripoistenie ↑</div>
     <div class="freq-price-cards" id="freq-price-cards">
       <div class="freq-price-card active" data-mult="1" data-label="mesačne" data-surcharge-pct="5" onclick="setFreq(1,'mesačne',this)">
         <div class="fpc-label">Mesačne</div>
@@ -3975,6 +3978,7 @@ async function recalcPrices(ecvWarning) {
     updateCalc();
     hideEntryLoader();
     if (!applied) { showEntryError('Ceny sa nepodarilo načítať. Skontrolujte údaje vozidla.'); return; }
+    pricesReady = true; updateCalc();
     renderVehCard(ecvWarning);
     document.getElementById('veh-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (e) {
@@ -4030,6 +4034,7 @@ async function triggerLookup() {
       showEntryError('Ceny sa nepodarilo načítať. Skontrolujte zadané údaje a skúste znova.');
       return;
     }
+    pricesReady = true; updateCalc();
     renderVehCard(veh.ecvWarning);
     document.getElementById('veh-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (e) {
@@ -4103,18 +4108,39 @@ function syncTileConstraints() {
   }
 }
 
+let pricesReady = false;   // pás sa ukazuje až keď sú ceny načítané
+
 function updateCalc() {
   const tiles = document.querySelectorAll('.tile.sel');
   const stickyBar = document.getElementById('sticky-summary');
+  const cta = document.getElementById('calc-cta');
+  const freqCards = document.getElementById('freq-price-cards');
+  const emptyMsg = document.getElementById('summary-empty');
 
-  if (!tiles.length) {
+  // pred lookupom pás vôbec neukazuj
+  if (!pricesReady) {
     stickyBar.classList.remove('show');
     document.body.style.paddingBottom = '';
     return;
   }
 
+  stickyBar.classList.add('show');
+
+  // prázdny stav — 0 vybraných: výzva + zašednuté CTA
+  if (!tiles.length) {
+    freqCards.style.display = 'none';
+    emptyMsg.style.display = '';
+    cta.classList.add('disabled');
+    document.body.style.paddingBottom = (stickyBar.offsetHeight + 16) + 'px';
+    return;
+  }
+
+  // plný stav — 1+ vybraných: frekvencie + aktívne CTA
+  emptyMsg.style.display = 'none';
+  freqCards.style.display = '';
+  cta.classList.remove('disabled');
+
   const selIds = [...tiles].map(t => t.dataset.id);
-  // ročný súčet pri ročnej platbe (referencia — najlacnejšia)
   const annualYearly = selIds.reduce((s, id) => s + monthEqFor(id, 1) * 12, 0);
 
   FREQS.forEach(mult => {
@@ -4134,14 +4160,13 @@ function updateCalc() {
     }
   });
 
-  stickyBar.classList.add('show');
-  // aby sticky pás neprekryl posledný rad dlaždíc
   document.body.style.paddingBottom = (stickyBar.offsetHeight + 16) + 'px';
 }
 
 /* ─── GO TO STEP 3 ─── */
 function goToStep3(e) {
   e.preventDefault();
+  if (!document.querySelectorAll('.tile.sel').length) return false;   // nedá sa pokračovať s 0 vybranými
   const params = new URLSearchParams();
   params.set('typ', currentType);
 
