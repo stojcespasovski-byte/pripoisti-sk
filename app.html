@@ -1145,8 +1145,8 @@ const API_BASE = (location.hostname === 'localhost' || location.hostname === '12
 
 const PILLOW_CONFIG = {
   BASE_URL:  API_BASE + '/pillow',
-  USER:      'automanager_ws_sk',
-  PASS:      '7Qvmfpiz5o6J',
+  // Pillow login+heslo sú na backende (api.pripoisti.sk) — frontend ich NIKDY nedrží.
+  // /authorize doplní credentials server-side, viď routers/pillow.py v pripoisti-api.
   AGENT_ID1: '771',
 };
 
@@ -3378,11 +3378,8 @@ async function apiLookupCompany(ico) {
 
 /* ── Pillow HTTP vrstva ── */
 async function pillowAuth() {
-  const res = await fetch(`${PILLOW_CONFIG.BASE_URL}/authorize`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `user=${encodeURIComponent(PILLOW_CONFIG.USER)}&password=${encodeURIComponent(PILLOW_CONFIG.PASS)}`,
-  });
+  // Bez credentials — backend (api.pripoisti.sk) doplní Pillow login+heslo server-side.
+  const res = await fetch(`${PILLOW_CONFIG.BASE_URL}/authorize`, { method: 'POST' });
   if (!res.ok) throw new Error('Prihlásenie do Pillow zlyhalo (HTTP ' + res.status + ')');
   const doc = new DOMParser().parseFromString(await res.text(), 'text/xml');
   const uid = doc.querySelector('uid')?.textContent;
