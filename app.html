@@ -175,7 +175,7 @@ h1 {
   scroll-margin-top: 130px;
 }
 .veh-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 11px; }
-.veh-card-title { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: #fff; }
+.veh-card-title { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 9px; font-size: 12px; font-weight: 700; color: #fff; }
 .veh-card-title svg { color: var(--o); flex: none; width: 15px; height: 15px; }
 .veh-actions { display: flex; align-items: center; gap: 8px; }
 .veh-link, .veh-change {
@@ -187,8 +187,10 @@ h1 {
 .veh-change { color: var(--o); border: 1px solid rgba(232,130,26,.4); }
 .veh-change:hover { background: rgba(232,130,26,.12); }
 .veh-warn {
-  font-size: 11.5px; color: #fbbf24; background: rgba(251,191,36,.08);
-  border: 1px solid rgba(251,191,36,.25); border-radius: 8px; padding: 6px 11px; margin-bottom: 11px;
+  display: inline-flex; align-items: center;
+  font-size: 11px; font-weight: 600; color: #fbbf24;
+  background: rgba(251,191,36,.1); border: 1px solid rgba(251,191,36,.28);
+  border-radius: 7px; padding: 2px 9px;
 }
 .veh-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px 20px; }
 .veh-item label { display: block; font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: rgba(255,255,255,.35); margin-bottom: 1px; }
@@ -930,14 +932,14 @@ footer {
         <div class="veh-card-head">
           <div class="veh-card-title">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="13" width="22" height="7" rx="2"/><path d="M7 13l2-5h6l2 5"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg>
-            Vaše vozidlo
+            <span>Vaše vozidlo</span>
+            <span class="veh-warn" id="veh-warn" style="display:none;">⚠️ EČV mohla byť preregistrovaná — skontrolujte VIN</span>
           </div>
           <div class="veh-actions">
             <a href="#" class="veh-link" onclick="return openVehModal(event)">Je to iné auto?</a>
             <a href="#" class="veh-change" onclick="return scrollToEntry(event)">Zmeniť</a>
           </div>
         </div>
-        <div class="veh-warn" id="veh-warn" style="display:none;">⚠️ EČV mohla byť preregistrovaná na iné auto — skontrolujte VIN.</div>
         <div class="veh-grid" id="veh-grid"></div>
         <div class="veh-holder" id="veh-holder" style="display:none;"></div>
       </div>
