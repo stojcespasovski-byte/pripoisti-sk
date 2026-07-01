@@ -3700,6 +3700,16 @@ function showEntryError(msg) {
   if (el) { el.textContent = msg; el.style.display = msg ? '' : 'none'; }
 }
 
+/* Scroll na dlaždice tak, aby ich neprekryla fixná navigácia (zarovnať pod ňu + odstup) */
+function scrollToTiles() {
+  const label = document.getElementById('tiles-label');
+  if (!label) return;
+  const nav = document.getElementById('nav');
+  const navH = nav ? nav.offsetHeight : 70;
+  const y = label.getBoundingClientRect().top + window.scrollY - navH - 24;
+  window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+}
+
 async function triggerLookup() {
   showEntryError('');
   showEntryLoader();
@@ -3745,7 +3755,7 @@ async function triggerLookup() {
       showEntryError('Ceny sa nepodarilo načítať. Skontrolujte zadané údaje a skúste znova.');
       return;
     }
-    document.getElementById('tiles-label')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    scrollToTiles();
   } catch (e) {
     console.error(e);
     hideEntryLoader();
