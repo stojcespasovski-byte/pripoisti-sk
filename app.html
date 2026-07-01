@@ -3869,24 +3869,37 @@ function goToStep3(e) {
     params.set('ecv', document.getElementById('f-ecv-szco').value);
   }
 
-  const selectedTiles = Array.from(document.querySelectorAll('.tile.sel')).map(t => ({
-    id: t.dataset.id,
-    name: t.querySelector('.tile-name').textContent,
-    desc: t.querySelector('.tile-desc') ? t.querySelector('.tile-desc').textContent : '',
-    base: parseFloat(t.dataset.price)
-  }));
+  const selectedTiles = Array.from(document.querySelectorAll('.tile.sel')).map(t => {
+    const id = t.dataset.id;
+    return {
+      id,
+      name: t.querySelector('.tile-name').textContent,
+      desc: t.querySelector('.tile-desc') ? t.querySelector('.tile-desc').textContent : '',
+      risks: (TILE_RISKS[id] || []).map(r => ({ risk: r.risk, variant: r.variant })),
+      priceMonthly: (pillowFreqPrices[12] && pillowFreqPrices[12][id] != null)
+        ? pillowFreqPrices[12][id] : (parseFloat(t.dataset.price) || 0),
+    };
+  });
 
   const activeFreqCard = document.querySelector('.freq-price-card.active');
-  const freqData = {
-    mult: activeFreqCard ? parseInt(activeFreqCard.dataset.mult) : 1,
-    label: activeFreqCard ? activeFreqCard.dataset.label : 'mesačne',
-    surchargePct: activeFreqCard ? parseFloat(activeFreqCard.dataset.surchargePct) : 0
-  };
+  const mult = activeFreqCard ? parseInt(activeFreqCard.dataset.mult) : 1;
 
-  localStorage.setItem('pripoisti_selection', JSON.stringify({
-    tiles: selectedTiles,
-    freq: freqData
-  }));
+  // Celá objednávka — reálne dáta pre step3/step4 (vrátane save do Pillow + BCRM)
+  const order = {
+    typ: currentType,
+    vehicle: { ...lookup.vehicle },              // reálne vozidlo z BCRM lookupu
+    vehicleCodes: resolveVehicleCodes(),         // brandCode, modelCode, fallback
+    poistnik: { ...lookup.poistnik },            // typ, ico/rc, nazov, obec, psc
+    tiles: selectedTiles,                        // vybrané dlaždice + ich Pillow riziká
+    freq: {
+      mult,
+      label: activeFreqCard ? activeFreqCard.dataset.label : 'mesačne',
+      pillowFreq: 12 / mult,                     // mult 1/3/6/12 → Pillow 12/4/2/1
+    },
+    freqPrices: pillowFreqPrices,                // {12:{tile:€},4,2,1} — pre zobrazenie
+    poistenieOd: (typeof todayISO === 'function') ? todayISO() : new Date().toISOString().slice(0, 10),
+  };
+  localStorage.setItem('pripoisti_order', JSON.stringify(order));
 
   window.location.href = 'app-step3.html?' + params.toString();
   return false;
