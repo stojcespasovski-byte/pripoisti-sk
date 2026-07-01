@@ -163,6 +163,37 @@ h1 {
 }
 /* aby fixná navigácia neprekryla nadpis pri scrollnutí na dlaždice */
 #tiles-label { scroll-margin-top: 150px; color: var(--o); }
+#entry-card { scroll-margin-top: 110px; }
+
+/* ── Karta „vaše vozidlo" (potvrdenie nájdeného auta) ── */
+.veh-card {
+  margin-top: 24px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 16px;
+  padding: 18px 22px;
+  scroll-margin-top: 150px;
+}
+.veh-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.veh-card-title { display: flex; align-items: center; gap: 9px; font-size: 13px; font-weight: 700; color: #fff; }
+.veh-card-title svg { color: var(--o); flex: none; }
+.veh-change {
+  font-size: 12px; font-weight: 600; color: var(--o); text-decoration: none;
+  border: 1px solid rgba(232,130,26,.4); padding: 5px 13px; border-radius: 8px;
+  transition: background .15s; white-space: nowrap;
+}
+.veh-change:hover { background: rgba(232,130,26,.12); }
+.veh-warn {
+  font-size: 12px; color: #fbbf24; background: rgba(251,191,36,.08);
+  border: 1px solid rgba(251,191,36,.25); border-radius: 8px; padding: 8px 12px; margin-bottom: 14px;
+}
+.veh-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px 20px; }
+.veh-item label { display: block; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: rgba(255,255,255,.35); margin-bottom: 3px; }
+.veh-item .v { font-size: 14px; font-weight: 600; color: rgba(255,255,255,.9); word-break: break-word; }
+.veh-item .v.mono { font-family: monospace; letter-spacing: .5px; }
+.veh-holder { margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,.06); font-size: 13px; color: rgba(255,255,255,.5); }
+.veh-holder strong { color: #fff; font-weight: 700; }
+@media (max-width: 820px) { .veh-grid { grid-template-columns: repeat(2, 1fr); } }
 /* TYPE TABS */
 .type-tabs {
   display: flex;
@@ -810,6 +841,20 @@ footer {
 
       <div class="entry-loader" id="entry-loader"><div class="entry-spinner"></div><div class="entry-loader-text">Zisťujeme údaje a posielame na ocenenie...</div></div>
       <div id="entry-error" style="display:none;color:#dc2626;font-size:14px;font-weight:600;margin-top:12px;text-align:center;"></div>
+      </div>
+
+      <!-- KARTA VOZIDLA (potvrdenie nájdeného auta) -->
+      <div class="veh-card" id="veh-card" style="display:none;">
+        <div class="veh-card-head">
+          <div class="veh-card-title">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="13" width="22" height="7" rx="2"/><path d="M7 13l2-5h6l2 5"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg>
+            Vaše vozidlo
+          </div>
+          <a href="#" class="veh-change" onclick="return scrollToEntry(event)">Zmeniť</a>
+        </div>
+        <div class="veh-warn" id="veh-warn" style="display:none;">⚠️ EČV mohla byť preregistrovaná na iné auto — skontrolujte VIN.</div>
+        <div class="veh-grid" id="veh-grid"></div>
+        <div class="veh-holder" id="veh-holder" style="display:none;"></div>
       </div>
 
       <div class="calc-label" id="tiles-label" style="margin-top:24px;">Vyberte pripoistenia, ktoré chcete:</div>
@@ -3663,6 +3708,7 @@ function setType(type, btn) {
     inp.classList.remove('ready');
   });
   hideEntryLoader();
+  hideVehCard();
 
   // Show/hide rows based on type
   document.querySelectorAll('.entry-row').forEach(row => {
@@ -3704,8 +3750,50 @@ function scrollToTiles() {
   document.getElementById('tiles-label')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+/* ── Karta „vaše vozidlo" ── */
+const VEH_PALIVO_LABEL = { benzin: 'Benzín', diesel: 'Nafta', nafta: 'Nafta', elektrina: 'Elektrina', hybrid: 'Hybrid', plyn: 'LPG/CNG' };
+function vehDatum(iso) { if (!iso) return ''; const [y, m, d] = iso.split('-'); return (d && m && y) ? `${d}.${m}.${y}` : iso; }
+
+function renderVehCard(ecvWarning) {
+  const v = lookup.vehicle || {};
+  const p = lookup.poistnik || {};
+  const items = [
+    ['EČV', v.ecv, true],
+    ['VIN', v.vin, true],
+    ['Značka', v.znacka],
+    ['Model', v.model],
+    ['1. registrácia', vehDatum(v.datumReg)],
+    ['Palivo', VEH_PALIVO_LABEL[v.palivo] || v.palivo],
+    ['Objem', v.objem ? v.objem + ' cm³' : ''],
+    ['Výkon', v.vykon ? v.vykon + ' kW' : ''],
+  ];
+  document.getElementById('veh-grid').innerHTML = items.map(([l, val, mono]) =>
+    `<div class="veh-item"><label>${l}</label><div class="v${mono ? ' mono' : ''}">${val || '–'}</div></div>`
+  ).join('');
+
+  const holder = document.getElementById('veh-holder');
+  if ((p.typ === 'po' || p.typ === 'szco') && p.nazov) {
+    holder.innerHTML = `Poistník: <strong>${p.nazov}</strong>`;
+    holder.style.display = '';
+  } else {
+    holder.style.display = 'none';
+  }
+
+  document.getElementById('veh-warn').style.display = ecvWarning ? '' : 'none';
+  document.getElementById('veh-card').style.display = '';
+}
+function hideVehCard() { const el = document.getElementById('veh-card'); if (el) el.style.display = 'none'; }
+
+/* „Zmeniť" — scroll späť hore k vstupným poliam */
+function scrollToEntry(e) {
+  if (e) e.preventDefault();
+  document.getElementById('entry-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  return false;
+}
+
 async function triggerLookup() {
   showEntryError('');
+  hideVehCard();
   showEntryLoader();
   try {
     const t = currentType;
@@ -3749,7 +3837,8 @@ async function triggerLookup() {
       showEntryError('Ceny sa nepodarilo načítať. Skontrolujte zadané údaje a skúste znova.');
       return;
     }
-    scrollToTiles();
+    renderVehCard(veh.ecvWarning);
+    document.getElementById('veh-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (e) {
     console.error(e);
     hideEntryLoader();
