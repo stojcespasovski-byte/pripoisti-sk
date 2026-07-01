@@ -194,6 +194,40 @@ h1 {
 .veh-holder { margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,.06); font-size: 13px; color: rgba(255,255,255,.5); }
 .veh-holder strong { color: #fff; font-weight: 700; }
 @media (max-width: 820px) { .veh-grid { grid-template-columns: repeat(2, 1fr); } }
+.veh-actions { display: flex; align-items: center; gap: 14px; }
+.veh-link { font-size: 12px; font-weight: 600; color: rgba(255,255,255,.5); text-decoration: none; }
+.veh-link:hover { color: var(--o); }
+
+/* ── Modal „iné vozidlo" ── */
+.vm-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,.7); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+}
+.vm-modal {
+  width: 100%; max-width: 640px; max-height: 90vh; overflow-y: auto;
+  background: #17181c; border: 1px solid rgba(255,255,255,.1); border-radius: 20px;
+  padding: 26px 28px;
+}
+.vm-title { font-size: 19px; font-weight: 800; color: #fff; margin-bottom: 4px; }
+.vm-sub { font-size: 13px; color: rgba(255,255,255,.45); margin-bottom: 20px; }
+.vm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.vm-field { display: flex; flex-direction: column; }
+.vm-field.full { grid-column: 1 / -1; }
+.vm-field label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: rgba(255,255,255,.4); margin-bottom: 6px; }
+.vm-field input, .vm-field select {
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12); border-radius: 10px;
+  padding: 11px 13px; color: #fff; font-size: 14px; font-family: inherit; width: 100%; box-sizing: border-box;
+}
+.vm-field select:disabled { opacity: .4; }
+.vm-field input:focus, .vm-field select:focus { outline: none; border-color: var(--o); }
+.vm-warn { grid-column: 1 / -1; font-size: 12px; color: #fbbf24; background: rgba(251,191,36,.08); border: 1px solid rgba(251,191,36,.25); border-radius: 8px; padding: 9px 12px; }
+.vm-error { grid-column: 1 / -1; font-size: 13px; color: #dc2626; font-weight: 600; }
+.vm-btns { display: flex; justify-content: flex-end; gap: 12px; margin-top: 22px; }
+.vm-btn-cancel { background: transparent; border: 1px solid rgba(255,255,255,.2); color: rgba(255,255,255,.7); padding: 12px 22px; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; }
+.vm-btn-save { background: var(--grad); border: none; color: #fff; padding: 12px 26px; border-radius: 10px; font-weight: 700; font-size: 14px; cursor: pointer; }
+.vm-btn-save:disabled { opacity: .6; cursor: default; }
+@media (max-width: 560px) { .vm-grid { grid-template-columns: 1fr; } }
 /* TYPE TABS */
 .type-tabs {
   display: flex;
@@ -850,7 +884,10 @@ footer {
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="13" width="22" height="7" rx="2"/><path d="M7 13l2-5h6l2 5"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg>
             Vaše vozidlo
           </div>
-          <a href="#" class="veh-change" onclick="return scrollToEntry(event)">Zmeniť</a>
+          <div class="veh-actions">
+            <a href="#" class="veh-link" onclick="return openVehModal(event)">Je to iné auto?</a>
+            <a href="#" class="veh-change" onclick="return scrollToEntry(event)">Zmeniť</a>
+          </div>
         </div>
         <div class="veh-warn" id="veh-warn" style="display:none;">⚠️ EČV mohla byť preregistrovaná na iné auto — skontrolujte VIN.</div>
         <div class="veh-grid" id="veh-grid"></div>
@@ -3791,6 +3828,106 @@ function scrollToEntry(e) {
   return false;
 }
 
+/* ── Modal „iné vozidlo" ── */
+let _vmBrandsFilled = false;
+function vmBuildBrands() {
+  const codeToName = {};
+  for (const [name, code] of Object.entries(PILLOW_BRAND_MAP)) if (!codeToName[code]) codeToName[code] = name;
+  return Object.keys(PILLOW_MODELS)
+    .map(code => ({ code, name: codeToName[code] || code }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'sk'));
+}
+function openVehModal(e) {
+  if (e) e.preventDefault();
+  const brandSel = document.getElementById('vm-znacka');
+  if (!_vmBrandsFilled) {
+    brandSel.innerHTML = '<option value="">Vyberte značku…</option>' +
+      vmBuildBrands().map(b => `<option value="${b.code}">${b.name}</option>`).join('') +
+      '<option value="__INA__">Iná (nie je v zozname)</option>';
+    _vmBrandsFilled = true;
+  }
+  // prázdne polia (vieme, že sa dotiahlo iné auto)
+  ['vm-znacka', 'vm-model', 'vm-typ', 'vm-datum', 'vm-palivo', 'vm-objem', 'vm-vykon', 'vm-hmotnost', 'vm-vin', 'vm-ina-text'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('vm-model').disabled = true;
+  document.getElementById('vm-model').innerHTML = '<option value="">Vyberte model…</option>';
+  document.getElementById('vm-ina-wrap').style.display = 'none';
+  document.getElementById('vm-warn').style.display = 'none';
+  document.getElementById('vm-error').style.display = 'none';
+  document.getElementById('vm-overlay').style.display = 'flex';
+  return false;
+}
+function closeVehModal() { document.getElementById('vm-overlay').style.display = 'none'; }
+function onVmBrandChange() {
+  const code = document.getElementById('vm-znacka').value;
+  const modelSel = document.getElementById('vm-model');
+  const inaWrap = document.getElementById('vm-ina-wrap');
+  const warn = document.getElementById('vm-warn');
+  if (code === '__INA__') {
+    modelSel.disabled = true; modelSel.innerHTML = '<option value="">–</option>';
+    inaWrap.style.display = ''; warn.style.display = '';
+    return;
+  }
+  inaWrap.style.display = 'none'; warn.style.display = 'none';
+  modelSel.disabled = !code;
+  const models = PILLOW_MODELS[code] || [];
+  modelSel.innerHTML = '<option value="">Vyberte model…</option>' +
+    models.map(([id, name]) => `<option value="${id}">${name}</option>`).join('');
+}
+function saveVehModal() {
+  const g = id => document.getElementById(id);
+  const isIna = g('vm-znacka').value === '__INA__';
+  const objem = g('vm-objem').value.trim(), vykon = g('vm-vykon').value.trim(), hmotnost = g('vm-hmotnost').value.trim();
+  const typ = g('vm-typ').value, datum = g('vm-datum').value, palivo = g('vm-palivo').value;
+
+  const errs = [];
+  if (!g('vm-znacka').value) errs.push('značku');
+  if (isIna && !g('vm-ina-text').value.trim()) errs.push('značku a model');
+  if (!isIna && !g('vm-model').value) errs.push('model');
+  if (!typ) errs.push('typ vozidla');
+  if (!datum) errs.push('dátum registrácie');
+  if (!palivo) errs.push('palivo');
+  if (!objem) errs.push('objem'); if (!vykon) errs.push('výkon'); if (!hmotnost) errs.push('hmotnosť');
+  if (errs.length) { const e = g('vm-error'); e.textContent = 'Vyplňte: ' + errs.join(', ') + '.'; e.style.display = ''; return; }
+
+  let znacka, model;
+  if (isIna) { znacka = g('vm-ina-text').value.trim(); model = ''; }   // → NEUVEDENA
+  else {
+    znacka = g('vm-znacka').options[g('vm-znacka').selectedIndex].text;
+    model  = g('vm-model').options[g('vm-model').selectedIndex].text;
+  }
+  const v = lookup.vehicle || (lookup.vehicle = {});
+  Object.assign(v, { znacka, model, typ, datumReg: datum, palivo, objem, vykon, hmotnost, vin: g('vm-vin').value.trim(), pohon: false });
+  // v.ecv, v.najazd zostávajú z pôvodného zadania
+
+  closeVehModal();
+  recalcPrices(false);
+}
+
+/* Prepočet cien pre už nastavené lookup.vehicle (po modale) */
+async function recalcPrices(ecvWarning) {
+  hideVehCard();
+  showEntryError('');
+  showEntryLoader();
+  try {
+    const prices = await fetchPillowPrices();
+    let applied = 0;
+    document.querySelectorAll('.tile').forEach(tile => {
+      const p = prices[tile.dataset.id];
+      if (p != null && p > 0) { tile.dataset.price = p.toFixed(2); applied++; }
+    });
+    renderTilePrices();
+    updateCalc();
+    hideEntryLoader();
+    if (!applied) { showEntryError('Ceny sa nepodarilo načítať. Skontrolujte údaje vozidla.'); return; }
+    renderVehCard(ecvWarning);
+    document.getElementById('veh-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (e) {
+    console.error(e);
+    hideEntryLoader();
+    showEntryError('Nepodarilo sa získať ceny: ' + (e.message || e));
+  }
+}
+
 async function triggerLookup() {
   showEntryError('');
   hideVehCard();
@@ -4005,5 +4142,74 @@ const observer = new IntersectionObserver((entries) => {
 
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 </script>
+
+<!-- MODAL: iné vozidlo -->
+<div class="vm-overlay" id="vm-overlay" style="display:none;">
+  <div class="vm-modal">
+    <div class="vm-title">Vypíšte vozidlo</div>
+    <div class="vm-sub">Zadajte údaje o vozidle, ktoré chcete poistiť.</div>
+    <div class="vm-grid">
+      <div class="vm-field">
+        <label>Značka</label>
+        <select id="vm-znacka" onchange="onVmBrandChange()"><option value="">Vyberte značku…</option></select>
+      </div>
+      <div class="vm-field">
+        <label>Model</label>
+        <select id="vm-model" disabled><option value="">Vyberte model…</option></select>
+      </div>
+      <div class="vm-field full" id="vm-ina-wrap" style="display:none;">
+        <label>Značka a model (voľný text)</label>
+        <input id="vm-ina-text" placeholder="napr. Tesla Model 3">
+      </div>
+      <div class="vm-warn" id="vm-warn" style="display:none;">⚠️ Pre toto vozidlo vieme oceniť len časť pripoistení (asistencia, úraz, batožina).</div>
+      <div class="vm-field">
+        <label>Typ vozidla</label>
+        <select id="vm-typ">
+          <option value="">Vyberte…</option>
+          <option value="OA">Osobné vozidlo</option>
+          <option value="NA">Nákladné vozidlo</option>
+          <option value="MO">Motocykel</option>
+          <option value="OBY">Obytné vozidlo</option>
+        </select>
+      </div>
+      <div class="vm-field">
+        <label>Dátum 1. registrácie</label>
+        <input type="date" id="vm-datum">
+      </div>
+      <div class="vm-field">
+        <label>Palivo</label>
+        <select id="vm-palivo">
+          <option value="">Vyberte…</option>
+          <option value="benzin">Benzín</option>
+          <option value="diesel">Nafta</option>
+          <option value="elektrina">Elektrina</option>
+          <option value="hybrid">Hybrid</option>
+          <option value="plyn">LPG/CNG</option>
+        </select>
+      </div>
+      <div class="vm-field">
+        <label>Objem motora (cm³)</label>
+        <input type="number" id="vm-objem" placeholder="1968" min="0">
+      </div>
+      <div class="vm-field">
+        <label>Výkon motora (kW)</label>
+        <input type="number" id="vm-vykon" placeholder="110" min="0">
+      </div>
+      <div class="vm-field">
+        <label>Max. hmotnosť (kg)</label>
+        <input type="number" id="vm-hmotnost" placeholder="2547" min="0">
+      </div>
+      <div class="vm-field full">
+        <label>VIN (voliteľné)</label>
+        <input id="vm-vin" placeholder="TMBLJ7NSXP8012326">
+      </div>
+      <div class="vm-error" id="vm-error" style="display:none;"></div>
+    </div>
+    <div class="vm-btns">
+      <button class="vm-btn-cancel" onclick="closeVehModal()">Zrušiť</button>
+      <button class="vm-btn-save" id="vm-save" onclick="saveVehModal()">Prepočítať</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
