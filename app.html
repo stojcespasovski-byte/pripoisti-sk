@@ -441,6 +441,41 @@ select.entry-input option { background: #1a1a1a; color: white; }
 }
 .tiles-partial b { color: #fcd34d; }
 
+/* „Viac info" spúšťač v dlaždici (oddelený od výberu) */
+.tile-info {
+  position: absolute; bottom: 14px; right: 16px;
+  font-size: 12px; font-weight: 600;
+  color: rgba(255,255,255,.4); cursor: pointer;
+  display: inline-flex; align-items: center; gap: 4px;
+  transition: color .15s; z-index: 2;
+}
+.tile-info:hover { color: var(--o); }
+.tile.unavailable .tile-info { display: none; }
+
+/* Info modal */
+.im-overlay {
+  position: fixed; inset: 0; z-index: 200; display: none;
+  align-items: center; justify-content: center; padding: 20px;
+  background: rgba(0,0,0,.62); backdrop-filter: blur(4px);
+}
+.im-modal {
+  background: #171717; border: 1px solid rgba(255,255,255,.1);
+  border-radius: 16px; width: 100%; max-width: 460px;
+  padding: 26px 28px; max-height: 85vh; overflow-y: auto;
+}
+.im-title { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 4px; }
+.im-section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--o); margin: 18px 0 9px; }
+.im-list { list-style: none; padding: 0; margin: 0; }
+.im-list li { position: relative; padding-left: 22px; margin-bottom: 8px; font-size: 14px; color: rgba(255,255,255,.78); line-height: 1.5; }
+.im-list li::before { content: '✓'; position: absolute; left: 0; color: var(--o); font-weight: 800; }
+.im-params { display: flex; flex-direction: column; }
+.im-param { display: flex; justify-content: space-between; gap: 14px; font-size: 13px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
+.im-param span:first-child { color: rgba(255,255,255,.5); }
+.im-param span:last-child { color: #fff; font-weight: 600; text-align: right; }
+.im-note { font-size: 12px; color: rgba(255,255,255,.42); margin-top: 14px; line-height: 1.5; }
+.im-close { margin-top: 22px; width: 100%; padding: 12px; border-radius: 10px; background: rgba(255,255,255,.08); color: #fff; border: none; font-size: 14px; font-weight: 700; cursor: pointer; transition: background .15s; }
+.im-close:hover { background: rgba(255,255,255,.14); }
+
 .calc-cta {
   background: var(--grad);
   color: white;
@@ -4117,6 +4152,118 @@ function setFreq(mult, label, el) {
   updateCalc();
 }
 
+/* ─── VIAC INFO K PRIPOISTENIU ───
+   Obsah opretý o Pillow IPID + varianty, ktoré posielame. Presné sumy/limity/spoluúčasť
+   sa riadia poistnou zmluvou (uvedené v pätke modalu). */
+const INFO_CONTENT = {
+  havaria: {
+    title: 'Havária a zrážka so zverou',
+    cover: [
+      'Škody na vašom vozidle pri dopravnej nehode — aj keď ste ju spôsobili vy.',
+      'Zrážka so zverou (napr. srna, diviak) — náraz do zvieraťa na ceste.',
+      'Poškodenie pri havárii bez ohľadu na vinníka.',
+    ],
+    params: [['Poistná suma', 'Všeobecná hodnota vozidla'], ['Spoluúčasť', '150 €']],
+    note: 'Obsahuje aj samostatné krytie „Zrážka so zverou" — nemusíte ho pridávať zvlášť.',
+  },
+  zver: {
+    title: 'Zrážka so zverou',
+    cover: [
+      'Škody na vozidle spôsobené nárazom do zvieraťa (lesná aj domáca zver).',
+      'Cielená ochrana pre tých, čo nechcú plnú havarijnú poistku.',
+    ],
+    params: [['Poistná suma', 'Všeobecná hodnota vozidla'], ['Spoluúčasť', 'Bez spoluúčasti']],
+  },
+  kradez: {
+    title: 'Krádež',
+    cover: [
+      'Odcudzenie celého vozidla.',
+      'Krádež časti vozidla (napr. kolesá, katalyzátor, výbava).',
+      'Škody spôsobené pri pokuse o krádež alebo vlámaní.',
+    ],
+    params: [['Poistná suma', 'Všeobecná hodnota vozidla'], ['Spoluúčasť', 'Bez spoluúčasti']],
+    note: 'Vozidlo musí byť zabezpečené podľa poistných podmienok.',
+  },
+  priroda: {
+    title: 'Prírodná udalosť',
+    cover: [
+      'Víchrica, krupobitie, blesk.',
+      'Povodeň, záplava, zosuv pôdy.',
+      'Pád stromu, konára alebo iného predmetu na vozidlo.',
+    ],
+    params: [['Poistná suma', 'Všeobecná hodnota vozidla'], ['Spoluúčasť', 'Bez spoluúčasti']],
+  },
+  skla: {
+    title: 'Sklá',
+    cover: [
+      'Čelné, zadné aj bočné sklá.',
+      'Oprava (scelenie prasklín) alebo výmena skla.',
+    ],
+    params: [['Poistná suma', 'Obvyklá cena výmeny skla'], ['Spoluúčasť', 'Väčšinou bez spoluúčasti']],
+    note: 'Opravou skla sa rozumie scelenie prasklín bez nutnosti výmeny.',
+  },
+  vandalizmus: {
+    title: 'Vandalizmus',
+    cover: [
+      'Úmyselné poškodenie vozidla cudzou osobou.',
+      'Poškriabaný lak, zničené zrkadlá, poškodená karoséria.',
+    ],
+    params: [['Poistná suma', 'Všeobecná hodnota vozidla'], ['Spoluúčasť', '150 €']],
+  },
+  asistencia: {
+    title: 'Asistencia',
+    cover: [
+      'Nonstop pomoc v SR aj v Európe pri poruche aj nehode.',
+      'Odťah vozidla, oprava na mieste, defekt, vybitá batéria.',
+      'Náhradné vozidlo alebo ubytovanie pri odstavení.',
+    ],
+    params: [['Variant', 'Rozšírená (L)']],
+  },
+  uraz: {
+    title: 'Úraz',
+    cover: [
+      'Krytie vodiča aj spolucestujúcich pri dopravnej nehode.',
+      'Trvalé následky úrazu a úmrtie následkom nehody.',
+    ],
+    params: [['Variant', 'Úraz 2'], ['Rozsah', 'Podľa počtu miest vo vozidle']],
+  },
+  batozina: {
+    title: 'Batožina',
+    cover: [
+      'Veci a batožina prepravované vo vozidle.',
+      'Elektronika, oblečenie a osobné veci poškodené alebo odcudzené pri nehode či krádeži.',
+    ],
+    params: [['Limit', '750 €']],
+  },
+};
+
+function openInfoModal(e, id) {
+  if (e) e.stopPropagation();                 // klik na „info" nezaškrtne dlaždicu
+  const c = INFO_CONTENT[id];
+  if (!c) return;
+  document.getElementById('im-title').textContent = c.title;
+  let html = '';
+  if (c.cover && c.cover.length)
+    html += '<div class="im-section-label">Čo kryje</div><ul class="im-list">' + c.cover.map(x => `<li>${x}</li>`).join('') + '</ul>';
+  if (c.params && c.params.length)
+    html += '<div class="im-section-label">Parametre</div><div class="im-params">' + c.params.map(p => `<div class="im-param"><span>${p[0]}</span><span>${p[1]}</span></div>`).join('') + '</div>';
+  if (c.note) html += `<div class="im-note">${c.note}</div>`;
+  html += '<div class="im-note">Presné sumy, limity a spoluúčasť sa riadia poistnou zmluvou a poistnými podmienkami Pillow.</div>';
+  document.getElementById('im-body').innerHTML = html;
+  document.getElementById('im-overlay').style.display = 'flex';
+}
+function closeInfoModal() { document.getElementById('im-overlay').style.display = 'none'; }
+
+/* pridať „ⓘ Viac info" na každú dlaždicu (oddelené od výberu) */
+document.querySelectorAll('#tiles .tile').forEach(tile => {
+  if (!INFO_CONTENT[tile.dataset.id]) return;
+  const btn = document.createElement('div');
+  btn.className = 'tile-info';
+  btn.innerHTML = 'ⓘ Viac info';
+  btn.addEventListener('click', e => openInfoModal(e, tile.dataset.id));
+  tile.appendChild(btn);
+});
+
 /* Naplní dlaždice cenami; ktoré Pillow neocenil (napr. NEUVEDENA) → označí nedostupné.
    Vráti počet ocenených dlaždíc. */
 function applyTilePrices(prices) {
@@ -4354,6 +4501,15 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
       <button class="vm-btn-cancel" onclick="closeVehModal()">Zrušiť</button>
       <button class="vm-btn-save" id="vm-save" onclick="saveVehModal()">Prepočítať</button>
     </div>
+  </div>
+</div>
+
+<!-- INFO MODAL (Viac info k pripoisteniu) -->
+<div class="im-overlay" id="im-overlay" onclick="if(event.target===this)closeInfoModal()">
+  <div class="im-modal">
+    <div class="im-title" id="im-title"></div>
+    <div id="im-body"></div>
+    <button class="im-close" onclick="closeInfoModal()">Zavrieť</button>
   </div>
 </div>
 </body>
