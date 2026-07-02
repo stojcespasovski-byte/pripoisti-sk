@@ -672,6 +672,7 @@ async function submitOrder() {
 
     localStorage.removeItem('pripoisti_order');
     showSuccess(final.policyId, final.varSym, bcrmOk);
+    sendClientEmail(final.policyId, final.varSym, check.calcId || rate.calcId);   // fire-and-forget
   } catch (e) {
     console.error(e);
     if (uid) pillowLogout(uid);
@@ -680,22 +681,120 @@ async function submitOrder() {
   }
 }
 
+/* ── Success + aktivácia platbou ── */
+const PILLOW_IBAN_DISP = 'SK64 8330 0000 0028 0266 5628';   // pevný účet Pillow (Fio)
+const PILLOW_BENEFICIARY = 'Pillow pojišťovna, a. s.';
+
 function showSuccess(policyId, varSym, bcrmOk) {
+  const suma = orderTotal.toFixed(2);
+  const due = order.poistenieOd || '';
+  const freqLabel = (order.freq?.label || 'mesačne');
+  const retUrl = location.origin + location.pathname + '?platba=navrat&z=' + encodeURIComponent(policyId);
+  const payHref = `${API_BASE}/bcrm/payment/pay?vs=${encodeURIComponent(varSym || '')}&amount=${suma}&ret=${encodeURIComponent(retUrl)}`;
+  const qrSrc = `${API_BASE}/bcrm/payment/qr?amount=${suma}&vs=${encodeURIComponent(varSym || '')}&due=${encodeURIComponent(due)}`;
+  const row = (k, v) => `<div style="display:flex;justify-content:space-between;gap:14px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:14px;"><span style="color:rgba(255,255,255,.45);">${k}</span><span style="color:#fff;font-weight:600;text-align:right;">${v}</span></div>`;
+
   document.querySelector('.page-wrap').innerHTML = `
-    <div style="text-align:center;padding:80px 20px;">
+    <div style="max-width:640px;margin:0 auto;padding:48px 20px;">
+      <div style="text-align:center;margin-bottom:28px;">
+        <div style="width:72px;height:72px;border-radius:50%;background:rgba(232,130,26,.1);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h2 style="font-size:28px;font-weight:900;margin-bottom:10px;">Návrh zmluvy <span style="color:var(--o);font-family:monospace;">${policyId}</span> uzatvorený!</h2>
+        <p style="font-size:14px;color:rgba(255,255,255,.5);line-height:1.6;">Doklady${P.email ? ` posielame na <strong style="color:rgba(255,255,255,.75);">${P.email}</strong>` : ' vám pošleme e-mailom'}.</p>
+        <div id="email-status" style="font-size:12.5px;margin-top:6px;min-height:16px;color:rgba(255,255,255,.4);"></div>
+      </div>
+
+      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:22px 24px;">
+        <div style="font-size:15px;font-weight:800;color:#fff;margin-bottom:4px;">Aktivujte zmluvu zaplatením poistného</div>
+        <div style="font-size:12.5px;color:rgba(255,255,255,.45);margin-bottom:14px;">Zmluva nadobudne platnosť až po zaplatení prvého poistného${due ? ` — najneskôr do <strong style="color:#fbbf24;">${dDot(due)}</strong>` : ''}.</div>
+        <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;">
+          <div style="flex:1;min-width:240px;">
+            ${row('Platba', `€ ${suma.replace('.', ',')} <span style="color:rgba(255,255,255,.35);font-weight:400;">/${freqLabel}</span>`)}
+            ${row('IBAN', `<span style="font-family:monospace;letter-spacing:.3px;">${PILLOW_IBAN_DISP}</span>`)}
+            ${row('Variabilný symbol', `<span style="font-family:monospace;">${varSym || '–'}</span>`)}
+            ${row('Splatnosť', dDot(due))}
+            ${row('Príjemca', PILLOW_BENEFICIARY)}
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:6px;">Naskenujte QR<br>v bankovej aplikácii</div>
+            <img src="${qrSrc}" alt="QR platba" width="132" height="132" style="background:#fff;border-radius:10px;padding:6px;" onerror="this.parentElement.style.display='none'">
+          </div>
+        </div>
+        <a href="${payHref}" style="display:block;text-align:center;margin-top:18px;background:var(--grad);color:white;padding:13px 24px;border-radius:10px;text-decoration:none;font-weight:800;font-size:15px;">Zaplatiť kartou online →</a>
+      </div>
+
+      ${bcrmOk ? '' : '<p style="font-size:12px;color:rgba(255,180,80,.7);margin-top:12px;text-align:center;">Poznámka: záznam do CRM sa nepodarilo uložiť, kontaktujte podporu.</p>'}
+      <div style="text-align:center;margin-top:22px;">
+        <a href="index.html" style="color:rgba(255,255,255,.45);font-size:13px;text-decoration:none;">← Späť na úvod</a>
+      </div>
+    </div>`;
+  window.scrollTo({ top: 0 });
+}
+
+/* ── E-mail klientovi (PDF návrhu + QR + odkaz na platbu) — best-effort ── */
+async function sendClientEmail(policyId, varSym, calcId) {
+  const to = (P.email || '').trim();
+  if (!to) return;
+  const setStatus = (t, c) => { const el = document.getElementById('email-status'); if (el) { el.textContent = t; el.style.color = c || 'rgba(255,255,255,.4)'; } };
+
+  // PDF návrhu zo Pillow (best-effort)
+  let pdfBase64 = null;
+  try {
+    if (calcId) {
+      const uid = await pillowAuth();
+      const res = await fetch(`${PILLOW.BASE}/par/policies/print/AP2/policyPreview/${calcId}/print`, {
+        method: 'POST', headers: { 'Content-Type': 'text/xml; charset=utf-8', 'RestUid': uid },
+      });
+      await pillowLogout(uid);
+      if (res.ok) {
+        const blob = await res.blob();
+        pdfBase64 = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(blob); });
+      }
+    }
+  } catch (_) { /* pošleme bez PDF */ }
+
+  try {
+    const freqLabel = (order.freq?.label || 'mesačne');
+    const retUrl = location.origin + location.pathname + '?platba=navrat&z=' + encodeURIComponent(policyId);
+    const res = await fetch(`${API_BASE}/bcrm/email/send-offer`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to,
+        brand: 'pripoisti',
+        meno: [P.meno, P.priezvisko].filter(Boolean).join(' ') || P.nazov || '',
+        zmluvaId: policyId,
+        suma: orderTotal,
+        vs: varSym || '',
+        splatnost: order.poistenieOd || '',
+        frekvencia: freqLabel.charAt(0).toUpperCase() + freqLabel.slice(1),
+        payLink: `https://api.pripoisti.sk/bcrm/payment/pay?vs=${encodeURIComponent(varSym || '')}&amount=${orderTotal.toFixed(2)}&ret=${encodeURIComponent(retUrl)}`,
+        pdfBase64,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (data && data.sent) setStatus('E-mail s dokladmi bol odoslaný ✓', '#4ade80');
+  } catch (_) { /* ticho — e-mail je doplnková akcia */ }
+}
+
+/* ── Návrat z platobnej brány ── */
+function showPaymentReturn() {
+  const z = getParam('z');
+  document.querySelector('.page-wrap').innerHTML = `
+    <div style="text-align:center;padding:90px 20px;">
       <div style="width:72px;height:72px;border-radius:50%;background:rgba(232,130,26,.1);display:flex;align-items:center;justify-content:center;margin:0 auto 24px;">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
       </div>
-      <h2 style="font-size:28px;font-weight:900;margin-bottom:12px;">Zmluva uzatvorená!</h2>
-      <p style="font-size:15px;color:rgba(255,255,255,.5);line-height:1.6;">
-        Číslo zmluvy: <strong style="color:var(--o);font-family:monospace;">${policyId}</strong>${varSym ? `<br>Variabilný symbol: <strong style="font-family:monospace;">${varSym}</strong>` : ''}<br>
-        Potvrdenie a platobné údaje vám pošleme e-mailom.
+      <h2 style="font-size:26px;font-weight:900;margin-bottom:12px;">Ďakujeme!</h2>
+      <p style="font-size:15px;color:rgba(255,255,255,.55);line-height:1.7;max-width:440px;margin:0 auto;">
+        ${z ? `Platbu k zmluve <strong style="color:var(--o);font-family:monospace;">${z}</strong> spracováva platobná brána.` : 'Platbu spracováva platobná brána.'}<br>
+        Po pripísaní poistného vám poisťovňa zašle poistku e-mailom.
       </p>
-      ${bcrmOk ? '' : '<p style="font-size:12px;color:rgba(255,180,80,.7);margin-top:12px;">Poznámka: záznam do CRM sa nepodarilo uložiť, kontaktujte podporu.</p>'}
       <br>
       <a href="index.html" style="display:inline-block;margin-top:16px;background:var(--grad);color:white;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:700;">Späť na úvod</a>
     </div>`;
 }
+if (getParam('platba') === 'navrat') showPaymentReturn();
 </script>
 </body>
 </html>
