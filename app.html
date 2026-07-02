@@ -464,6 +464,7 @@ select.entry-input option { background: #1a1a1a; color: white; }
 @keyframes seBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 .calc-cta.disabled { opacity: .4; pointer-events: none; filter: grayscale(.3); }
 .freq-price-card {
+  position: relative;
   flex: 1;
   text-align: center;
   padding: 8px 12px;
@@ -472,6 +473,13 @@ select.entry-input option { background: #1a1a1a; color: white; }
   background: rgba(255,255,255,.03);
   cursor: pointer;
   transition: all .18s;
+}
+.fpc-badge {
+  position: absolute; top: -9px; left: 50%; transform: translateX(-50%);
+  background: var(--grad); color: #fff;
+  font-size: 8.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px;
+  padding: 2px 8px; border-radius: 6px; white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,.35);
 }
 .freq-price-card:hover { border-color: rgba(232,130,26,.35); background: rgba(232,130,26,.05); }
 .freq-price-card.active {
@@ -1047,6 +1055,7 @@ footer {
         <div class="fpc-extra" id="fpc-extra-6"></div>
       </div>
       <div class="freq-price-card" data-mult="12" data-label="ročne" data-surcharge-pct="0" onclick="setFreq(12,'ročne',this)">
+        <span class="fpc-badge">Najvýhodnejšie</span>
         <div class="fpc-label">Ročne</div>
         <div class="fpc-price" id="fpc-price-12">€ 0,00</div>
         <div class="fpc-extra" id="fpc-extra-12"></div>
