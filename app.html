@@ -371,14 +371,21 @@ select.entry-input option { background: #1a1a1a; color: white; }
   width: 20px; height: 20px;
   border-radius: 50%;
   border: 1.5px solid rgba(255,255,255,.2);
+  display: flex; align-items: center; justify-content: center;
   transition: all .18s;
 }
+.tile-chk::after {                 /* nevybraný stav = „+" (pridať) */
+  content:'+';
+  font-size: 15px; font-weight: 400; line-height: 1;
+  color: rgba(255,255,255,.4);
+  transition: color .18s;
+}
+.tile:hover .tile-chk::after { color: var(--o); }
 .tile.sel .tile-chk {
   background: var(--grad);
   border: none;
-  display: flex; align-items: center; justify-content: center;
 }
-.tile.sel .tile-chk::after {
+.tile.sel .tile-chk::after {       /* vybraný stav = „✓" */
   content:'';
   width:8px;height:5px;
   border-left:2px solid white;
