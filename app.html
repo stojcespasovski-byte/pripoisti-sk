@@ -409,6 +409,31 @@ select.entry-input option { background: #1a1a1a; color: white; }
   border-radius: 6px; padding: 4px 9px;
 }
 
+/* NEUVEDENA — dlaždice, ktoré Pillow pre dané vozidlo nevie oceniť */
+.tile.unavailable { opacity: .5; cursor: not-allowed; filter: grayscale(1); }
+.tile.unavailable:hover { border-color: var(--border); background: transparent; }
+.tile.unavailable .tile-chk { display: none; }
+.tile.unavailable .tile-price { visibility: hidden; }
+.tile.unavailable .tile-note { display: none; }
+.tile.unavailable::after {
+  content: "Pre toto vozidlo nedostupné";
+  grid-area: price; align-self: center; justify-self: start;
+  font-size: 11px; font-weight: 600;
+  color: rgba(255,255,255,.5);
+  background: rgba(255,255,255,.06);
+  border-radius: 6px; padding: 4px 9px;
+}
+/* banner keď je časť pripoistení nedostupná (vozidlo mimo cenníka) */
+.tiles-partial {
+  display: none;
+  margin-bottom: 16px; padding: 12px 16px;
+  background: rgba(251,191,36,.08);
+  border: 1px solid rgba(251,191,36,.28);
+  border-radius: 10px;
+  font-size: 13px; color: #fbbf24; line-height: 1.55;
+}
+.tiles-partial b { color: #fcd34d; }
+
 .calc-cta {
   background: var(--grad);
   color: white;
@@ -963,6 +988,10 @@ footer {
       </div>
 
       <div class="calc-label" id="tiles-label" style="margin-top:24px;">Vyberte pripoistenia, ktoré chcete:</div>
+      <div class="tiles-partial" id="tiles-partial">
+        Toto vozidlo sa nenašlo v cenníku — vieme oceniť len <b>asistenciu, úraz a batožinu</b>.
+        Pre plné krytie kliknite <b>„Je to iné auto?"</b> pri vozidle a vyplňte ho ručne.
+      </div>
       <div class="tiles-grid" id="tiles">
         <div class="tile" data-id="havaria" data-price="12.5" onclick="toggleTile(this)">
           <div class="tile-chk"></div>
@@ -3980,11 +4009,7 @@ async function recalcPrices(ecvWarning) {
   showEntryLoader();
   try {
     const prices = await fetchPillowPrices();
-    let applied = 0;
-    document.querySelectorAll('.tile').forEach(tile => {
-      const p = prices[tile.dataset.id];
-      if (p != null && p > 0) { tile.dataset.price = p.toFixed(2); applied++; }
-    });
+    const applied = applyTilePrices(prices);
     renderTilePrices();
     updateCalc();
     hideEntryLoader();
@@ -4031,12 +4056,8 @@ async function triggerLookup() {
     // 3. Pillow ceny
     const prices = await fetchPillowPrices();
 
-    // 4. Naplniť dlaždice reálnymi cenami
-    let applied = 0;
-    document.querySelectorAll('.tile').forEach(tile => {
-      const p = prices[tile.dataset.id];
-      if (p != null && p > 0) { tile.dataset.price = p.toFixed(2); applied++; }
-    });
+    // 4. Naplniť dlaždice (nedostupné → označiť)
+    const applied = applyTilePrices(prices);
     renderTilePrices();
     updateCalc();
 
@@ -4089,9 +4110,31 @@ function setFreq(mult, label, el) {
   updateCalc();
 }
 
+/* Naplní dlaždice cenami; ktoré Pillow neocenil (napr. NEUVEDENA) → označí nedostupné.
+   Vráti počet ocenených dlaždíc. */
+function applyTilePrices(prices) {
+  let applied = 0, unavailable = 0;
+  document.querySelectorAll('.tile').forEach(tile => {
+    const p = prices[tile.dataset.id];
+    if (p != null && p > 0) {
+      tile.dataset.price = p.toFixed(2);
+      tile.classList.remove('unavailable');
+      applied++;
+    } else {
+      tile.classList.add('unavailable');
+      tile.classList.remove('sel');           // nedostupné nemôže ostať vybrané
+      unavailable++;
+    }
+  });
+  const banner = document.getElementById('tiles-partial');
+  if (banner) banner.style.display = (unavailable > 0 && applied > 0) ? 'block' : 'none';
+  return applied;
+}
+
 function renderTilePrices() {
   const pf = pillowFreqForMult(currentMult);
   document.querySelectorAll('.tile').forEach(tile => {
+    if (tile.classList.contains('unavailable')) return;   // cena skrytá, poznámku rieši CSS
     const priceEl = tile.querySelector('.tile-price');
     const val = (monthEqFor(tile.dataset.id, pf) * currentMult).toFixed(2).replace('.', ',');
     priceEl.innerHTML = `€${val} <span>/${currentFreqLabel}</span>`;
@@ -4099,7 +4142,7 @@ function renderTilePrices() {
 }
 
 function toggleTile(el) {
-  if (el.classList.contains('disabled')) return;   // vypnutá inou voľbou
+  if (el.classList.contains('disabled') || el.classList.contains('unavailable')) return;   // vypnutá / nedostupná
   el.classList.toggle('sel');
   syncTileConstraints();
   updateCalc();
