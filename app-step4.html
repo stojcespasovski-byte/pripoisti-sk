@@ -661,6 +661,18 @@ async function submitOrder() {
     // 2) kontrolný návrh (createPolicy=false)
     const check = parseSave(await pillowCall(uid, 'par/policies/save/AP2', buildSaveXML(rate.calcId, false, freq)));
     if (check.errors.length && !check.calcId && !check.policyId) throw new Error(check.errors[0]);
+    // 2b) PDF návrhu — MUSÍ byť teraz: po save-check je kalkulácia v stave PRE,
+    //     po finálnom uzatvorení už print preview nefunguje ("Kalkulace musí být ve stavu PRE")
+    let pdfBase64 = null;
+    try {
+      const pdfRes = await fetch(`${PILLOW.BASE}/par/policies/print/AP2/policyPreview/${check.calcId || rate.calcId}/print`, {
+        method: 'POST', headers: { 'Content-Type': 'text/xml; charset=utf-8', 'RestUid': uid },
+      });
+      if (pdfRes.ok) {
+        const blob = await pdfRes.blob();
+        pdfBase64 = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(blob); });
+      }
+    } catch (_) { /* best-effort — e-mail pôjde bez PDF */ }
     // 3) finálne uzatvorenie (createPolicy=true)
     const final = parseSave(await pillowCall(uid, 'par/policies/save/AP2', buildSaveXML(check.calcId || rate.calcId, true, freq)));
     if (!final.policyId) throw new Error(final.errors[0] || 'Uzatvorenie zmluvy zlyhalo.');
@@ -672,7 +684,7 @@ async function submitOrder() {
 
     localStorage.removeItem('pripoisti_order');
     showSuccess(final.policyId, final.varSym, bcrmOk);
-    sendClientEmail(final.policyId, final.varSym, check.calcId || rate.calcId);   // fire-and-forget
+    sendClientEmail(final.policyId, final.varSym, pdfBase64);   // fire-and-forget
   } catch (e) {
     console.error(e);
     if (uid) pillowLogout(uid);
@@ -732,27 +744,12 @@ function showSuccess(policyId, varSym, bcrmOk) {
   window.scrollTo({ top: 0 });
 }
 
-/* ── E-mail klientovi (PDF návrhu + QR + odkaz na platbu) — best-effort ── */
-async function sendClientEmail(policyId, varSym, calcId) {
+/* ── E-mail klientovi (PDF návrhu + QR + odkaz na platbu) — best-effort.
+   pdfBase64 prichádza zo submitOrder (stiahnuté po save-check, kým bola kalkulácia v PRE). ── */
+async function sendClientEmail(policyId, varSym, pdfBase64) {
   const to = (P.email || '').trim();
   if (!to) return;
   const setStatus = (t, c) => { const el = document.getElementById('email-status'); if (el) { el.textContent = t; el.style.color = c || 'rgba(255,255,255,.4)'; } };
-
-  // PDF návrhu zo Pillow (best-effort)
-  let pdfBase64 = null;
-  try {
-    if (calcId) {
-      const uid = await pillowAuth();
-      const res = await fetch(`${PILLOW.BASE}/par/policies/print/AP2/policyPreview/${calcId}/print`, {
-        method: 'POST', headers: { 'Content-Type': 'text/xml; charset=utf-8', 'RestUid': uid },
-      });
-      await pillowLogout(uid);
-      if (res.ok) {
-        const blob = await res.blob();
-        pdfBase64 = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(blob); });
-      }
-    }
-  } catch (_) { /* pošleme bez PDF */ }
 
   try {
     const freqLabel = (order.freq?.label || 'mesačne');
