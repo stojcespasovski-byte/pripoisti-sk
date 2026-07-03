@@ -4390,9 +4390,9 @@ function updateCalc() {
     if (mult === 12) {
       extraEl.textContent = '';
     } else {
-      const fairInstallment = annualYearly * (mult / 12);
-      const diff = installment - fairInstallment;
-      extraEl.textContent = diff > 0.005 ? `+€${diff.toFixed(2).replace('.', ',')} oproti ročnej` : '';
+      // ročný preplatok oproti ročnej platbe (rovnaká báza pre všetky karty)
+      const yearDiff = installment * (12 / mult) - annualYearly;
+      extraEl.textContent = yearDiff > 0.005 ? `+€${yearDiff.toFixed(2).replace('.', ',')}/rok oproti ročnej` : '';
     }
   });
 
