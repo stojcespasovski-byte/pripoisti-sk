@@ -468,6 +468,9 @@ select.entry-input option { background: #1a1a1a; color: white; }
 .im-list { list-style: none; padding: 0; margin: 0; }
 .im-list li { position: relative; padding-left: 22px; margin-bottom: 8px; font-size: 14px; color: rgba(255,255,255,.78); line-height: 1.5; }
 .im-list li::before { content: '✓'; position: absolute; left: 0; color: var(--o); font-weight: 800; }
+.im-excl-label { color: rgba(239,68,68,.85); }
+.im-list.im-excl li::before { content: '✕'; color: rgba(239,68,68,.75); }
+.im-list.im-excl li { color: rgba(255,255,255,.6); }
 .im-params { display: flex; flex-direction: column; }
 .im-param { display: flex; justify-content: space-between; gap: 14px; font-size: 13px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
 .im-param span:first-child { color: rgba(255,255,255,.5); }
@@ -4181,87 +4184,137 @@ function setFreq(mult, label, el) {
 }
 
 /* ─── VIAC INFO K PRIPOISTENIU ───
-   Obsah opretý o Pillow IPID + varianty, ktoré posielame. Presné sumy/limity/spoluúčasť
-   sa riadia poistnou zmluvou (uvedené v pätke modalu). */
+   Obsah verne podľa Pillow Príručky poistenia vozidiel (20231031) — sekcie
+   „Aké udalosti sú poistené / nie sú poistené" per vankúš + varianty, ktoré
+   posielame. Presné znenie sa riadi poistnou zmluvou a podmienkami. */
 const INFO_CONTENT = {
   havaria: {
     title: 'Havária a zrážka so zverou',
     cover: [
-      'Škody na vašom vozidle pri dopravnej nehode — aj keď ste ju spôsobili vy.',
-      'Zrážka so zverou (napr. srna, diviak) — náraz do zvieraťa na ceste.',
-      'Poškodenie pri havárii bez ohľadu na vinníka.',
+      'Škody na vozidle pri strete, náraze, páde či vjazde do vody — aj keď nehodu zaviníte sami.',
+      'Chemické poškodenie laku a pád predmetu na vozidlo (konár, kvetináč…).',
+      'Súčasťou je aj Zrážka so zverou — stret so zvieraťom aj poškodenie zaparkovaného vozidla zvieraťom.',
     ],
-    params: [['Poistná suma', 'Všeobecná hodnota vozidla'], ['Spoluúčasť', '150 €']],
-    note: 'Obsahuje aj samostatné krytie „Zrážka so zverou" — nemusíte ho pridávať zvlášť.',
+    excl: [
+      'Škody výhradne na sklách či pneumatikách/diskoch — na sklá je pripoistenie Sklá.',
+      'Jazda pod vplyvom alkoholu/drog, súťaže, jazdy mimo ciest, použitie vozidla ako pracovný stroj.',
+      'Poruchy a prirodzené opotrebenie, nesprávna obsluha, vjazd do vody v zaplavenom území.',
+    ],
+    params: [['Poistná suma', 'Obvyklá cena vozidla'], ['Spoluúčasť (havária)', '150 €'], ['Spoluúčasť (zver)', 'Bez spoluúčasti']],
+    note: 'Nehodu, ktorú podľa zákona treba hlásiť, oznámte polícii — inak môže poisťovňa plnenie primerane znížiť.',
   },
   zver: {
     title: 'Zrážka so zverou',
     cover: [
-      'Škody na vozidle spôsobené nárazom do zvieraťa (lesná aj domáca zver).',
-      'Cielená ochrana pre tých, čo nechcú plnú havarijnú poistku.',
+      'Stret idúceho vozidla so zvieraťom.',
+      'Poškodenie zaparkovaného vozidla zvieraťom (napr. kuna prehryzie káble v motore).',
     ],
-    params: [['Poistná suma', 'Všeobecná hodnota vozidla'], ['Spoluúčasť', 'Bez spoluúčasti']],
+    excl: [
+      'Nepriame škody — ak sa zvieraťu vyhnete a skončíte v priekope, to kryje až Havária.',
+      'Škody spôsobené zvieraťom prepravovaným vo vozidle.',
+      'Škody výhradne na sklách či pneumatikách — na sklá je pripoistenie Sklá.',
+    ],
+    params: [['Poistná suma', 'Obvyklá cena vozidla'], ['Spoluúčasť', 'Bez spoluúčasti']],
+    note: 'Stret so zverou bezodkladne nahláste polícii; ak ho polícia nešetrí, spravte si fotodokumentáciu.',
   },
   kradez: {
     title: 'Krádež',
     cover: [
-      'Odcudzenie celého vozidla.',
-      'Krádež časti vozidla (napr. kolesá, katalyzátor, výbava).',
-      'Škody spôsobené pri pokuse o krádež alebo vlámaní.',
+      'Krádež celého vozidla (vrátane násilnej lúpeže).',
+      'Poškodenie vozidla v čase, keď je políciou evidované ako ukradnuté alebo neoprávnene používané.',
     ],
-    params: [['Poistná suma', 'Všeobecná hodnota vozidla'], ['Spoluúčasť', 'Bez spoluúčasti']],
-    note: 'Vozidlo musí byť zabezpečené podľa poistných podmienok.',
+    excl: [
+      'Vozidlo opustené neuzamknuté či nezabezpečené podľa pokynov výrobcu.',
+      'Zmocnenie sa vozidla podvodom alebo originálnym kľúčom ponechaným bez dozoru.',
+      '„Požičanie" vozidla osobou zo spoločnej domácnosti sa nepovažuje za krádež.',
+    ],
+    params: [['Poistná suma', 'Obvyklá cena vozidla'], ['Spoluúčasť', 'Bez spoluúčasti']],
+    note: 'Krádež bezodkladne nahláste polícii. Technický preukaz a kľúče nenechávajte vo vozidle.',
   },
   priroda: {
     title: 'Prírodná udalosť',
     cover: [
-      'Víchrica, krupobitie, blesk.',
-      'Povodeň, záplava, zosuv pôdy.',
-      'Pád stromu, konára alebo iného predmetu na vozidlo.',
+      'Krupobitie, víchrica (aj tornádo), priamy úder blesku, požiar, výbuch.',
+      'Povodeň, záplava, zosuv pôdy či skál, zemetrasenie.',
+      'Pád stromu či stožiara, zosuv alebo ťarcha snehu a námrazy.',
     ],
-    params: [['Poistná suma', 'Všeobecná hodnota vozidla'], ['Spoluúčasť', 'Bez spoluúčasti']],
+    excl: [
+      'Vjazd do súvislej vody a náraz do už ležiacej prekážky (napr. deň starý spadnutý strom) — to kryje Havária.',
+      'Škody výhradne na sklách či pneumatikách — na sklá je pripoistenie Sklá.',
+      'Požiar/výbuch spôsobený úmyselne cudzou osobou (to kryje Vandalizmus) alebo poruchou vozidla.',
+    ],
+    params: [['Poistná suma', 'Obvyklá cena vozidla'], ['Spoluúčasť', 'Bez spoluúčasti']],
   },
   skla: {
     title: 'Sklá',
     cover: [
-      'Čelné, zadné aj bočné sklá.',
-      'Oprava (scelenie prasklín) alebo výmena skla.',
+      'Všetky výhľadové sklá vrátane strešného okna a skiel spätných zrkadiel.',
+      'Náhodné poškodenie či zničenie — typicky kamienok odletený od iného vozidla.',
+      'Pri výmene aj povinne vymieňané časti (napr. senzory) a ich kalibrácia.',
     ],
-    params: [['Poistná suma', 'Obvyklá cena výmeny skla'], ['Spoluúčasť', 'Väčšinou bez spoluúčasti']],
-    note: 'Opravou skla sa rozumie scelenie prasklín bez nutnosti výmeny.',
+    excl: [
+      'Udalosti, pri ktorých je poškodené aj niečo iné než sklo — tie riešia ostatné pripoistenia (výnimka: krupobitie).',
+      'Veci spojené so sklom (diaľničné známky, fólie) a dodatočné úpravy skiel.',
+    ],
+    params: [['Poistná suma', 'Obvyklá cena výmeny skla']],
+    note: 'O spôsobe opravy (scelenie vs. výmena) rozhoduje poisťovňa podľa technologických noriem.',
   },
   vandalizmus: {
     title: 'Vandalizmus',
     cover: [
-      'Úmyselné poškodenie vozidla cudzou osobou.',
-      'Poškriabaný lak, zničené zrkadlá, poškodená karoséria.',
+      'Úmyselné poškodenie zaparkovaného vozidla cudzou osobou.',
+      'Krádež časti vozidla alebo jeho poškodenie pri pokuse o krádež.',
     ],
-    params: [['Poistná suma', 'Všeobecná hodnota vozidla'], ['Spoluúčasť', '150 €']],
+    excl: [
+      'Poškodenie prevádzkou iného vozidla (napr. zlé cúvanie) — nejde o úmysel, to kryje Havária.',
+      'Škody výhradne na sklách či pneumatikách — na sklá je pripoistenie Sklá.',
+      'Vozidlo opustené neuzamknuté či nezabezpečené.',
+    ],
+    params: [['Poistná suma', 'Obvyklá cena vozidla'], ['Spoluúčasť', '150 €']],
+    note: 'Vandalizmus bezodkladne nahláste polícii.',
   },
   asistencia: {
     title: 'Asistencia',
     cover: [
-      'Nonstop pomoc v SR aj v Európe pri poruche aj nehode.',
-      'Odťah vozidla, oprava na mieste, defekt, vybitá batéria.',
-      'Náhradné vozidlo alebo ubytovanie pri odstavení.',
+      'Pomoc pri nehode, poruche, vandalizme, prírodnej udalosti aj krádeži.',
+      'Oprava na mieste (do 1 hod.) alebo odťah — v SR bez limitu km, v zahraničí do najbližšieho servisu.',
+      'Náhradné vozidlo (2 dni, pri krádeži +10 dní), náhradná doprava, ubytovanie posádky (2 noci), úschova (10 dní).',
     ],
-    params: [['Variant', 'Rozšírená (L)']],
+    excl: [
+      'Služby organizované mimo asistenčnej centrály poisťovne sa nepreplácajú.',
+      'Materiál a náhradné diely pri oprave na mieste si hradí klient.',
+    ],
+    params: [['Variant', 'Optimálne v SR a EÚ']],
+    note: 'Pri udalosti vždy volajte asistenčnú linku poisťovne — nikdy „lovcov nehôd".',
   },
   uraz: {
     title: 'Úraz',
     cover: [
-      'Krytie vodiča aj spolucestujúcich pri dopravnej nehode.',
-      'Trvalé následky úrazu a úmrtie následkom nehody.',
+      'Smrť vodiča následkom úrazu pri nehode — jednorazovo 20 000 €.',
+      'Invalidita vodiča (pokles schopnosti zárobku aspoň o 40 %) — 20 000 €.',
+      'Hospitalizácia vodiča — 20 € za každú noc (max. 1 rok).',
+      'Smrť oboch rodičov — 400 € mesačne každému dieťaťu až do 25 rokov.',
     ],
-    params: [['Variant', 'Úraz 2'], ['Rozsah', 'Podľa počtu miest vo vozidle']],
+    excl: [
+      'Jazda pod vplyvom alkoholu/drog, súťaže, použitie vozidla na trestnú činnosť.',
+    ],
+    params: [['Variant', 'Úraz vodiča']],
+    note: 'Spolujazdcov pri nehode kryje PZP vinníka — tento vankúš chráni najmä vodiča.',
   },
   batozina: {
     title: 'Batožina',
     cover: [
-      'Veci a batožina prepravované vo vozidle.',
-      'Elektronika, oblečenie a osobné veci poškodené alebo odcudzené pri nehode či krádeži.',
+      'Batožina, detské sedačky a osobné veci vo vozidle alebo v strešnom boxe.',
+      'Športová výbava (bicykle, lyže…) na uzamknutom nosiči.',
+      'Pri nehode, strete so zverou, prírodnej udalosti, krádeži, lúpeži či vandalizme.',
     ],
-    params: [['Limit', '750 €']],
+    excl: [
+      'Krádež z neuzamknutého vozidla/boxu a neuzamknutej výbavy na nosiči.',
+      'Doklady, peniaze, šperky, umelecké predmety, zvieratá.',
+      'Elektronika ponechaná v aute cez noc mimo stráženého parkoviska.',
+    ],
+    params: [['Limit plnenia', '750 €']],
+    note: 'Plnenie sa vypláca v časovej cene (zohľadňuje vek a opotrebenie vecí).',
   },
 };
 
@@ -4273,6 +4326,8 @@ function openInfoModal(e, id) {
   let html = '';
   if (c.cover && c.cover.length)
     html += '<div class="im-section-label">Čo kryje</div><ul class="im-list">' + c.cover.map(x => `<li>${x}</li>`).join('') + '</ul>';
+  if (c.excl && c.excl.length)
+    html += '<div class="im-section-label im-excl-label">Čo nekryje (hlavné výluky)</div><ul class="im-list im-excl">' + c.excl.map(x => `<li>${x}</li>`).join('') + '</ul>';
   if (c.params && c.params.length)
     html += '<div class="im-section-label">Parametre</div><div class="im-params">' + c.params.map(p => `<div class="im-param"><span>${p[0]}</span><span>${p[1]}</span></div>`).join('') + '</div>';
   if (c.note) html += `<div class="im-note">${c.note}</div>`;
