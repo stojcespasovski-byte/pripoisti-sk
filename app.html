@@ -972,7 +972,8 @@ footer {
           </div>
           <div class="entry-field-sm">
             <div class="entry-label">Obec</div>
-            <input class="entry-input" id="f-obec-szco" placeholder="Bratislava" oninput="onFieldInput()">
+            <input class="entry-input" id="f-obec-szco" placeholder="Bratislava" autocomplete="off" oninput="onFieldInput()">
+            <input type="hidden" id="f-psc-szco">
           </div>
           <div class="entry-field-sm">
             <div class="entry-label">EČV</div>
@@ -3691,7 +3692,7 @@ function buildRateXML(freq = 12, codes = null, riskList = null) {
     ${xe('withoutRegistration', 'false')}
   </xml-par-ap2-vehicle></vehicle>
   ${xe('partyType', partyType)}
-  ${partyType === 'FORC' ? xe('personalIdentification', p.rc) : ''}
+  ${partyType === 'FORC' ? xe('personalIdentification', (p.rc || '').replace(/\D/g, '')) : ''}
   ${isCompany ? xe('companyIdentification', p.ico) : ''}
   <address><xml-par-address>
     ${xe('country', 'SVK')}
@@ -3870,7 +3871,10 @@ function setupObecAutocomplete(inputId, pscInputId) {
   input.addEventListener('blur', () => setTimeout(closeDropdown, 150));
 }
 
-document.addEventListener('DOMContentLoaded', () => setupObecAutocomplete('f-obec-fo', 'f-psc-fo'));
+document.addEventListener('DOMContentLoaded', () => {
+  setupObecAutocomplete('f-obec-fo', 'f-psc-fo');
+  setupObecAutocomplete('f-obec-szco', 'f-psc-szco');
+});
 
 /* ─── TYPE SWITCHER + ENTRY FIELDS ─── */
 let currentType = 'po';
@@ -4088,7 +4092,10 @@ async function triggerLookup() {
       const ico  = t === 'po' ? fieldVal('f-ico') : fieldVal('f-ico-szco');
       const obec = t === 'po' ? '' : fieldVal('f-obec-szco');
       const c = await apiLookupCompany(ico);
-      lookup.poistnik = { typ: t, ico, nazov: c.nazov || '', obec: c.mesto || obec, psc: c.psc || '',
+      // SZČO (živnostník) často nie je v ORSR → lookup zlyhá; PSČ vtedy z číselníka obcí
+      const effObec = c.mesto || obec;
+      const psc = c.psc || fieldVal('f-psc-szco') || pscForObec(effObec);
+      lookup.poistnik = { typ: t, ico, nazov: c.nazov || '', obec: effObec, psc,
                           ulica: c.ulica || '', cislo: c.cislo || '' };
     } else {
       const obec = fieldVal('f-obec-fo');

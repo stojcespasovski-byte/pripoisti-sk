@@ -360,7 +360,7 @@ select option { background: #1a1a1a; color: white; }
 
         <div class="row" style="grid-template-columns:160px 1fr;">
           <div class="field"><label>IČO</label><input class="mono" id="szco-ico" value="" readonly></div>
-          <div class="field"><label>Názov živnosti</label><input id="szco-nazov" value="" readonly></div>
+          <div class="field"><label>Názov živnosti</label><input id="szco-nazov" data-required="true" placeholder="Obchodné meno živnosti"><div class="field-error">Zadajte názov živnosti</div></div>
         </div>
 
         <div class="row c4">
@@ -371,7 +371,7 @@ select option { background: #1a1a1a; color: white; }
         </div>
 
         <div class="row c4">
-          <div class="field"><label>Rodné číslo</label><input class="mono" id="szco-rc" value="" readonly></div>
+          <div class="field"><label>Rodné číslo</label><input class="mono" id="szco-rc" data-required="true" placeholder="9001011234"><div class="field-error">Zadajte rodné číslo</div></div>
           <div class="field"><label>Číslo dokladu</label><input class="mono" placeholder="EA000000"></div>
           <div class="field"><label>Telefón</label><input class="mono" id="szco-telefon" data-required="true" placeholder="+421 900 000 000"><div class="field-error">Zadajte telefónne číslo</div></div>
           <div class="field"><label>E-mail</label><input type="email" id="szco-email" data-required="true" placeholder="meno@email.sk"><div class="field-error">Zadajte e-mail</div></div>
@@ -561,6 +561,7 @@ function goToSummary() {
     pk.email = g('po-email'); pk.tel = g('po-telefon'); pk.ulica = g('po-ulica'); pk.cislo = g('po-cislo');
   } else if (typ === 'szco') {
     pk.meno = g('szco-meno'); pk.priezvisko = g('szco-priezvisko');
+    pk.nazov = g('szco-nazov'); pk.rc = g('szco-rc');            // editovateľné — lookup živnostníka nemusí nájsť
     pk.email = g('szco-email'); pk.tel = g('szco-telefon'); pk.ulica = g('szco-ulica'); pk.cislo = g('szco-cislo');
   } else if (typ === 'cudzinec') {
     pk.meno = g('cz-meno'); pk.priezvisko = g('cz-priezvisko'); pk.datumNar = g('cz-datum-narodenia');

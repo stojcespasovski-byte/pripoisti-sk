@@ -558,6 +558,7 @@ function vehicleXML() {
     ${xe('withoutRegistration', 'false')}
   </xml-par-ap2-vehicle></vehicle>`;
 }
+const cleanRc = rc => (rc || '').replace(/\D/g, '');   // RČ bez lomky/medzier
 function partyXML() {
   const pt = PARTYTYPE[typ] || 'FORC';
   const isCo = pt === 'PO' || pt === 'OSVC';
@@ -566,7 +567,7 @@ function partyXML() {
     ${xe('partyType', pt)}
     ${isCo ? xe('companyIdentification', P.ico) : ''}
     ${isCo ? xe('companyName', P.nazov) : ''}
-    ${pt === 'FORC' ? xe('personalIdentification', P.rc) : ''}
+    ${(pt === 'FORC' || pt === 'OSVC') ? xe('personalIdentification', cleanRc(P.rc)) : ''}
     ${hasName ? xe('forename', P.meno) : ''}
     ${hasName ? xe('surname', P.priezvisko) : ''}
     ${P.datumNar ? xe('birthdate', P.datumNar) : ''}
@@ -588,7 +589,7 @@ function buildRateXML(freq) {
   ${xe('paymentFrequency', String(freq))}
   ${vehicleXML()}
   ${xe('partyType', pt)}
-  ${pt === 'FORC' ? xe('personalIdentification', P.rc) : ''}
+  ${pt === 'FORC' ? xe('personalIdentification', cleanRc(P.rc)) : ''}
   ${isCo ? xe('companyIdentification', P.ico) : ''}
   <address><xml-par-address>${xe('country', 'SVK')}${xe('zipCode', cleanPsc(P.psc))}${xe('city', P.obec)}</xml-par-address></address>
 ${variantsXML()}
