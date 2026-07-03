@@ -135,6 +135,15 @@ nav {
   padding: 20px 24px;
   display: flex; flex-direction: column; gap: 12px;
 }
+.submit-error {
+  background: rgba(239,68,68,.09);
+  border: 1px solid rgba(239,68,68,.35);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 13px; line-height: 1.55;
+  color: #fca5a5;
+}
+.submit-error b { color: #fecaca; }
 .btn-back {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   height: 46px; padding: 0 22px;
@@ -316,6 +325,7 @@ nav {
       <!-- ACTIONS -->
       <div class="card">
         <div class="card-foot">
+          <div class="submit-error" id="submit-error" style="display:none;"></div>
           <button class="cta" id="submit-btn" onclick="submitOrder()">✓ Potvrdiť a odoslať</button>
           <button class="btn-back" onclick="history.back()">← Späť na úpravu údajov</button>
         </div>
@@ -642,11 +652,43 @@ async function sendBcrm(policyId, varSym) {
   return r.json().catch(() => ({}));
 }
 
+/* ── Chybové hlášky — inline box namiesto alertu ── */
+function showSubmitError(html) {
+  const el = document.getElementById('submit-error');
+  if (!el) { alert(html.replace(/<[^>]+>/g, '')); return; }   // fallback
+  el.innerHTML = html;
+  el.style.display = '';
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function clearSubmitError() {
+  const el = document.getElementById('submit-error');
+  if (el) { el.style.display = 'none'; el.innerHTML = ''; }
+}
+
+/* Preklad známych Pillow chýb na zrozumiteľnú slovenčinu (+ čo má klient spraviť).
+   Neznáme chyby sa zobrazia v pôvodnom znení. */
+function friendlyError(msg) {
+  const m = String(msg || '');
+  if (/e-?mail.*(používá|pouziva|jiný zákazník)/i.test(m)) {
+    return '<b>Tento e-mail už je v poisťovni registrovaný na iného zákazníka.</b><br>' +
+           'Každý klient (osoba či firma) musí mať v poisťovni Pillow vlastný e-mail. ' +
+           'Vráťte sa na úpravu údajov a zadajte e-mail poisťovanej osoby/firmy.';
+  }
+  if (/formát RČ|format RC|Nesprávny formát/i.test(m)) {
+    return '<b>Rodné číslo nemá správny formát.</b><br>Skontrolujte ho a zadajte bez lomky, napr. 9001011234.';
+  }
+  if (/musí být vyplněna|musí byť vyplnen/i.test(m)) {
+    return '<b>Poisťovňa hlási chýbajúci údaj:</b><br>' + m;
+  }
+  return '<b>Nepodarilo sa odoslať zmluvu.</b><br>' + m;
+}
+
 /* ── SUBMIT ── */
 async function submitOrder() {
+  clearSubmitError();
   const required = document.querySelectorAll('.suh-required');
-  if (![...required].every(c => c.checked)) { alert('Pre pokračovanie musíte odsúhlasiť všetky povinné súhlasy.'); return; }
-  if (!order.tiles || !order.tiles.length) { alert('Neboli vybrané žiadne pripoistenia.'); return; }
+  if (![...required].every(c => c.checked)) { showSubmitError('<b>Chýbajú súhlasy.</b><br>Pre pokračovanie zaškrtnite všetky povinné súhlasy.'); return; }
+  if (!order.tiles || !order.tiles.length) { showSubmitError('<b>Neboli vybrané žiadne pripoistenia.</b><br><a href="app.html" style="color:#fecaca;">Vrátiť sa na výber</a>'); return; }
 
   const btn = document.getElementById('submit-btn');
   const orig = btn ? btn.innerHTML : '';
@@ -690,7 +732,7 @@ async function submitOrder() {
     console.error(e);
     if (uid) pillowLogout(uid);
     if (btn) { btn.disabled = false; btn.style.opacity = ''; btn.innerHTML = orig; }
-    alert('Nepodarilo sa odoslať zmluvu: ' + (e.message || e));
+    showSubmitError(friendlyError(e.message || e));
   }
 }
 
