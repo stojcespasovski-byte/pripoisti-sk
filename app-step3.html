@@ -204,9 +204,12 @@ select option { background: #1a1a1a; color: white; }
   .steps-wrap, .page-wrap { padding-left: 20px; padding-right: 20px; }
   .card-body { padding: 22px; }
   .row.c2, .row.c3, .row.c4, .row.addr { grid-template-columns: 1fr 1fr; }
+  .row > *, .field { min-width: 0; }
   .step-label { display: none; }
   .card-foot { padding: 18px 22px; flex-direction: column-reverse; gap: 12px; }
   .btn-back, .cta { width: 100%; justify-content: center; }
+  .block-hd { flex-wrap: wrap; }
+  .start-date-box { flex: 1 1 100% !important; margin-left: 0 !important; margin-top: 10px; }
 }
 </style>
 </head>
@@ -270,7 +273,7 @@ select option { background: #1a1a1a; color: white; }
           <svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         </div>
         <div class="block-title">Začiatok poistenia</div>
-        <div style="flex:0 0 220px;margin-left:16px;">
+        <div class="start-date-box" style="flex:0 0 220px;margin-left:16px;">
           <input type="date" id="poistenie-od" value="" class="field-input-inline">
         </div>
       </div>

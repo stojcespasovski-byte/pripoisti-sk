@@ -176,6 +176,9 @@ nav {
   .col-right { position: static; }
   .row.c4 { grid-template-columns: 1fr 1fr; }
   .step-label { display: none; }
+  /* dlhé hodnoty (e-mail, VIN) nesmú roztiahnuť grid → horizontálny scroll */
+  .row > *, .fv { min-width: 0; }
+  .fv .val { word-break: break-word; }
 }
 </style>
 </head>
