@@ -514,6 +514,19 @@ if (typ === 'po') {
   setV('cz-obec', P.obec); setV('cz-psc', P.psc);
 }
 
+/* Validácia rodného čísla (SK/CZ): 9–10 číslic, platný mesiac/deň, 10-miestne deliteľné 11 */
+function validRc(rc) {
+  const d = (rc || '').replace(/\D/g, '');
+  if (d.length !== 9 && d.length !== 10) return false;
+  const m = parseInt(d.slice(2, 4), 10) % 50;       // ženy +50
+  const mm = m > 20 ? m - 20 : m;                    // pridelené +20 (od 2004)
+  if (mm < 1 || mm > 12) return false;
+  const day = parseInt(d.slice(4, 6), 10);
+  if (day < 1 || day > 31) return false;
+  if (d.length === 10 && parseInt(d, 10) % 11 !== 0) return false;
+  return true;
+}
+
 function validateForm() {
   let firstInvalid = null;
   let valid = true;
@@ -522,8 +535,18 @@ function validateForm() {
     if (block.style.display === 'none') return;
     block.querySelectorAll('input[data-required="true"]').forEach(input => {
       const filled = input.value.trim().length > 0;
-      input.classList.toggle('error', !filled);
-      if (!filled) {
+      let ok = filled;
+      // rodné číslo: nielen vyplnené, ale aj platné (nech to nepadá až v poisťovni)
+      if (ok && input.id === 'szco-rc' && !validRc(input.value)) {
+        ok = false;
+        const err = input.parentElement.querySelector('.field-error');
+        if (err) err.textContent = 'Rodné číslo nie je platné — zadajte ho bez lomky, napr. 9001011234';
+      } else if (!filled && input.id === 'szco-rc') {
+        const err = input.parentElement.querySelector('.field-error');
+        if (err) err.textContent = 'Zadajte rodné číslo';
+      }
+      input.classList.toggle('error', !ok);
+      if (!ok) {
         valid = false;
         if (!firstInvalid) firstInvalid = input;
       }
