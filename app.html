@@ -4088,7 +4088,8 @@ async function triggerLookup() {
       const ico  = t === 'po' ? fieldVal('f-ico') : fieldVal('f-ico-szco');
       const obec = t === 'po' ? '' : fieldVal('f-obec-szco');
       const c = await apiLookupCompany(ico);
-      lookup.poistnik = { typ: t, ico, nazov: c.nazov || '', obec: c.mesto || obec, psc: c.psc || '' };
+      lookup.poistnik = { typ: t, ico, nazov: c.nazov || '', obec: c.mesto || obec, psc: c.psc || '',
+                          ulica: c.ulica || '', cislo: c.cislo || '' };
     } else {
       const obec = fieldVal('f-obec-fo');
       const psc  = fieldVal('f-psc-fo') || pscForObec(obec);   // z číselníka obcí

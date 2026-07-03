@@ -504,8 +504,10 @@ setV('v-typ', V.typ || 'OA');
 // Poistník — readonly polia z lookupu
 if (typ === 'po') {
   setV('po-ico', P.ico); setV('po-nazov', P.nazov); setV('po-obec', P.obec); setV('po-psc', P.psc);
+  setV('po-ulica', P.ulica); setV('po-cislo', P.cislo);          // z company lookupu (editovateľné)
 } else if (typ === 'szco') {
   setV('szco-ico', P.ico); setV('szco-nazov', P.nazov); setV('szco-rc', P.rc); setV('szco-obec', P.obec); setV('szco-psc', P.psc);
+  setV('szco-ulica', P.ulica); setV('szco-cislo', P.cislo);
 } else if (typ === 'fo') {
   setV('fo-rc', P.rc); setV('fo-obec', P.obec); setV('fo-psc', P.psc);
 } else if (typ === 'cudzinec') {
