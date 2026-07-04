@@ -33,17 +33,17 @@ nav {
 .step-num {
   width: 26px; height: 26px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 700; flex-shrink: 0;
+  font-size: 14px; font-weight: 700; flex-shrink: 0;
 }
 .step.done .step-num { background: var(--grad); color: white; }
 .step.active .step-num { background: var(--grad); color: white; }
-.step-label { font-size: 12px; font-weight: 600; white-space: nowrap; }
+.step-label { font-size: 14px; font-weight: 600; white-space: nowrap; }
 .step.done .step-label { color: rgba(255,255,255,.5); }
 .step.active .step-label { color: white; }
 .step-connector { flex: 1; height: 1px; background: var(--border); margin: 0 12px; }
 
 .page-wrap { max-width: 1100px; margin: 0 auto; padding: 8px 48px 140px; }
-.page-hint { font-size: 13px; color: rgba(255,255,255,.35); margin: 14px 0 20px; }
+.page-hint { font-size: 15px; color: rgba(255,255,255,.35); margin: 14px 0 20px; }
 
 .layout { display: grid; grid-template-columns: 1fr 320px; gap: 18px; align-items: start; }
 .col-left { display: flex; flex-direction: column; gap: 16px; }
@@ -71,21 +71,21 @@ nav {
 }
 .block-icon svg { width: 13px; height: 13px; }
 .block-title {
-  font-size: 11px; font-weight: 700; letter-spacing: .8px;
+  font-size: 13px; font-weight: 700; letter-spacing: .8px;
   text-transform: uppercase; color: rgba(255,255,255,.5);
 }
-.block-extra { font-size: 10px; color: rgba(255,255,255,.3); white-space: nowrap; margin-left: auto; }
+.block-extra { font-size: 12px; color: rgba(255,255,255,.3); white-space: nowrap; margin-left: auto; }
 
 .row { display: grid; gap: 14px; margin-bottom: 14px; }
 .row.c4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
 .row:last-child { margin-bottom: 0; }
 
 .fv label {
-  display: block; font-size: 10px; font-weight: 700;
+  display: block; font-size: 12px; font-weight: 700;
   letter-spacing: .5px; text-transform: uppercase;
   color: rgba(232,130,26,.65); margin-bottom: 4px;
 }
-.fv .val { font-size: 14px; color: white; padding: 4px 0; border-bottom: 1px solid var(--border); }
+.fv .val { font-size: 16px; color: white; padding: 4px 0; border-bottom: 1px solid var(--border); }
 .fv .val.mono { font-variant-numeric: tabular-nums; }
 .fv .val.empty { color: rgba(255,255,255,.25); }
 
@@ -94,15 +94,15 @@ nav {
   padding: 12px 0; border-bottom: 1px solid var(--border); gap: 10px;
 }
 .poistenie-row:last-child { border-bottom: none; }
-.poistenie-name { font-size: 14px; font-weight: 700; color: white; }
-.poistenie-desc { font-size: 11px; color: rgba(255,255,255,.35); margin-top: 3px; }
-.poistenie-price { font-size: 14px; font-weight: 800; color: var(--o); white-space: nowrap; flex-shrink: 0; }
+.poistenie-name { font-size: 16px; font-weight: 700; color: white; }
+.poistenie-desc { font-size: 13px; color: rgba(255,255,255,.35); margin-top: 3px; }
+.poistenie-price { font-size: 16px; font-weight: 800; color: var(--o); white-space: nowrap; flex-shrink: 0; }
 
 .celkom-row {
   display: flex; justify-content: space-between; align-items: baseline;
   padding: 16px 0 0; border-top: 2px solid var(--o); margin-top: 6px;
 }
-.celkom-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: rgba(255,255,255,.5); }
+.celkom-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: rgba(255,255,255,.5); }
 .celkom-val {
   font-size: 26px; font-weight: 900;
   background: var(--grad);
@@ -112,7 +112,7 @@ nav {
 
 .doc-item {
   display: flex; align-items: center; gap: 9px;
-  font-size: 13px; color: rgba(255,255,255,.6);
+  font-size: 15px; color: rgba(255,255,255,.6);
   cursor: pointer; text-decoration: none;
   padding: 10px 0; border-bottom: 1px solid var(--border);
   transition: color .15s;
@@ -124,7 +124,7 @@ nav {
 .suhlas-item {
   display: flex; align-items: flex-start; gap: 10px;
   padding: 10px 0; border-bottom: 1px solid var(--border);
-  font-size: 13px; color: rgba(255,255,255,.6);
+  font-size: 15px; color: rgba(255,255,255,.6);
 }
 .suhlas-item:last-child { border-bottom: none; }
 .suhlas-link { color: var(--o); text-decoration: none; }
@@ -140,7 +140,7 @@ nav {
   border: 1px solid rgba(239,68,68,.35);
   border-radius: 10px;
   padding: 12px 14px;
-  font-size: 13px; line-height: 1.55;
+  font-size: 15px; line-height: 1.55;
   color: #fca5a5;
 }
 .submit-error b { color: #fecaca; }
@@ -150,7 +150,7 @@ nav {
   border: 1.5px solid rgba(255,255,255,.12);
   border-radius: 11px; background: none;
   color: rgba(255,255,255,.5);
-  font-size: 14px; font-weight: 600;
+  font-size: 16px; font-weight: 600;
   font-family: 'Inter', sans-serif; cursor: pointer;
   transition: all .15s;
 }
@@ -167,7 +167,7 @@ nav {
 .cta:hover { opacity: .9; transform: translateY(-1px); }
 .cta:disabled { opacity: .4; cursor: not-allowed; transform: none; }
 
-.empty-state { font-size: 13px; color: rgba(255,255,255,.3); padding: 12px 0; }
+.empty-state { font-size: 15px; color: rgba(255,255,255,.3); padding: 12px 0; }
 
 @media (max-width: 880px) {
   nav { padding: 14px 20px; }
@@ -216,7 +216,7 @@ nav {
 <line x1="390.5" y1="116.8" x2="480.1" y2="116.8" stroke="#5b6173" stroke-width="2" stroke-linecap="round"/>
 </svg>
   </a></div>
-  <div style="font-size:12px;color:rgba(255,255,255,.35);">🔒 Bezpečné &amp; šifrované</div>
+  <div style="font-size:14px;color:rgba(255,255,255,.35);">🔒 Bezpečné &amp; šifrované</div>
 </nav>
 
 <div class="steps-wrap">
@@ -256,7 +256,7 @@ nav {
             <div class="block-title">Vozidlo</div>
           </div>
           <div class="row c4">
-            <div class="fv"><label>VIN</label><div class="val mono" id="s-vin" style="font-size:12px;">—</div></div>
+            <div class="fv"><label>VIN</label><div class="val mono" id="s-vin" style="font-size:14px;">—</div></div>
             <div class="fv"><label>EČV</label><div class="val mono" id="s-ecv">—</div></div>
             <div class="fv"><label>Číslo TP</label><div class="val mono" id="s-tp">—</div></div>
             <div class="fv"><label>Farba</label><div class="val" id="s-farba">—</div></div>
@@ -284,7 +284,7 @@ nav {
             <div class="block-title">Vybraté pripoistenia</div>
             <div class="block-extra" id="s-freq-label">—</div>
           </div>
-          <div style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:14px;">Začiatok poistenia: <strong id="s-poistenie-od" style="color:white;font-weight:600;">—</strong></div>
+          <div style="font-size:14px;color:rgba(255,255,255,.4);margin-bottom:14px;">Začiatok poistenia: <strong id="s-poistenie-od" style="color:white;font-weight:600;">—</strong></div>
           <div id="poistenia-list"></div>
           <div class="celkom-row">
             <div class="celkom-label">Celkom</div>
@@ -761,7 +761,7 @@ function showSuccess(policyId, varSym, bcrmOk) {
   const retUrl = location.origin + location.pathname + '?platba=navrat&z=' + encodeURIComponent(policyId);
   const payHref = `${API_BASE}/bcrm/payment/pay?vs=${encodeURIComponent(varSym || '')}&amount=${suma}&ret=${encodeURIComponent(retUrl)}`;
   const qrSrc = `${API_BASE}/bcrm/payment/qr?amount=${suma}&vs=${encodeURIComponent(varSym || '')}&due=${encodeURIComponent(due)}`;
-  const row = (k, v) => `<div style="display:flex;justify-content:space-between;gap:14px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:14px;"><span style="color:rgba(255,255,255,.45);">${k}</span><span style="color:#fff;font-weight:600;text-align:right;">${v}</span></div>`;
+  const row = (k, v) => `<div style="display:flex;justify-content:space-between;gap:14px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:16px;"><span style="color:rgba(255,255,255,.45);">${k}</span><span style="color:#fff;font-weight:600;text-align:right;">${v}</span></div>`;
 
   document.querySelector('.page-wrap').innerHTML = `
     <div style="max-width:640px;margin:0 auto;padding:48px 20px;">
@@ -770,13 +770,13 @@ function showSuccess(policyId, varSym, bcrmOk) {
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
         <h2 style="font-size:28px;font-weight:900;margin-bottom:10px;">Návrh zmluvy <span style="color:var(--o);font-family:monospace;">${policyId}</span> uzatvorený!</h2>
-        <p style="font-size:14px;color:rgba(255,255,255,.5);line-height:1.6;">Doklady${P.email ? ` posielame na <strong style="color:rgba(255,255,255,.75);">${P.email}</strong>` : ' vám pošleme e-mailom'}.</p>
-        <div id="email-status" style="font-size:12.5px;margin-top:6px;min-height:16px;color:rgba(255,255,255,.4);"></div>
+        <p style="font-size:16px;color:rgba(255,255,255,.5);line-height:1.6;">Doklady${P.email ? ` posielame na <strong style="color:rgba(255,255,255,.75);">${P.email}</strong>` : ' vám pošleme e-mailom'}.</p>
+        <div id="email-status" style="font-size:14px;margin-top:6px;min-height:16px;color:rgba(255,255,255,.4);"></div>
       </div>
 
       <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:22px 24px;">
         <div style="font-size:15px;font-weight:800;color:#fff;margin-bottom:4px;">Aktivujte zmluvu zaplatením poistného</div>
-        <div style="font-size:12.5px;color:rgba(255,255,255,.45);margin-bottom:14px;">Zmluva nadobudne platnosť až po zaplatení prvého poistného${due ? ` — najneskôr do <strong style="color:#fbbf24;">${dDot(due)}</strong>` : ''}.</div>
+        <div style="font-size:14px;color:rgba(255,255,255,.45);margin-bottom:14px;">Zmluva nadobudne platnosť až po zaplatení prvého poistného${due ? ` — najneskôr do <strong style="color:#fbbf24;">${dDot(due)}</strong>` : ''}.</div>
         <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;">
           <div style="flex:1;min-width:240px;">
             ${row('Platba', `€ ${suma.replace('.', ',')} <span style="color:rgba(255,255,255,.35);font-weight:400;">/${freqLabel}</span>`)}
@@ -786,16 +786,16 @@ function showSuccess(policyId, varSym, bcrmOk) {
             ${row('Príjemca', PILLOW_BENEFICIARY)}
           </div>
           <div style="text-align:center;">
-            <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:6px;">Naskenujte QR<br>v bankovej aplikácii</div>
+            <div style="font-size:13px;color:rgba(255,255,255,.4);margin-bottom:6px;">Naskenujte QR<br>v bankovej aplikácii</div>
             <img src="${qrSrc}" alt="QR platba" width="132" height="132" style="background:#fff;border-radius:10px;padding:6px;" onerror="this.parentElement.style.display='none'">
           </div>
         </div>
         <a href="${payHref}" style="display:block;text-align:center;margin-top:18px;background:var(--grad);color:white;padding:13px 24px;border-radius:10px;text-decoration:none;font-weight:800;font-size:15px;">Zaplatiť kartou online →</a>
       </div>
 
-      ${bcrmOk ? '' : '<p style="font-size:12px;color:rgba(255,180,80,.7);margin-top:12px;text-align:center;">Poznámka: záznam do CRM sa nepodarilo uložiť, kontaktujte podporu.</p>'}
+      ${bcrmOk ? '' : '<p style="font-size:14px;color:rgba(255,180,80,.7);margin-top:12px;text-align:center;">Poznámka: záznam do CRM sa nepodarilo uložiť, kontaktujte podporu.</p>'}
       <div style="text-align:center;margin-top:22px;">
-        <a href="index.html" style="color:rgba(255,255,255,.45);font-size:13px;text-decoration:none;">← Späť na úvod</a>
+        <a href="index.html" style="color:rgba(255,255,255,.45);font-size:15px;text-decoration:none;">← Späť na úvod</a>
       </div>
     </div>`;
   window.scrollTo({ top: 0 });
