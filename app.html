@@ -796,6 +796,8 @@ footer {
 
 /* ── mobil ── */
 @media (max-width: 640px) {
+  /* iOS Safari: input s písmom <16px spôsobí auto-zoom celej stránky */
+  .entry-input { font-size: 16px; height: 46px; }
   nav { padding: 10px 16px; }
   .nav-logo svg { height: 36px; }
   .nav-link { display: none; }               /* na mobile ostáva logo + CTA */
@@ -910,11 +912,11 @@ footer {
         <div class="entry-row" data-for="po">
           <div class="entry-field-sm">
             <div class="entry-label">IČO</div>
-            <input class="entry-input" id="f-ico" placeholder="12345678" oninput="onFieldInput()">
+            <input class="entry-input" id="f-ico" placeholder="12345678" inputmode="numeric" oninput="onFieldInput()">
           </div>
           <div class="entry-field-sm">
             <div class="entry-label">EČV</div>
-            <input class="entry-input" id="f-ecv-po" placeholder="BA123AB" oninput="onFieldInput()">
+            <input class="entry-input" id="f-ecv-po" placeholder="BA123AB" autocapitalize="characters" autocorrect="off" spellcheck="false" oninput="onFieldInput()">
           </div>
           <div class="entry-field-sm">
             <div class="entry-label">Nájazd (km/rok)</div>
@@ -949,7 +951,7 @@ footer {
         <div class="entry-row" data-for="fo">
           <div class="entry-field-sm">
             <div class="entry-label">Rodné číslo</div>
-            <input class="entry-input" id="f-rc" placeholder="900101/1234" oninput="onFieldInput()">
+            <input class="entry-input" id="f-rc" placeholder="900101/1234" inputmode="numeric" oninput="onFieldInput()">
           </div>
           <div class="entry-field-sm">
             <div class="entry-label">Obec</div>
@@ -958,7 +960,7 @@ footer {
           </div>
           <div class="entry-field-sm">
             <div class="entry-label">EČV</div>
-            <input class="entry-input" id="f-ecv-fo" placeholder="BA123AB" oninput="onFieldInput()">
+            <input class="entry-input" id="f-ecv-fo" placeholder="BA123AB" autocapitalize="characters" autocorrect="off" spellcheck="false" oninput="onFieldInput()">
           </div>
           <div class="entry-field-sm">
             <div class="entry-label">Nájazd (km/rok)</div>
@@ -993,7 +995,7 @@ footer {
         <div class="entry-row" data-for="szco">
           <div class="entry-field-sm">
             <div class="entry-label">IČO</div>
-            <input class="entry-input" id="f-ico-szco" placeholder="12345678" oninput="onFieldInput()">
+            <input class="entry-input" id="f-ico-szco" placeholder="12345678" inputmode="numeric" oninput="onFieldInput()">
           </div>
           <div class="entry-field-sm">
             <div class="entry-label">Obec</div>
@@ -1002,7 +1004,7 @@ footer {
           </div>
           <div class="entry-field-sm">
             <div class="entry-label">EČV</div>
-            <input class="entry-input" id="f-ecv-szco" placeholder="BA123AB" oninput="onFieldInput()">
+            <input class="entry-input" id="f-ecv-szco" placeholder="BA123AB" autocapitalize="characters" autocorrect="off" spellcheck="false" oninput="onFieldInput()">
           </div>
           <div class="entry-field-sm">
             <div class="entry-label">Nájazd (km/rok)</div>
@@ -4118,6 +4120,7 @@ async function triggerLookup() {
     if (t === 'po')        { ecv = fieldVal('f-ecv-po');   najazd = fieldVal('f-km-po');   }
     else if (t === 'fo')   { ecv = fieldVal('f-ecv-fo');   najazd = fieldVal('f-km-fo');   }
     else                   { ecv = fieldVal('f-ecv-szco'); najazd = fieldVal('f-km-szco'); }
+    ecv = (ecv || '').toUpperCase().replace(/[\s-]/g, '');   // mobil píše "Aa616em", Pillow chce veľké
 
     // FO: rodné číslo skontrolovať u nás — nech to nepadá až v poisťovni
     if (t === 'fo' && !validRc(fieldVal('f-rc'))) {
@@ -4134,9 +4137,15 @@ async function triggerLookup() {
 
     // 2. Poistník
     if (t === 'po' || t === 'szco') {
-      const ico  = t === 'po' ? fieldVal('f-ico') : fieldVal('f-ico-szco');
+      const ico  = (t === 'po' ? fieldVal('f-ico') : fieldVal('f-ico-szco')).replace(/\D/g, '');
       const obec = t === 'po' ? '' : fieldVal('f-obec-szco');
       const c = await apiLookupCompany(ico);
+      // Firma MUSÍ byť v registri (bez nej nemáme názov ani adresu) → jasná chyba hneď
+      if (t === 'po' && !c.nazov) {
+        hideEntryLoader();
+        showEntryError(`IČO ${ico} sa nenašlo v obchodnom registri — skontrolujte ho, prosím.`);
+        return;
+      }
       // SZČO (živnostník) často nie je v ORSR → lookup zlyhá; PSČ vtedy z číselníka obcí
       const effObec = c.mesto || obec;
       const psc = c.psc || fieldVal('f-psc-szco') || pscForObec(effObec);
