@@ -1138,7 +1138,7 @@ footer {
   <div class="sticky-summary-inner">
     <div class="summary-empty" id="summary-empty" style="display:none;">Vyberte aspoň jedno pripoistenie <span class="se-arrow">↑</span></div>
     <div class="freq-price-cards" id="freq-price-cards">
-      <div class="freq-price-card active" data-mult="1" data-label="mesačne" data-surcharge-pct="5" onclick="setFreq(1,'mesačne',this)">
+      <div class="freq-price-card" data-mult="1" data-label="mesačne" data-surcharge-pct="5" onclick="setFreq(1,'mesačne',this)">
         <div class="fpc-label">Mesačne</div>
         <div class="fpc-price" id="fpc-price-1">€ 0,00</div>
         <div class="fpc-extra" id="fpc-extra-1"></div>
@@ -1153,7 +1153,7 @@ footer {
         <div class="fpc-price" id="fpc-price-6">€ 0,00</div>
         <div class="fpc-extra" id="fpc-extra-6"></div>
       </div>
-      <div class="freq-price-card" data-mult="12" data-label="ročne" data-surcharge-pct="0" onclick="setFreq(12,'ročne',this)">
+      <div class="freq-price-card active" data-mult="12" data-label="ročne" data-surcharge-pct="0" onclick="setFreq(12,'ročne',this)">
         <span class="fpc-badge">Najvýhodnejšie</span>
         <div class="fpc-label">Ročne</div>
         <div class="fpc-price" id="fpc-price-12">€ 0,00</div>
@@ -4203,8 +4203,8 @@ document.addEventListener('DOMContentLoaded', () => {
 /* ─── FREQUENCY ───
    UI mult (mesiace/splátka) → Pillow paymentFrequency:
    1→12 (mesačne), 3→4 (štvrťročne), 6→2 (polročne), 12→1 (ročne) */
-let currentMult = 1;
-let currentFreqLabel = 'mesačne';
+let currentMult = 12;
+let currentFreqLabel = 'ročne';
 const FREQS = [1, 3, 6, 12];
 const pillowFreqForMult = m => 12 / m;
 
@@ -4529,7 +4529,7 @@ function goToStep3(e) {
   });
 
   const activeFreqCard = document.querySelector('.freq-price-card.active');
-  const mult = activeFreqCard ? parseInt(activeFreqCard.dataset.mult) : 1;
+  const mult = activeFreqCard ? parseInt(activeFreqCard.dataset.mult) : 12;
 
   // Celá objednávka — reálne dáta pre step3/step4 (vrátane save do Pillow + BCRM)
   const order = {
@@ -4540,7 +4540,7 @@ function goToStep3(e) {
     tiles: selectedTiles,                        // vybrané dlaždice + ich Pillow riziká
     freq: {
       mult,
-      label: activeFreqCard ? activeFreqCard.dataset.label : 'mesačne',
+      label: activeFreqCard ? activeFreqCard.dataset.label : 'ročne',
       pillowFreq: 12 / mult,                     // mult 1/3/6/12 → Pillow 12/4/2/1
     },
     freqPrices: pillowFreqPrices,                // {12:{tile:€},4,2,1} — pre zobrazenie
