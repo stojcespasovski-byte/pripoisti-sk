@@ -4216,7 +4216,7 @@ function onVmTypChange() {
   show('vm-cena-wrap', needsCena);
   if (needsCena) {
     g('vm-cena-label').textContent = isNew
-      ? 'Zadajte cenu, za ktorú ste vozidlo kúpili (max. 120 000 €)'
+      ? 'Zadajte novú cenu s DPH, bez zliav (max. 120 000 €)'
       : 'Zadajte približnú aktuálnu trhovú hodnotu vozidla (max. 120 000 €)';
     g('vm-cena').placeholder = isNew ? 'Obstarávacia cena nového vozidla (€)' : 'Obvyklá cena vozidla (€)';
   }
