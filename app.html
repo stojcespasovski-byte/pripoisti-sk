@@ -3604,8 +3604,9 @@ async function apiLookupVehicle(ecv) {
   } catch (e) { return { found: false }; }
   if (!raw.found) return { found: false };
   const palivo  = BCRM_PALIVO_MAP[(raw.palivo || '').toLowerCase()] || raw.palivo || '';
-  const katCode = (raw.kat || '').match(/^([A-Z0-9]+)/)?.[1] || '';
-  const typ     = BCRM_KAT_MAP[katCode] || 'OA';
+  // kat napr. "L3e-A2 motocykel..." → "L3e"; "M1 osobné..." → "M1" (malé 'e' v L-kategóriách!)
+  const katCode = (raw.kat || '').match(/^([A-Za-z0-9]+)/)?.[1] || '';
+  const typ     = BCRM_KAT_MAP[katCode] || BCRM_KAT_MAP[katCode[0]] || 'OA';   // T1→T (traktory ap.)
   const pohon   = raw.nahon === true || raw.nahon === '4x4' || raw.nahon === 'AWD' || raw.nahon === '4WD';
   return {
     found: true,
