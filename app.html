@@ -4441,6 +4441,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const forTypes = row.dataset.for.split(',');
     row.classList.toggle('show', forTypes.includes('po'));
   });
+  restoreFromOrder();     // návrat z kroku 3/4 → obnoviť ceny, výber aj formulár
 });
 
 /* ─── TILE TOGGLE ─── */
@@ -4801,11 +4802,60 @@ function goToStep3(e) {
     },
     freqPrices: pillowFreqPrices,                // {12:{tile:€},4,2,1} — pre zobrazenie
     poistenieOd: (typeof todayISO === 'function') ? todayISO() : new Date().toISOString().slice(0, 10),
+    savedAt: Date.now(),                         // pre obnovu stavu pri návrate na Krok 1
   };
   localStorage.setItem('pripoisti_order', JSON.stringify(order));
 
   window.location.href = 'app-step3.html?' + params.toString();
   return false;
+}
+
+/* ── Návrat na Krok 1 — obnoviť ceny, výber dlaždíc aj formulár z rozpracovanej
+      objednávky (po úspešnom odoslaní sa objednávka maže, takže sa obnoví len
+      rozpracovaná; staršia ako 12 h sa ignoruje — ceny by mohli byť neplatné) ── */
+function restoreFromOrder() {
+  let order = null;
+  try { order = JSON.parse(localStorage.getItem('pripoisti_order') || 'null'); } catch (_) {}
+  if (!order || !order.savedAt || (Date.now() - order.savedAt) > 12 * 3600 * 1000) return;
+  if (!order.vehicle || !order.vehicle.ecv || !order.freqPrices || !order.freqPrices[12]) return;
+
+  const setVal = (id, v) => { const el = document.getElementById(id); if (el && v != null && v !== '') el.value = v; };
+  const t = order.typ || 'po';
+  const tab = document.querySelector(`.type-tab[data-type="${t}"]`);
+  if (tab) setType(t, tab);
+  const p = order.poistnik || {};
+  if (t === 'po')      { setVal('f-ico', p.ico); setVal('f-ecv-po', order.vehicle.ecv); }
+  else if (t === 'fo') { setVal('f-rc', p.rc); setVal('f-obec-fo', p.obec); setVal('f-ecv-fo', order.vehicle.ecv); }
+  else                 { setVal('f-ico-szco', p.ico); setVal('f-obec-szco', p.obec); setVal('f-ecv-szco', order.vehicle.ecv); }
+
+  lookup.vehicle   = { ...order.vehicle };
+  lookup.poistnik  = { ...order.poistnik };
+  pillowFreqPrices = order.freqPrices;
+  _vehCacheKey = order.vehicle.ecv;                     // pre-lookup/re-lookup nevolá BCRM zbytočne
+  _vehCacheVal = { found: true, data: { ...order.vehicle } };
+
+  updateEntryKmOptions();                               // správne pásma nájazdu + hodnota z objednávky
+
+  applyTilePrices(pillowFreqPrices[12] || {});
+  (order.tiles || []).forEach(tl => {
+    const el = document.querySelector(`.tile[data-id="${tl.id}"]`);
+    if (el && !el.classList.contains('unavailable')) el.classList.add('sel');
+  });
+  syncTileConstraints();
+
+  const mult = (order.freq && order.freq.mult) || 12;
+  const card = document.querySelector(`.freq-price-card[data-mult="${mult}"]`);
+  if (card) {
+    currentMult = mult; currentFreqLabel = card.dataset.label || 'ročne';
+    document.querySelectorAll('.freq-price-card').forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
+  }
+
+  renderTilePrices();
+  pricesReady = true;
+  renderVehCard(false);
+  updateCalc();
+  onFieldInput();                                       // označí vyplnené polia
 }
 
 /* ─── SCROLL REVEAL ─── */
