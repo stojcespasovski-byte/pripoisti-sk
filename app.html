@@ -3902,6 +3902,14 @@ function setupObecAutocomplete(inputId, pscInputId) {
 
 document.addEventListener('DOMContentLoaded', () => {
   setupObecAutocomplete('f-obec-fo', 'f-psc-fo');
+  // Oprava ktoréhokoľvek poľa (napr. zlého IČO) po opustení poľa spustí prepočet,
+  // ak sú všetky viditeľné polia vyplnené — nielen zmena nájazdu.
+  document.querySelectorAll('.entry-input').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const visible = Array.from(document.querySelectorAll('.entry-row.show .entry-input'));
+      if (visible.length && visible.every(i => i.value.trim().length > 0)) triggerLookup();
+    });
+  });
   setupObecAutocomplete('f-obec-szco', 'f-psc-szco');
 });
 
@@ -4096,6 +4104,8 @@ async function recalcPrices(ecvWarning) {
     console.error(e);
     hideEntryLoader();
     showEntryError('Nepodarilo sa získať ceny: ' + (e.message || e));
+  } finally {
+    lookupBusy = false;
   }
 }
 
@@ -4112,7 +4122,10 @@ function validRc(rc) {
   return true;
 }
 
+let lookupBusy = false;   // ochrana pred dvojitým spustením (change + km onchange)
 async function triggerLookup() {
+  if (lookupBusy) return;
+  lookupBusy = true;
   showEntryError('');
   hideVehCard();
   showEntryLoader();
@@ -4190,6 +4203,8 @@ async function triggerLookup() {
     console.error(e);
     hideEntryLoader();
     showEntryError('Nepodarilo sa získať ceny: ' + (e.message || e));
+  } finally {
+    lookupBusy = false;
   }
 }
 
