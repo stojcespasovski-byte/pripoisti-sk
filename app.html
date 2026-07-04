@@ -4042,6 +4042,41 @@ const KM_CAR  = [[5000,'5 000 km a menej'],[7000,'7 000 km'],[10000,'10 000 km']
 /* interné palivo (z BCRM) → hodnota v <select> modalu */
 const PALIVO_TO_SELECT = { benzin:'benzin', diesel:'diesel', nafta:'diesel', elektro:'elektrina', elektrina:'elektrina', hybrid:'hybrid', lpg:'plyn', cng:'plyn', plyn:'plyn' };
 
+/* Krok 1: plná autová roleta nájazdu (rovnaká ako v HTML) — pre swap späť z moto módu */
+const KM_CAR_ENTRY = (() => {
+  const fmt = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  const a = [[5000, '5 000 km a menej']];
+  for (let n = 6000; n <= 24000; n += 1000) a.push([n, fmt(n) + ' km']);
+  a.push([25000, '25 000 km a viac']);
+  return a;
+})();
+function entryKmSelect() {
+  return document.getElementById(currentType === 'po' ? 'f-km-po' : currentType === 'fo' ? 'f-km-fo' : 'f-km-szco');
+}
+/* Prepne roletu nájazdu v Kroku 1 podľa typu vozidla z lookupu (motorka má vlastné pásma).
+   Hodnotu namapuje na najbližšie pásmo a zosúladí s lookup.vehicle.najazd. */
+function updateEntryKmOptions() {
+  const sel = entryKmSelect(); if (!sel) return;
+  const mode = (lookup.vehicle && lookup.vehicle.typ === 'MO') ? 'moto' : 'car';
+  const desired = parseInt((lookup.vehicle && lookup.vehicle.najazd) || sel.value, 10) || 0;
+  if ((sel.dataset.kmMode || 'car') !== mode) {
+    const brackets = mode === 'moto' ? KM_MOTO : KM_CAR_ENTRY;
+    sel.innerHTML = '<option value="">Vyberte...</option>' + brackets.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+    sel.dataset.kmMode = mode;
+    if (desired) {
+      const best = brackets.reduce((a, b) => Math.abs(b[0] - desired) < Math.abs(a[0] - desired) ? b : a);
+      sel.value = String(best[0]);
+    }
+  } else if (desired && sel.value !== String(desired)) {
+    const opts = [...sel.options].map(o => parseInt(o.value, 10)).filter(Boolean);
+    if (opts.length) {
+      const best = opts.reduce((a, b) => Math.abs(b - desired) < Math.abs(a - desired) ? b : a);
+      sel.value = String(best);
+    }
+  }
+  if (lookup.vehicle && sel.value) lookup.vehicle.najazd = sel.value;
+}
+
 function openVehModal(e, prefill) {
   if (e) e.preventDefault();
   const g = id => document.getElementById(id);
@@ -4206,6 +4241,7 @@ function saveVehModal() {
   // km z modalu (non-OA); inak ostáva z Kroku 1
   const kmWrap = g('vm-km-wrap');
   if (kmWrap && kmWrap.style.display !== 'none' && g('vm-km').value) v.najazd = g('vm-km').value;
+  updateEntryKmOptions();                 // zosúladiť roletu v Kroku 1 s typom/km z modalu
   // v.ecv zostáva z pôvodného zadania
 
   closeVehModal();
@@ -4273,10 +4309,14 @@ async function triggerLookup() {
     }
 
     // 1. Vozidlo podľa EČV
+    // cenu vozidla si pamätať, ak ide o to isté EČV (zmena km nesmie vypýtať cenu znova)
+    const prevCena = (lookup.vehicle && lookup.vehicle.ecv === ecv) ? lookup.vehicle.cenaVozidla : '';
     const veh = await apiLookupVehicle(ecv);
     lookup.vehicle = veh.found ? veh.data : {};
     lookup.vehicle.ecv = ecv;
     lookup.vehicle.najazd = najazd;
+    if (prevCena && !lookup.vehicle.cenaVozidla) lookup.vehicle.cenaVozidla = prevCena;
+    updateEntryKmOptions();                 // motorka → moto pásma nájazdu aj v Kroku 1
 
     // 2. Poistník
     if (t === 'po' || t === 'szco') {
