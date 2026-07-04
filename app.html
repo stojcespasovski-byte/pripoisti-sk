@@ -4215,10 +4215,10 @@ function onVmTypChange() {
   const needsCena = !!typ && (!isOA || isNew);
   show('vm-cena-wrap', needsCena);
   if (needsCena) {
-    g('vm-cena-label').textContent = isNew ? 'Obstarávacia cena nového vozidla (€)' : 'Obvyklá cena vozidla (€)';
-    g('vm-cena-hint').textContent = isNew
-      ? 'Zadajte cenu, za ktorú ste vozidlo kúpili (max. 120 000 €).'
-      : 'Zadajte približnú aktuálnu trhovú hodnotu vozidla (max. 120 000 €).';
+    g('vm-cena-label').textContent = isNew
+      ? 'Zadajte cenu, za ktorú ste vozidlo kúpili (max. 120 000 €)'
+      : 'Zadajte približnú aktuálnu trhovú hodnotu vozidla (max. 120 000 €)';
+    g('vm-cena').placeholder = isNew ? 'Obstarávacia cena nového vozidla (€)' : 'Obvyklá cena vozidla (€)';
   }
 }
 
@@ -4895,9 +4895,8 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
       <!-- Cena vozidla — len keď je povinná (non-OA alebo OA mladšie ako 6 mes.) -->
       <div class="vm-field full" id="vm-cena-wrap" style="display:none;">
-        <label id="vm-cena-label">Obvyklá cena vozidla (€)</label>
-        <input type="number" id="vm-cena" placeholder="8000" min="0" step="1" style="border-color:var(--o);">
-        <div class="vm-cena-hint" id="vm-cena-hint" style="font-size:12px;color:var(--o);margin-top:5px;"></div>
+        <label id="vm-cena-label" style="color:var(--o);">Zadajte približnú aktuálnu trhovú hodnotu vozidla (max. 120 000 €)</label>
+        <input type="number" id="vm-cena" placeholder="Obvyklá cena vozidla (€)" min="0" step="1" style="border-color:var(--o);">
       </div>
 
       <div class="vm-field full">
