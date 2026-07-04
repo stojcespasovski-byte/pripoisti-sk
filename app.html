@@ -3951,7 +3951,7 @@ function hideEntryLoader() {
 
 function showEntryError(msg) {
   const el = document.getElementById('entry-error');
-  if (el) { el.textContent = msg; el.style.display = msg ? '' : 'none'; }
+  if (el) { el.innerHTML = msg; el.style.display = msg ? '' : 'none'; }
 }
 
 /* Scroll na dlaždice — #tiles-label má scroll-margin-top, takže sa zastaví pod fixnou navigáciou */
@@ -4155,6 +4155,17 @@ async function triggerLookup() {
       const obec = fieldVal('f-obec-fo');
       const psc  = fieldVal('f-psc-fo') || pscForObec(obec);   // z číselníka obcí
       lookup.poistnik = { typ: 'fo', rc: fieldVal('f-rc'), obec, psc };
+    }
+
+    // Vozidlo sa nenašlo → jasný dôvod + rovno ponúknuť ručné vypísanie
+    // (poistník už je načítaný, takže po vyplnení modalu sa ceny dopočítajú)
+    if (!veh.found) {
+      hideEntryLoader();
+      showEntryError(
+        `Vozidlo s EČV <b>${ecv}</b> sa nenašlo v databáze.<br>` +
+        `<button type="button" onclick="openVehModal(event)" style="margin-top:10px;background:var(--grad);color:#fff;border:none;border-radius:9px;padding:10px 18px;font-size:13px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;">Vypísať údaje vozidla ručne</button>`
+      );
+      return;
     }
 
     // 3. Pillow ceny
