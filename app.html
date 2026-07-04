@@ -4481,7 +4481,19 @@ function applyTilePrices(prices) {
     }
   });
   const banner = document.getElementById('tiles-partial');
-  if (banner) banner.style.display = (unavailable > 0 && applied > 0) ? 'block' : 'none';
+  if (banner) {
+    if (unavailable > 0 && applied > 0) {
+      // NEUVEDENA (vozidlo neidentifikované) → len 3 univerzálne riziká + výzva vypísať ručne.
+      // Inak (napr. motorka bez skiel) → vozidlo je OK, len časť pripoistení pre daný typ nie je.
+      banner.innerHTML = applied <= 3
+        ? 'Toto vozidlo sa nenašlo v cenníku — vieme oceniť len <b>asistenciu, úraz a batožinu</b>. ' +
+          'Pre plné krytie kliknite <b>„Je to iné auto?"</b> pri vozidle a vyplňte ho ručne.'
+        : 'Niektoré pripoistenia nie sú pre tento typ vozidla dostupné (zošedené). Ostatné si môžete vybrať bežne.';
+      banner.style.display = 'block';
+    } else {
+      banner.style.display = 'none';
+    }
+  }
   return applied;
 }
 
