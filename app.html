@@ -3718,6 +3718,8 @@ function buildRateXML(freq = 12, codes = null, riskList = null) {
     ${xe('noTechnicalCertificate', v.tp ? 'false' : 'true')}
     ${v.tp ? xe('technicalCertificateNumber', v.tp) : ''}
     ${v.farba ? xe('colour', v.farba) : ''}
+    ${(() => { const c = parseFloat(v.cenaVozidla); if (!c) return '';
+      return vehIsNew(v.datumReg) ? xe('clientsNewVehiclePrice', c) : xe('clientsVehiclePrice', c); })()}
     ${xe('withoutRegistration', 'false')}
   </xml-par-ap2-vehicle></vehicle>
   ${xe('partyType', partyType)}
@@ -4019,6 +4021,16 @@ function vmBuildBrands() {
     .map(code => ({ code, name: codeToName[code] || code }))
     .sort((a, b) => a.name.localeCompare(b.name, 'sk'));
 }
+/* Vozidlo mladšie ako 6 mesiacov (podľa 1. registrácie) → „nové" */
+function vehIsNew(datumReg) {
+  if (!datumReg) return false;
+  const d = new Date(datumReg);
+  if (isNaN(d)) return false;
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - 6);
+  return d >= cutoff;
+}
+
 function openVehModal(e) {
   if (e) e.preventDefault();
   const brandSel = document.getElementById('vm-znacka');
@@ -4029,16 +4041,48 @@ function openVehModal(e) {
     _vmBrandsFilled = true;
   }
   // prázdne polia (vieme, že sa dotiahlo iné auto)
-  ['vm-znacka', 'vm-model', 'vm-typ', 'vm-datum', 'vm-palivo', 'vm-objem', 'vm-vykon', 'vm-hmotnost', 'vm-vin', 'vm-ina-text'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['vm-znacka', 'vm-model', 'vm-typ', 'vm-datum', 'vm-palivo', 'vm-objem', 'vm-vykon', 'vm-hmotnost', 'vm-vin', 'vm-ina-text', 'vm-free-znacka', 'vm-free-model', 'vm-cena'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   document.getElementById('vm-model').disabled = true;
   document.getElementById('vm-model').innerHTML = '<option value="">Vyberte model…</option>';
   document.getElementById('vm-ina-wrap').style.display = 'none';
   document.getElementById('vm-warn').style.display = 'none';
   document.getElementById('vm-error').style.display = 'none';
+  onVmTypChange();                                  // schová katalóg/cenu, kým sa nevyberie typ
   document.getElementById('vm-overlay').style.display = 'flex';
   return false;
 }
 function closeVehModal() { document.getElementById('vm-overlay').style.display = 'none'; }
+
+/* Typ vozidla riadi, čo sa v modáli zobrazí:
+   - OSOBNÉ (OA): značka/model z Pillow katalógu; cena len ak je auto mladšie ako 6 mes.
+   - OSTATNÉ: značka/model voľný text (do rate netreba); cena vozidla vždy povinná. */
+function onVmTypChange() {
+  const g = id => document.getElementById(id);
+  const typ = g('vm-typ').value;
+  const isOA = typ === 'OA';
+  const isNew = vehIsNew(g('vm-datum').value);
+  const show = (id, on) => { const el = g(id); if (el) el.style.display = on ? '' : 'none'; };
+
+  // katalóg len pre osobné auto
+  show('vm-cat-znacka-wrap', isOA);
+  show('vm-cat-model-wrap', isOA);
+  if (!isOA) { g('vm-ina-wrap').style.display = 'none'; g('vm-warn').style.display = 'none'; }
+
+  // voľný text značka/model pre ostatné typy
+  show('vm-free-znacka-wrap', !!typ && !isOA);
+  show('vm-free-model-wrap', !!typ && !isOA);
+
+  // cena vozidla: non-OA vždy, OA len ak je nové (<6 mes.)
+  const needsCena = !!typ && (!isOA || isNew);
+  show('vm-cena-wrap', needsCena);
+  if (needsCena) {
+    g('vm-cena-label').textContent = isNew ? 'Obstarávacia cena nového vozidla (€)' : 'Obvyklá cena vozidla (€)';
+    g('vm-cena-hint').textContent = isNew
+      ? 'Cena, za ktorú ste vozidlo kúpili (max. 120 000 €).'
+      : 'Aktuálna trhová hodnota vozidla (max. 120 000 €).';
+  }
+}
+
 function onVmBrandChange() {
   const code = document.getElementById('vm-znacka').value;
   const modelSel = document.getElementById('vm-model');
@@ -4055,30 +4099,44 @@ function onVmBrandChange() {
   modelSel.innerHTML = '<option value="">Vyberte model…</option>' +
     models.map(([id, name]) => `<option value="${id}">${name}</option>`).join('');
 }
+
 function saveVehModal() {
   const g = id => document.getElementById(id);
-  const isIna = g('vm-znacka').value === '__INA__';
-  const objem = g('vm-objem').value.trim(), vykon = g('vm-vykon').value.trim(), hmotnost = g('vm-hmotnost').value.trim();
   const typ = g('vm-typ').value, datum = g('vm-datum').value, palivo = g('vm-palivo').value;
+  const objem = g('vm-objem').value.trim(), vykon = g('vm-vykon').value.trim(), hmotnost = g('vm-hmotnost').value.trim();
+  const isOA = typ === 'OA';
+  const isIna = isOA && g('vm-znacka').value === '__INA__';
+  const needsCena = !!typ && (!isOA || vehIsNew(datum));
+  const cena = g('vm-cena').value.trim();
 
   const errs = [];
-  if (!g('vm-znacka').value) errs.push('značku');
-  if (isIna && !g('vm-ina-text').value.trim()) errs.push('značku a model');
-  if (!isIna && !g('vm-model').value) errs.push('model');
   if (!typ) errs.push('typ vozidla');
+  if (isOA) {
+    if (!g('vm-znacka').value) errs.push('značku');
+    if (isIna && !g('vm-ina-text').value.trim()) errs.push('značku a model');
+    if (!isIna && !g('vm-model').value) errs.push('model');
+  } else if (typ) {
+    if (!g('vm-free-znacka').value.trim()) errs.push('značku');
+    if (!g('vm-free-model').value.trim()) errs.push('model');
+  }
   if (!datum) errs.push('dátum registrácie');
   if (!palivo) errs.push('palivo');
   if (!objem) errs.push('objem'); if (!vykon) errs.push('výkon'); if (!hmotnost) errs.push('hmotnosť');
+  if (needsCena && !(parseFloat(cena) > 0)) errs.push('cenu vozidla');
   if (errs.length) { const e = g('vm-error'); e.textContent = 'Vyplňte: ' + errs.join(', ') + '.'; e.style.display = ''; return; }
 
   let znacka, model;
-  if (isIna) { znacka = g('vm-ina-text').value.trim(); model = ''; }   // → NEUVEDENA
+  if (!isOA) {                                             // ostatné typy — voľný text (do rate ide NEUVEDENA)
+    znacka = g('vm-free-znacka').value.trim();
+    model  = g('vm-free-model').value.trim();
+  } else if (isIna) { znacka = g('vm-ina-text').value.trim(); model = ''; }   // → NEUVEDENA
   else {
     znacka = g('vm-znacka').options[g('vm-znacka').selectedIndex].text;
     model  = g('vm-model').options[g('vm-model').selectedIndex].text;
   }
   const v = lookup.vehicle || (lookup.vehicle = {});
-  Object.assign(v, { znacka, model, typ, datumReg: datum, palivo, objem, vykon, hmotnost, vin: g('vm-vin').value.trim(), pohon: false });
+  Object.assign(v, { znacka, model, typ, datumReg: datum, palivo, objem, vykon, hmotnost,
+                     vin: g('vm-vin').value.trim(), cenaVozidla: needsCena ? cena : '', pohon: false });
   // v.ecv, v.najazd zostávajú z pôvodného zadania
 
   closeVehModal();
@@ -4583,11 +4641,24 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
     <div class="vm-title">Vypíšte vozidlo</div>
     <div class="vm-sub">Zadajte údaje o vozidle, ktoré chcete poistiť.</div>
     <div class="vm-grid">
-      <div class="vm-field">
+      <!-- 1) Typ vozidla — riadi, čo sa ďalej zobrazí -->
+      <div class="vm-field full">
+        <label>Typ vozidla</label>
+        <select id="vm-typ" onchange="onVmTypChange()">
+          <option value="">Vyberte…</option>
+          <option value="OA">Osobné vozidlo</option>
+          <option value="MO">Motocykel</option>
+          <option value="NA">Nákladné vozidlo</option>
+          <option value="OBY">Obytné vozidlo</option>
+        </select>
+      </div>
+
+      <!-- 2a) OSOBNÉ: značka + model z Pillow katalógu -->
+      <div class="vm-field" id="vm-cat-znacka-wrap" style="display:none;">
         <label>Značka</label>
         <select id="vm-znacka" onchange="onVmBrandChange()"><option value="">Vyberte značku…</option></select>
       </div>
-      <div class="vm-field">
+      <div class="vm-field" id="vm-cat-model-wrap" style="display:none;">
         <label>Model</label>
         <select id="vm-model" disabled><option value="">Vyberte model…</option></select>
       </div>
@@ -4596,19 +4667,20 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
         <input id="vm-ina-text" placeholder="napr. Tesla Model 3">
       </div>
       <div class="vm-warn" id="vm-warn" style="display:none;">⚠️ Pre toto vozidlo vieme oceniť len časť pripoistení (asistencia, úraz, batožina).</div>
-      <div class="vm-field">
-        <label>Typ vozidla</label>
-        <select id="vm-typ">
-          <option value="">Vyberte…</option>
-          <option value="OA">Osobné vozidlo</option>
-          <option value="NA">Nákladné vozidlo</option>
-          <option value="MO">Motocykel</option>
-          <option value="OBY">Obytné vozidlo</option>
-        </select>
+
+      <!-- 2b) OSTATNÉ typy: značka + model voľný text (do výpočtu netreba, doplnia sa pri uzatvorení) -->
+      <div class="vm-field" id="vm-free-znacka-wrap" style="display:none;">
+        <label>Značka</label>
+        <input id="vm-free-znacka" placeholder="napr. Yamaha">
       </div>
+      <div class="vm-field" id="vm-free-model-wrap" style="display:none;">
+        <label>Model</label>
+        <input id="vm-free-model" placeholder="napr. MT-07">
+      </div>
+
       <div class="vm-field">
         <label>Dátum 1. registrácie</label>
-        <input type="date" id="vm-datum">
+        <input type="date" id="vm-datum" onchange="onVmTypChange()">
       </div>
       <div class="vm-field">
         <label>Palivo</label>
@@ -4633,6 +4705,14 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
         <label>Max. hmotnosť (kg)</label>
         <input type="number" id="vm-hmotnost" placeholder="2547" min="0">
       </div>
+
+      <!-- Cena vozidla — len keď je povinná (non-OA alebo OA mladšie ako 6 mes.) -->
+      <div class="vm-field full" id="vm-cena-wrap" style="display:none;">
+        <label id="vm-cena-label">Obvyklá cena vozidla (€)</label>
+        <input type="number" id="vm-cena" placeholder="8000" min="0" step="1">
+        <div class="vm-cena-hint" id="vm-cena-hint" style="font-size:11px;color:rgba(255,255,255,.4);margin-top:4px;"></div>
+      </div>
+
       <div class="vm-field full">
         <label>VIN (voliteľné)</label>
         <input id="vm-vin" placeholder="TMBLJ7NSXP8012326">

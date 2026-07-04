@@ -546,6 +546,12 @@ function variantsXML() {
     `  <variantOfSubject><xml-par-ap2-variant-of-subject-req>${xe('risk', r.risk)}${xe('variant', r.variant)}</xml-par-ap2-variant-of-subject-req></variantOfSubject>`
   ).join('\n');
 }
+function vehIsNew(datumReg) {
+  if (!datumReg) return false;
+  const d = new Date(datumReg); if (isNaN(d)) return false;
+  const cutoff = new Date(); cutoff.setMonth(cutoff.getMonth() - 6);
+  return d >= cutoff;
+}
 function vehicleXML() {
   const codes = order.vehicleCodes || {};
   return `<vehicle><xml-par-ap2-vehicle>
@@ -568,6 +574,8 @@ function vehicleXML() {
     ${xe('noTechnicalCertificate', V.tp ? 'false' : 'true')}
     ${V.tp ? xe('technicalCertificateNumber', V.tp) : ''}
     ${xe('colour', mapColour(V.farba))}
+    ${(() => { const c = parseFloat(V.cenaVozidla); if (!c) return '';
+      return vehIsNew(V.datumReg) ? xe('clientsNewVehiclePrice', c) : xe('clientsVehiclePrice', c); })()}
     ${xe('withoutRegistration', 'false')}
   </xml-par-ap2-vehicle></vehicle>`;
 }
