@@ -4031,25 +4031,72 @@ function vehIsNew(datumReg) {
   return d >= cutoff;
 }
 
-function openVehModal(e) {
+/* Vozidlo potrebuje cenu (rate aj save): každé non-OA, alebo OA mladšie ako 6 mes. */
+function needsCenaFor(v) { return !!v && !!v.typ && (v.typ !== 'OA' || vehIsNew(v.datumReg)); }
+
+/* Číselníky nájazdu — motorka jazdí menej, má vlastné pásma */
+const KM_MOTO = [[2000,'2 000 km a menej'],[3000,'3 000 km'],[5000,'5 000 km'],[7000,'7 000 km'],[10000,'10 000 km'],[15000,'15 000 km a viac']];
+const KM_CAR  = [[5000,'5 000 km a menej'],[7000,'7 000 km'],[10000,'10 000 km'],[13000,'13 000 km'],[15000,'15 000 km'],[18000,'18 000 km'],[20000,'20 000 km'],[25000,'25 000 km a viac']];
+
+/* interné palivo (z BCRM) → hodnota v <select> modalu */
+const PALIVO_TO_SELECT = { benzin:'benzin', diesel:'diesel', nafta:'diesel', elektro:'elektrina', elektrina:'elektrina', hybrid:'hybrid', lpg:'plyn', cng:'plyn', plyn:'plyn' };
+
+function openVehModal(e, prefill) {
   if (e) e.preventDefault();
-  const brandSel = document.getElementById('vm-znacka');
+  const g = id => document.getElementById(id);
+  const brandSel = g('vm-znacka');
   if (!_vmBrandsFilled) {
     brandSel.innerHTML = '<option value="">Vyberte značku…</option>' +
       vmBuildBrands().map(b => `<option value="${b.code}">${b.name}</option>`).join('') +
       '<option value="__INA__">Iná (nie je v zozname)</option>';
     _vmBrandsFilled = true;
   }
-  // prázdne polia (vieme, že sa dotiahlo iné auto)
-  ['vm-znacka', 'vm-model', 'vm-typ', 'vm-datum', 'vm-palivo', 'vm-objem', 'vm-vykon', 'vm-hmotnost', 'vm-vin', 'vm-ina-text', 'vm-free-znacka', 'vm-free-model', 'vm-cena'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  document.getElementById('vm-model').disabled = true;
-  document.getElementById('vm-model').innerHTML = '<option value="">Vyberte model…</option>';
-  document.getElementById('vm-ina-wrap').style.display = 'none';
-  document.getElementById('vm-warn').style.display = 'none';
-  document.getElementById('vm-error').style.display = 'none';
-  onVmTypChange();                                  // schová katalóg/cenu, kým sa nevyberie typ
-  document.getElementById('vm-overlay').style.display = 'flex';
+  // vyčistiť polia
+  ['vm-znacka', 'vm-model', 'vm-typ', 'vm-datum', 'vm-palivo', 'vm-objem', 'vm-vykon', 'vm-hmotnost', 'vm-vin', 'vm-ina-text', 'vm-free-znacka', 'vm-free-model', 'vm-cena'].forEach(id => { const el = g(id); if (el) el.value = ''; });
+  g('vm-model').disabled = true;
+  g('vm-model').innerHTML = '<option value="">Vyberte model…</option>';
+  g('vm-ina-wrap').style.display = 'none';
+  g('vm-warn').style.display = 'none';
+  g('vm-error').style.display = 'none';
+
+  if (prefill) prefillVehModal();                   // predvyplniť z lookupu (netreba prepisovať všetko)
+  onVmTypChange();                                   // ukáže správne polia + km číselník
+  g('vm-overlay').style.display = 'flex';
+  setTimeout(() => g('vm-cena')?.focus(), 60);       // rovno kurzor do ceny
   return false;
+}
+
+/* Predvyplní modal údajmi z EČV lookupu — používateľ len doplní cenu */
+function prefillVehModal() {
+  const g = id => document.getElementById(id);
+  const v = lookup.vehicle || {};
+  g('vm-typ').value = PILLOW_VEHICLETYPE_VALID.has(v.typ) ? v.typ : 'OA';
+  const isOA = g('vm-typ').value === 'OA';
+  onVmTypChange();                                   // vykreslí správne polia podľa typu
+
+  if (isOA) {
+    // skús katalóg; ak sa značka/model nenájde → voľný „Iná" text
+    const brandCode = getBrandCode(v.znacka);
+    const hasBrand = brandCode && brandCode !== 'OSTATNE' && [...g('vm-znacka').options].some(o => o.value === brandCode);
+    if (hasBrand) {
+      g('vm-znacka').value = brandCode; onVmBrandChange();
+      const modelCode = getModelCode(brandCode, v.model);
+      if (modelCode && [...g('vm-model').options].some(o => o.value === modelCode)) g('vm-model').value = modelCode;
+    } else {
+      g('vm-znacka').value = '__INA__'; onVmBrandChange();
+      g('vm-ina-text').value = [v.znacka, v.model].filter(Boolean).join(' ');
+    }
+  } else {
+    g('vm-free-znacka').value = v.znacka || '';
+    g('vm-free-model').value  = v.model  || '';
+  }
+  g('vm-datum').value    = v.datumReg || '';
+  g('vm-palivo').value   = PALIVO_TO_SELECT[v.palivo] || '';
+  g('vm-objem').value    = v.objem    || '';
+  g('vm-vykon').value    = v.vykon    || '';
+  g('vm-hmotnost').value = v.hmotnost || '';
+  g('vm-vin').value      = v.vin      || '';
+  // km + cena doplní onVmTypChange (km predvyberie z v.najazd); cena ostáva prázdna
 }
 function closeVehModal() { document.getElementById('vm-overlay').style.display = 'none'; }
 
@@ -4071,6 +4118,22 @@ function onVmTypChange() {
   // voľný text značka/model pre ostatné typy
   show('vm-free-znacka-wrap', !!typ && !isOA);
   show('vm-free-model-wrap', !!typ && !isOA);
+
+  // nájazd km/rok — pre non-OA (OA berie km z Kroku 1); motorka má vlastný číselník
+  const showKm = !!typ && !isOA;
+  show('vm-km-wrap', showKm);
+  if (showKm) {
+    const sel = g('vm-km');
+    const brackets = typ === 'MO' ? KM_MOTO : KM_CAR;
+    const cur = sel.value || (lookup.vehicle && lookup.vehicle.najazd) || '';
+    sel.innerHTML = brackets.map(([v, lbl]) => `<option value="${v}">${lbl}</option>`).join('');
+    // predvybrať najbližšie pásmo k doterajšej hodnote
+    if (cur) {
+      const curN = parseInt(cur, 10);
+      const best = brackets.reduce((a, b) => Math.abs(b[0] - curN) < Math.abs(a[0] - curN) ? b : a);
+      sel.value = String(best[0]);
+    }
+  }
 
   // cena vozidla: non-OA vždy, OA len ak je nové (<6 mes.)
   const needsCena = !!typ && (!isOA || isNew);
@@ -4123,6 +4186,8 @@ function saveVehModal() {
   if (!palivo) errs.push('palivo');
   if (!objem) errs.push('objem'); if (!vykon) errs.push('výkon'); if (!hmotnost) errs.push('hmotnosť');
   if (needsCena && !(parseFloat(cena) > 0)) errs.push('cenu vozidla');
+  const vin = g('vm-vin').value.trim().toUpperCase();
+  if (vin.length !== 17) errs.push('VIN (presne 17 znakov)');
   if (errs.length) { const e = g('vm-error'); e.textContent = 'Vyplňte: ' + errs.join(', ') + '.'; e.style.display = ''; return; }
 
   let znacka, model;
@@ -4136,8 +4201,11 @@ function saveVehModal() {
   }
   const v = lookup.vehicle || (lookup.vehicle = {});
   Object.assign(v, { znacka, model, typ, datumReg: datum, palivo, objem, vykon, hmotnost,
-                     vin: g('vm-vin').value.trim(), cenaVozidla: needsCena ? cena : '', pohon: false });
-  // v.ecv, v.najazd zostávajú z pôvodného zadania
+                     vin, cenaVozidla: needsCena ? cena : '', pohon: false });
+  // km z modalu (non-OA); inak ostáva z Kroku 1
+  const kmWrap = g('vm-km-wrap');
+  if (kmWrap && kmWrap.style.display !== 'none' && g('vm-km').value) v.najazd = g('vm-km').value;
+  // v.ecv zostáva z pôvodného zadania
 
   closeVehModal();
   recalcPrices(false);
@@ -4238,6 +4306,25 @@ async function triggerLookup() {
         `Vozidlo s EČV <b>${ecv}</b> sa nenašlo v databáze.<br>` +
         `<button type="button" onclick="openVehModal(event)" style="margin-top:10px;background:var(--grad);color:#fff;border:none;border-radius:9px;padding:10px 18px;font-size:13px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;">Vypísať údaje vozidla ručne</button>`
       );
+      return;
+    }
+
+    // Vozidlo sa našlo, ale potrebuje cenu (motorka / nákladné / nové OA <6 mes.) a nemáme ju
+    // → ukáž nájdené vozidlo a rovno otvor PREDVYPLNENÝ modal; klient len doplní cenu.
+    if (needsCenaFor(lookup.vehicle) && !lookup.vehicle.cenaVozidla) {
+      hideEntryLoader();
+      renderVehCard(veh.ecvWarning);
+      const banner = document.getElementById('tiles-partial');
+      if (banner) {
+        const jeMoto = lookup.vehicle.typ === 'MO';
+        banner.innerHTML = `Pre ${jeMoto ? 'motorku' : 'toto vozidlo'} potrebujeme <b>cenu vozidla</b> — ` +
+          'doplňte ju v okne a ceny prepočítame. ' +
+          '<button type="button" onclick="openVehModal(event, true)" style="margin-top:8px;background:var(--grad);color:#fff;border:none;border-radius:9px;padding:8px 16px;font-size:13px;font-weight:700;font-family:\'Inter\',sans-serif;cursor:pointer;">Doplniť cenu vozidla</button>';
+        banner.style.display = 'block';
+      }
+      document.getElementById('veh-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      openVehModal(null, true);
+      lookupBusy = false;
       return;
     }
 
@@ -4718,6 +4805,12 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
         <input type="number" id="vm-hmotnost" placeholder="2547" min="0">
       </div>
 
+      <!-- Nájazd km/rok — pre non-OA (motorka má vlastný číselník) -->
+      <div class="vm-field" id="vm-km-wrap" style="display:none;">
+        <label>Nájazd (km/rok)</label>
+        <select id="vm-km"><option value="">Vyberte…</option></select>
+      </div>
+
       <!-- Cena vozidla — len keď je povinná (non-OA alebo OA mladšie ako 6 mes.) -->
       <div class="vm-field full" id="vm-cena-wrap" style="display:none;">
         <label id="vm-cena-label">Obvyklá cena vozidla (€)</label>
@@ -4726,8 +4819,8 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
       </div>
 
       <div class="vm-field full">
-        <label>VIN (voliteľné)</label>
-        <input id="vm-vin" placeholder="TMBLJ7NSXP8012326">
+        <label>VIN (17 znakov)</label>
+        <input id="vm-vin" placeholder="TMBLJ7NSXP8012326" maxlength="17" autocapitalize="characters" style="text-transform:uppercase">
       </div>
       <div class="vm-error" id="vm-error" style="display:none;"></div>
     </div>
