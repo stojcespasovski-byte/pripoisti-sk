@@ -4240,6 +4240,7 @@ async function recalcPrices(ecvWarning) {
 function validRc(rc) {
   const d = (rc || '').replace(/\D/g, '');
   if (d.length !== 9 && d.length !== 10) return false;
+  if (d.length === 9 && parseInt(d.slice(0, 2), 10) >= 54) return false;   // 9-miestne len pre narodených pred 1954
   const m = parseInt(d.slice(2, 4), 10) % 50;       // ženy +50
   const mm = m > 20 ? m - 20 : m;                    // pridelené +20 (od 2004)
   if (mm < 1 || mm > 12) return false;
