@@ -3622,6 +3622,15 @@ async function apiLookupVehicle(ecv) {
     }
   };
 }
+/* cache posledného EČV — predbežný lookup (roleta km) + plný lookup zdieľajú výsledok */
+let _vehCacheKey = '', _vehCacheVal = null;
+async function apiLookupVehicleCached(ecv) {
+  if (ecv === _vehCacheKey && _vehCacheVal) return _vehCacheVal;
+  const r = await apiLookupVehicle(ecv);
+  if (r && r.found) { _vehCacheKey = ecv; _vehCacheVal = r; }
+  return r;
+}
+
 async function apiLookupCompany(ico) {
   try {
     const res = await fetch(`${API_BASE}/bcrm/company?ico=${encodeURIComponent(ico)}&stat=SK`);
@@ -3952,6 +3961,37 @@ function onFieldInput() {
 
   if (allFilled && document.activeElement === kmField) {
     triggerLookup();
+  }
+
+  scheduleEcvPreLookup();     // po dopísaní EČV zistiť typ vozidla → správna roleta km
+}
+
+/* ── Predbežný lookup vozidla hneď po dopísaní EČV ──
+   Zistí typ (motorka/auto) skôr, než si človek vyberá nájazd — roleta km sa medzitým
+   zablokuje so stavom „Zisťujem vozidlo…", aby neklikal do starých pásiem. */
+let _ecvDebounce = null, _preSeq = 0;
+function scheduleEcvPreLookup() {
+  clearTimeout(_ecvDebounce);
+  _ecvDebounce = setTimeout(ecvPreLookup, 500);
+}
+async function ecvPreLookup() {
+  if (lookupBusy) return;                                       // beží plný lookup — netreba
+  const t = currentType;
+  const raw = fieldVal(t === 'po' ? 'f-ecv-po' : t === 'fo' ? 'f-ecv-fo' : 'f-ecv-szco');
+  const ecv = (raw || '').toUpperCase().replace(/[\s-]/g, '');
+  if (ecv.length < 6 || ecv === _vehCacheKey) return;           // krátke alebo už zistené
+  const seq = ++_preSeq;
+  const sel = entryKmSelect();
+  const firstOpt = sel ? sel.options[0] : null;
+  if (sel) { sel.disabled = true; if (firstOpt) firstOpt.textContent = 'Zisťujem vozidlo…'; }
+  const veh = await apiLookupVehicleCached(ecv).catch(() => null);
+  if (seq !== _preSeq) return;                                  // medzitým sa EČV zmenilo
+  if (sel) { sel.disabled = false; if (firstOpt) firstOpt.textContent = 'Vyberte...'; }
+  if (veh && veh.found) {
+    const prevCena = (lookup.vehicle && lookup.vehicle.ecv === ecv) ? lookup.vehicle.cenaVozidla : '';
+    lookup.vehicle = { ...veh.data, ecv, najazd: sel ? sel.value : '' };
+    if (prevCena) lookup.vehicle.cenaVozidla = prevCena;
+    updateEntryKmOptions();
   }
 }
 
@@ -4311,7 +4351,7 @@ async function triggerLookup() {
     // 1. Vozidlo podľa EČV
     // cenu vozidla si pamätať, ak ide o to isté EČV (zmena km nesmie vypýtať cenu znova)
     const prevCena = (lookup.vehicle && lookup.vehicle.ecv === ecv) ? lookup.vehicle.cenaVozidla : '';
-    const veh = await apiLookupVehicle(ecv);
+    const veh = await apiLookupVehicleCached(ecv);
     lookup.vehicle = veh.found ? veh.data : {};
     lookup.vehicle.ecv = ecv;
     lookup.vehicle.najazd = najazd;
