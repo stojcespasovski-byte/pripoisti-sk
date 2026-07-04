@@ -3704,6 +3704,8 @@ function buildRateXML(freq = 12, codes = null, riskList = null) {
     ${xe('enginePower',  parseInt(v.vykon) || 0)}
     ${xe('weight',       parseInt(v.hmotnost) || 0)}
     ${xe('fuel', fuelCode)}
+    ${(() => { const c = parseFloat(v.cenaVozidla); if (!c) return '';
+      return vehIsNew(v.datumReg) ? xe('clientsNewVehiclePrice', c) : xe('clientsVehiclePrice', c); })()}
     ${xe('noLicensePlate', v.ecv ? 'false' : 'true')}
     ${v.ecv ? xe('licensePlate', v.ecv) : ''}
     ${v.vin ? xe('VIN', v.vin) : ''}
@@ -3718,8 +3720,6 @@ function buildRateXML(freq = 12, codes = null, riskList = null) {
     ${xe('noTechnicalCertificate', v.tp ? 'false' : 'true')}
     ${v.tp ? xe('technicalCertificateNumber', v.tp) : ''}
     ${v.farba ? xe('colour', v.farba) : ''}
-    ${(() => { const c = parseFloat(v.cenaVozidla); if (!c) return '';
-      return vehIsNew(v.datumReg) ? xe('clientsNewVehiclePrice', c) : xe('clientsVehiclePrice', c); })()}
     ${xe('withoutRegistration', 'false')}
   </xml-par-ap2-vehicle></vehicle>
   ${xe('partyType', partyType)}

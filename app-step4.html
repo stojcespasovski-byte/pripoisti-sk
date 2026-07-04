@@ -563,6 +563,8 @@ function vehicleXML() {
     ${xe('enginePower', parseInt(V.vykon) || 0)}
     ${xe('weight', parseInt(V.hmotnost) || 0)}
     ${xe('fuel', PILLOW_FUEL[V.palivo] || 'JI')}
+    ${(() => { const c = parseFloat(V.cenaVozidla); if (!c) return '';
+      return vehIsNew(V.datumReg) ? xe('clientsNewVehiclePrice', c) : xe('clientsVehiclePrice', c); })()}
     ${xe('noLicensePlate', V.ecv ? 'false' : 'true')}
     ${V.ecv ? xe('licensePlate', V.ecv) : ''}
     ${V.vin ? xe('VIN', V.vin) : ''}
@@ -574,8 +576,6 @@ function vehicleXML() {
     ${xe('noTechnicalCertificate', V.tp ? 'false' : 'true')}
     ${V.tp ? xe('technicalCertificateNumber', V.tp) : ''}
     ${xe('colour', mapColour(V.farba))}
-    ${(() => { const c = parseFloat(V.cenaVozidla); if (!c) return '';
-      return vehIsNew(V.datumReg) ? xe('clientsNewVehiclePrice', c) : xe('clientsVehiclePrice', c); })()}
     ${xe('withoutRegistration', 'false')}
   </xml-par-ap2-vehicle></vehicle>`;
 }
