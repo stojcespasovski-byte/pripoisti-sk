@@ -478,6 +478,7 @@ select.entry-input option { background: #1a1a1a; color: white; }
 .tv-opt .tv-l small { display: block; font-size: 11.5px; font-weight: 500; color: rgba(255,255,255,.45); }
 .tv-opt.on .tv-l { color: var(--o); }
 .tv-opt .tv-p { font-size: 13px; font-weight: 800; color: var(--o); white-space: nowrap; }
+.tv-title { padding: 7px 10px 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: rgba(255,255,255,.4); }
 
 /* Info modal */
 .im-overlay {
@@ -1454,24 +1455,55 @@ const OUR_RISKS = new Set(ALL_VARIANTS.map(r => r.risk));
 
 /* Dlaždice s výberom variantu (Pillow vracia ceny všetkých variantov v jednej rate odpovedi) */
 const VARIANT_CHOICES = {
-  asistencia: { risk: 'AS2', options: [
+  asistencia: { risk: 'AS2', title: 'Rozsah asistencie', options: [
     ['AS2_S',  'S',  '50 km pri nehode'],
     ['AS2_M',  'M',  '50 km v SR'],
     ['AS2_L',  'L',  'SR a EÚ'],
     ['AS2_XL', 'XL', 'Neobmedzene SR+EÚ'],
   ]},
-  uraz: { risk: 'UR2', options: [
+  uraz: { risk: 'UR2', title: 'Rozsah krytia', options: [
     ['UR2_2', 'Úraz vodiča', '', 'Úraz'],
     ['UR2_1', 'Smrť oboch rodičov', '', 'Smrť'],
   ]},
-  batozina: { risk: 'ZA2', options: [
+  batozina: { risk: 'ZA2', title: 'Limit plnenia', options: [
     ['ZA2_750',  'do 750 €', '', '750 €'],
     ['ZA2_1500', 'do 1 500 €', '', '1 500 €'],
   ]},
+  havaria: { risk: 'HP2', title: 'Spoluúčasť', options: [
+    ['HP2_150', 'Spoluúčasť 150 €', '', '150 €'],
+    ['HP2_300', 'Spoluúčasť 300 €', '', '300 €'],
+    ['HP2_600', 'Spoluúčasť 600 €', '', '600 €'],
+  ]},
+  zver: { risk: 'SZ2', title: 'Spoluúčasť', options: [
+    ['SZ2_0',   'Bez spoluúčasti', '', 'bez SÚ'],
+    ['SZ2_150', 'Spoluúčasť 150 €', '', '150 €'],
+    ['SZ2_300', 'Spoluúčasť 300 €', '', '300 €'],
+    ['SZ2_600', 'Spoluúčasť 600 €', '', '600 €'],
+  ]},
+  kradez: { risk: 'OV2', title: 'Spoluúčasť', options: [
+    ['OV2_0',   'Bez spoluúčasti', '', 'bez SÚ'],
+    ['OV2_150', 'Spoluúčasť 150 €', '', '150 €'],
+    ['OV2_300', 'Spoluúčasť 300 €', '', '300 €'],
+    ['OV2_600', 'Spoluúčasť 600 €', '', '600 €'],
+  ]},
+  priroda: { risk: 'ZV2', title: 'Spoluúčasť', options: [
+    ['ZV2_0',   'Bez spoluúčasti', '', 'bez SÚ'],
+    ['ZV2_150', 'Spoluúčasť 150 €', '', '150 €'],
+    ['ZV2_300', 'Spoluúčasť 300 €', '', '300 €'],
+    ['ZV2_600', 'Spoluúčasť 600 €', '', '600 €'],
+  ]},
+  vandalizmus: { risk: 'VA2', title: 'Spoluúčasť', options: [
+    ['VA2_150', 'Spoluúčasť 150 €', '', '150 €'],
+    ['VA2_300', 'Spoluúčasť 300 €', '', '300 €'],
+    ['VA2_600', 'Spoluúčasť 600 €', '', '600 €'],
+  ]},
 };
 const CHOICE_RISKS = new Set(Object.values(VARIANT_CHOICES).map(c => c.risk));
-/* zvolený variant per dlaždica (default = doterajšie fixné hodnoty) */
-let selectedVariants = { asistencia: 'AS2_L', uraz: 'UR2_2', batozina: 'ZA2_750' };
+/* zvolený variant per dlaždica (default = doterajšie fixné hodnoty → ceny sa nemenia) */
+let selectedVariants = {
+  asistencia: 'AS2_L', uraz: 'UR2_2', batozina: 'ZA2_750',
+  havaria: 'HP2_150', zver: 'SZ2_0', kradez: 'OV2_0', priroda: 'ZV2_0', vandalizmus: 'VA2_150',
+};
 /* ceny variantov per frekvencia: {pillowFreq: {AS2: {AS2_S: mesačný ekvivalent, ...}, ...}} */
 let pillowVariantPrices = {};
 
@@ -3808,8 +3840,8 @@ function parseRateResponse(xmlText) {
     const month   = parseFloat(inner.querySelector('monthPremium')?.textContent || '0');
     const variant = inner.querySelector('variant')?.textContent;
     if (chosen || byRisk[risk] === undefined) byRisk[risk] = month;
-    // Pillow vracia ceny VŠETKÝCH variantov — pri rizikách s výberom si ich odložíme
-    if (CHOICE_RISKS.has(risk) && variant) {
+    // Pillow vracia ceny VŠETKÝCH variantov — odložíme si ich pre prepínanie bez API volaní
+    if (variant) {
       (byVariant[risk] = byVariant[risk] || {})[variant] = month;
     }
   });
@@ -4527,11 +4559,19 @@ const pillowFreqForMult = m => 12 / m;
 
 /* mesačný ekvivalent rizika pri danej Pillow frekvencii (fallback na statickú data-price) */
 function monthEqFor(tileId, pillowFreq) {
-  // dlaždica s výberom variantu → cena zvoleného variantu
+  // dlaždica s výberom variantu → súčet rizík so zvoleným variantom
+  // (havária = HP2 podľa výberu + SZ2_0; ostatné majú jedno riziko)
   const choice = VARIANT_CHOICES[tileId];
   if (choice) {
-    const vp = pillowVariantPrices[pillowFreq]?.[choice.risk]?.[selectedVariants[tileId]];
-    if (vp != null) return vp;
+    const vp = pillowVariantPrices[pillowFreq] || {};
+    let sum = 0, complete = true;
+    for (const r of (TILE_RISKS[tileId] || [])) {
+      const variant = (r.risk === choice.risk) ? selectedVariants[tileId] : r.variant;
+      const p = vp[r.risk]?.[variant];
+      if (p == null) { complete = false; break; }
+      sum += p;
+    }
+    if (complete) return sum;
   }
   const fp = pillowFreqPrices[pillowFreq];
   if (fp && fp[tileId] != null) return fp[tileId];
@@ -4565,7 +4605,7 @@ const INFO_CONTENT = {
       'Jazda pod vplyvom alkoholu/drog, súťaže, jazdy mimo ciest, použitie vozidla ako pracovný stroj.',
       'Poruchy a prirodzené opotrebenie, nesprávna obsluha, vjazd do vody v zaplavenom území.',
     ],
-    params: [['Poistná suma', 'Obvyklá cena vozidla'], ['Spoluúčasť (havária)', '150 €'], ['Spoluúčasť (zver)', 'Bez spoluúčasti']],
+    params: [['Poistná suma', 'Obvyklá cena vozidla'], ['Spoluúčasť havárie (na výber)', '150 / 300 / 600 €'], ['Spoluúčasť (zver)', 'Bez spoluúčasti']],
     note: 'Nehodu, ktorú podľa zákona treba hlásiť, oznámte polícii — inak môže poisťovňa plnenie primerane znížiť.',
   },
   zver: {
@@ -4579,7 +4619,7 @@ const INFO_CONTENT = {
       'Škody spôsobené zvieraťom prepravovaným vo vozidle.',
       'Škody výhradne na sklách či pneumatikách — na sklá je pripoistenie Sklá.',
     ],
-    params: [['Poistná suma', 'Obvyklá cena vozidla'], ['Spoluúčasť', 'Bez spoluúčasti']],
+    params: [['Poistná suma', 'Obvyklá cena vozidla'], ['Spoluúčasť (na výber)', 'bez / 150 / 300 / 600 €']],
     note: 'Stret so zverou bezodkladne nahláste polícii; ak ho polícia nešetrí, spravte si fotodokumentáciu.',
   },
   kradez: {
@@ -4593,7 +4633,7 @@ const INFO_CONTENT = {
       'Zmocnenie sa vozidla podvodom alebo originálnym kľúčom ponechaným bez dozoru.',
       '„Požičanie" vozidla osobou zo spoločnej domácnosti sa nepovažuje za krádež.',
     ],
-    params: [['Poistná suma', 'Obvyklá cena vozidla'], ['Spoluúčasť', 'Bez spoluúčasti']],
+    params: [['Poistná suma', 'Obvyklá cena vozidla'], ['Spoluúčasť (na výber)', 'bez / 150 / 300 / 600 €']],
     note: 'Krádež bezodkladne nahláste polícii. Technický preukaz a kľúče nenechávajte vo vozidle.',
   },
   priroda: {
@@ -4608,7 +4648,7 @@ const INFO_CONTENT = {
       'Škody výhradne na sklách či pneumatikách — na sklá je pripoistenie Sklá.',
       'Požiar/výbuch spôsobený úmyselne cudzou osobou (to kryje Vandalizmus) alebo poruchou vozidla.',
     ],
-    params: [['Poistná suma', 'Obvyklá cena vozidla'], ['Spoluúčasť', 'Bez spoluúčasti']],
+    params: [['Poistná suma', 'Obvyklá cena vozidla'], ['Spoluúčasť (na výber)', 'bez / 150 / 300 / 600 €']],
   },
   skla: {
     title: 'Sklá',
@@ -4635,7 +4675,7 @@ const INFO_CONTENT = {
       'Škody výhradne na sklách či pneumatikách — na sklá je pripoistenie Sklá.',
       'Vozidlo opustené neuzamknuté či nezabezpečené.',
     ],
-    params: [['Poistná suma', 'Obvyklá cena vozidla'], ['Spoluúčasť', '150 €']],
+    params: [['Poistná suma', 'Obvyklá cena vozidla'], ['Spoluúčasť (na výber)', '150 / 300 / 600 €']],
     note: 'Vandalizmus bezodkladne nahláste polícii.',
   },
   asistencia: {
@@ -4721,7 +4761,7 @@ function openVariantPopover(e, tileId) {
   const prices = (pillowVariantPrices[pf] || {})[cfg.risk] || {};
   const pop = document.createElement('div');
   pop.className = 'tv-pop'; pop.id = 'tv-pop';
-  pop.innerHTML = cfg.options.map(([code, label, sub]) => {
+  pop.innerHTML = (cfg.title ? `<div class="tv-title">${cfg.title}</div>` : '') + cfg.options.map(([code, label, sub]) => {
     const p = prices[code];
     const pTxt = p != null ? `€${(p * currentMult).toFixed(2).replace('.', ',')}` : '';
     return `<div class="tv-opt${selectedVariants[tileId] === code ? ' on' : ''}" onclick="selectVariant(event,'${tileId}','${code}')">` +
