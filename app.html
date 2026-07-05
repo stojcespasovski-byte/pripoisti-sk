@@ -4529,7 +4529,8 @@ async function triggerLookup() {
       const effObec = c.mesto || obec;
       const psc = c.psc || fieldVal('f-psc-szco') || pscForObec(effObec);
       lookup.poistnik = { typ: t, ico, nazov: c.nazov || '', obec: effObec, psc,
-                          ulica: c.ulica || '', cislo: c.cislo || '' };
+                          ulica: c.ulica || '', cislo: c.cislo || '',
+                          konatelia: (c.konatelia || []).filter(Boolean) };   // z ORSR → oprávnená osoba v Kroku 3
     } else {
       const obec = fieldVal('f-obec-fo');
       const psc  = fieldVal('f-psc-fo') || pscForObec(obec);   // z číselníka obcí

@@ -508,6 +508,13 @@ setV('v-typ', V.typ || 'OA');
 if (typ === 'po') {
   setV('po-ico', P.ico); setV('po-nazov', P.nazov); setV('po-obec', P.obec); setV('po-psc', P.psc);
   setV('po-ulica', P.ulica); setV('po-cislo', P.cislo);          // z company lookupu (editovateľné)
+  // Konateľ z ORSR → oprávnená osoba (meno/priezvisko). 1 → rovno; viacerí → výber v modali
+  const kon = (P.konatelia || []).filter(Boolean);
+  const menoPrazdne = !document.getElementById('po-meno').value.trim() && !document.getElementById('po-priezvisko').value.trim();
+  if (kon.length && menoPrazdne) {
+    if (kon.length === 1) fillKonatel(kon[0]);
+    else showKonatelPicker(kon);
+  }
 } else if (typ === 'szco') {
   setV('szco-ico', P.ico); setV('szco-nazov', P.nazov); setV('szco-rc', P.rc); setV('szco-obec', P.obec); setV('szco-psc', P.psc);
   setV('szco-ulica', P.ulica); setV('szco-cislo', P.cislo);
@@ -515,6 +522,40 @@ if (typ === 'po') {
   setV('fo-rc', P.rc); setV('fo-obec', P.obec); setV('fo-psc', P.psc);
 } else if (typ === 'cudzinec') {
   setV('cz-obec', P.obec); setV('cz-psc', P.psc);
+}
+
+/* ── Konateľ z ORSR → oprávnená osoba (PO) ── */
+function splitKonatelMeno(full) {
+  // "Ing. Ján Novák - Člen predstavenstva" → bez titulov a bez roly za pomlčkou
+  const bezRole = String(full).split(/\s[-–]\s/)[0];
+  const t = bezRole.split(/\s+/).filter(x => x && !/\.$/.test(x) && !/^(PhD|CSc|DrSc|MBA|LLM)$/i.test(x.replace(/,$/, '')));
+  if (!t.length) return { meno: '', priezvisko: '' };
+  return { meno: t.slice(0, -1).join(' '), priezvisko: t[t.length - 1] };
+}
+function fillKonatel(fullName) {
+  const { meno, priezvisko } = splitKonatelMeno(fullName);
+  setV('po-meno', meno); setV('po-priezvisko', priezvisko);
+}
+function showKonatelPicker(names) {
+  document.getElementById('konOv')?.remove();
+  const ov = document.createElement('div');
+  ov.id = 'konOv';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.62);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML = `<div style="background:#171717;border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:22px 24px;max-width:400px;width:100%;box-shadow:0 18px 50px rgba(0,0,0,.5);">
+    <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:4px;">Oprávnená osoba</div>
+    <div style="font-size:13px;color:rgba(255,255,255,.5);margin-bottom:16px;line-height:1.5;">Firma má v ORSR viacerých konateľov — vyberte, kto podpisuje zmluvu.</div>
+    ${names.map(n => `<button type="button" class="kon-opt" data-meno="${n.replace(/"/g, '&quot;')}"
+      style="display:block;width:100%;text-align:left;margin-bottom:8px;padding:12px 14px;border:1px solid rgba(255,255,255,.15);border-radius:9px;background:rgba(255,255,255,.03);font-size:14px;font-weight:600;color:#fff;cursor:pointer;font-family:inherit;transition:all .12s;">${n}</button>`).join('')}
+    <button type="button" id="konZrusit" style="margin-top:6px;border:none;background:none;font-size:13px;color:rgba(255,255,255,.45);cursor:pointer;font-family:inherit;">Zavrieť — vypíšem ručne</button>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.querySelectorAll('.kon-opt').forEach(b => {
+    b.addEventListener('mouseenter', () => { b.style.borderColor = 'var(--o)'; b.style.background = 'rgba(232,130,26,.1)'; });
+    b.addEventListener('mouseleave', () => { b.style.borderColor = 'rgba(255,255,255,.15)'; b.style.background = 'rgba(255,255,255,.03)'; });
+    b.addEventListener('click', () => { fillKonatel(b.dataset.meno); ov.remove(); });
+  });
+  ov.querySelector('#konZrusit').addEventListener('click', () => ov.remove());
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
 }
 
 /* Validácia rodného čísla (SK/CZ): 9–10 číslic, platný mesiac/deň, 10-miestne deliteľné 11 */
