@@ -457,7 +457,7 @@ select.entry-input option { background: #1a1a1a; color: white; }
 .tv-cur {
   display: none; margin-left: 8px; vertical-align: 2px;
   font-size: 12px; font-weight: 700; color: var(--o);
-  border: 1px solid rgba(232,130,26,.4); border-radius: 7px;
+  border: 1px solid var(--o); border-radius: 7px;
   padding: 2px 8px; cursor: pointer; white-space: nowrap;
   transition: background .12s; user-select: none;
 }
@@ -1461,12 +1461,12 @@ const VARIANT_CHOICES = {
     ['AS2_XL', 'XL', 'Neobmedzene SR+EÚ'],
   ]},
   uraz: { risk: 'UR2', options: [
-    ['UR2_2', 'Úraz vodiča', ''],
-    ['UR2_1', 'Smrť oboch rodičov', ''],
+    ['UR2_2', 'Úraz vodiča', '', 'Úraz'],
+    ['UR2_1', 'Smrť oboch rodičov', '', 'Smrť'],
   ]},
   batozina: { risk: 'ZA2', options: [
-    ['ZA2_750',  'do 750 €', ''],
-    ['ZA2_1500', 'do 1 500 €', ''],
+    ['ZA2_750',  'do 750 €', '', '750 €'],
+    ['ZA2_1500', 'do 1 500 €', '', '1 500 €'],
   ]},
 };
 const CHOICE_RISKS = new Set(Object.values(VARIANT_CHOICES).map(c => c.risk));
@@ -4789,7 +4789,8 @@ function renderTilePrices() {
     let variantBtn = '';
     const choice = VARIANT_CHOICES[id];
     if (choice) {
-      const lbl = (choice.options.find(o => o[0] === selectedVariants[id]) || [])[1] || '';
+      const opt = choice.options.find(o => o[0] === selectedVariants[id]) || [];
+      const lbl = opt[3] || opt[1] || '';                 // krátky názov; plný je v roletke
       variantBtn = ` <span class="tv-cur" onclick="openVariantPopover(event,'${id}')" title="Zmeniť variant">${lbl} ▾</span>`;
     }
     priceEl.innerHTML = `€${val} <span>/${currentFreqLabel}</span>${variantBtn}`;
