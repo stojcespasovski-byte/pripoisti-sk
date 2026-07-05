@@ -480,6 +480,18 @@ select.entry-input option { background: #1a1a1a; color: white; }
 .tv-opt .tv-p { font-size: 13px; font-weight: 800; color: var(--o); white-space: nowrap; }
 .tv-title { padding: 7px 10px 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: rgba(255,255,255,.4); }
 
+/* Jednotná spoluúčasť nad mriežkou */
+.su-switch { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 12px 0 16px; }
+.su-lbl { font-size: 14px; font-weight: 700; color: rgba(255,255,255,.65); }
+.su-opt {
+  border: 1px solid rgba(255,255,255,.18); border-radius: 8px;
+  padding: 6px 14px; font-size: 14px; font-weight: 700; color: rgba(255,255,255,.55);
+  cursor: pointer; transition: all .12s; user-select: none;
+}
+.su-opt:hover { border-color: rgba(232,130,26,.5); }
+.su-opt.active { border-color: var(--o); background: rgba(232,130,26,.14); color: var(--o); }
+.su-hint { font-size: 12px; color: rgba(255,255,255,.35); }
+
 /* Info modal */
 .im-overlay {
   position: fixed; inset: 0; z-index: 200; display: none;
@@ -1088,6 +1100,13 @@ footer {
       </div>
 
       <div class="calc-label" id="tiles-label" style="margin-top:24px;">Vyberte pripoistenia, ktoré chcete:</div>
+      <div class="su-switch" id="su-switch">
+        <span class="su-lbl">Spoluúčasť:</span>
+        <span class="su-opt" data-su="150" onclick="setSpoluUcast('150')">150 €</span>
+        <span class="su-opt active" data-su="300" onclick="setSpoluUcast('300')">300 €</span>
+        <span class="su-opt" data-su="600" onclick="setSpoluUcast('600')">600 €</span>
+        <span class="su-hint">platí spoločne pre haváriu, zver, krádež, živel a vandalizmus</span>
+      </div>
       <div class="tiles-partial" id="tiles-partial">
         Toto vozidlo sa nenašlo v cenníku — vieme oceniť len <b>asistenciu, úraz a batožinu</b>.
         Pre plné krytie kliknite <b>„Je to iné auto?"</b> pri vozidle a vyplňte ho ručne.
@@ -1435,12 +1454,12 @@ const PILLOW_CONFIG = {
    „Havária a zrážka so zverou" nesie HP2 aj SZ2 (cena = súčet). Samostatná dlaždica
    „zver" (len SZ2) ostáva pre tých, čo nechcú plnú havárku. */
 const TILE_RISKS = {
-  havaria:     [{ risk: 'HP2', variant: 'HP2_150' }, { risk: 'SZ2', variant: 'SZ2_0' }],
-  zver:        [{ risk: 'SZ2', variant: 'SZ2_0'        }],
-  kradez:      [{ risk: 'OV2', variant: 'OV2_0'        }],
-  priroda:     [{ risk: 'ZV2', variant: 'ZV2_0'        }],  // živel
+  havaria:     [{ risk: 'HP2', variant: 'HP2_300' }, { risk: 'SZ2', variant: 'SZ2_300' }],
+  zver:        [{ risk: 'SZ2', variant: 'SZ2_300'      }],
+  kradez:      [{ risk: 'OV2', variant: 'OV2_300'      }],
+  priroda:     [{ risk: 'ZV2', variant: 'ZV2_300'      }],  // živel
   skla:        [{ risk: 'SK2', variant: 'SK2_STANDARD' }],
-  vandalizmus: [{ risk: 'VA2', variant: 'VA2_150'      }],
+  vandalizmus: [{ risk: 'VA2', variant: 'VA2_300'      }],
   asistencia:  [{ risk: 'AS2', variant: 'AS2_L'        }],
   uraz:        [{ risk: 'UR2', variant: 'UR2_2'        }],
   batozina:    [{ risk: 'ZA2', variant: 'ZA2_750'      }],
@@ -1469,41 +1488,21 @@ const VARIANT_CHOICES = {
     ['ZA2_750',  'do 750 €', '', '750 €'],
     ['ZA2_1500', 'do 1 500 €', '', '1 500 €'],
   ]},
-  havaria: { risk: 'HP2', title: 'Spoluúčasť', options: [
-    ['HP2_150', 'Spoluúčasť 150 €', '', '150 €'],
-    ['HP2_300', 'Spoluúčasť 300 €', '', '300 €'],
-    ['HP2_600', 'Spoluúčasť 600 €', '', '600 €'],
-  ]},
-  zver: { risk: 'SZ2', title: 'Spoluúčasť', options: [
-    ['SZ2_0',   'Bez spoluúčasti', '', 'bez SÚ'],
-    ['SZ2_150', 'Spoluúčasť 150 €', '', '150 €'],
-    ['SZ2_300', 'Spoluúčasť 300 €', '', '300 €'],
-    ['SZ2_600', 'Spoluúčasť 600 €', '', '600 €'],
-  ]},
-  kradez: { risk: 'OV2', title: 'Spoluúčasť', options: [
-    ['OV2_0',   'Bez spoluúčasti', '', 'bez SÚ'],
-    ['OV2_150', 'Spoluúčasť 150 €', '', '150 €'],
-    ['OV2_300', 'Spoluúčasť 300 €', '', '300 €'],
-    ['OV2_600', 'Spoluúčasť 600 €', '', '600 €'],
-  ]},
-  priroda: { risk: 'ZV2', title: 'Spoluúčasť', options: [
-    ['ZV2_0',   'Bez spoluúčasti', '', 'bez SÚ'],
-    ['ZV2_150', 'Spoluúčasť 150 €', '', '150 €'],
-    ['ZV2_300', 'Spoluúčasť 300 €', '', '300 €'],
-    ['ZV2_600', 'Spoluúčasť 600 €', '', '600 €'],
-  ]},
-  vandalizmus: { risk: 'VA2', title: 'Spoluúčasť', options: [
-    ['VA2_150', 'Spoluúčasť 150 €', '', '150 €'],
-    ['VA2_300', 'Spoluúčasť 300 €', '', '300 €'],
-    ['VA2_600', 'Spoluúčasť 600 €', '', '600 €'],
-  ]},
 };
+
+/* Jednotná spoluúčasť pre havarijné krytia (HP2, SZ2, OV2, ZV2, VA2) —
+   na zmluve môže byť len jedna spoločná; 'bez' sa nepoužíva. Default 300 €. */
+const SU_RISKS = new Set(['HP2', 'SZ2', 'OV2', 'ZV2', 'VA2']);
+let spoluUcast = '300';
+/* variant rizika: SÚ riziká podľa jednotnej spoluúčasti, výberové podľa dlaždice */
+function variantFor(r, tileId) {
+  if (SU_RISKS.has(r.risk)) return r.risk + '_' + spoluUcast;
+  const c = VARIANT_CHOICES[tileId];
+  return (c && r.risk === c.risk) ? selectedVariants[tileId] : r.variant;
+}
 const CHOICE_RISKS = new Set(Object.values(VARIANT_CHOICES).map(c => c.risk));
 /* zvolený variant per dlaždica (default = doterajšie fixné hodnoty → ceny sa nemenia) */
-let selectedVariants = {
-  asistencia: 'AS2_L', uraz: 'UR2_2', batozina: 'ZA2_750',
-  havaria: 'HP2_150', zver: 'SZ2_0', kradez: 'OV2_0', priroda: 'ZV2_0', vandalizmus: 'VA2_150',
-};
+let selectedVariants = { asistencia: 'AS2_L', uraz: 'UR2_2', batozina: 'ZA2_750' };
 /* ceny variantov per frekvencia: {pillowFreq: {AS2: {AS2_S: mesačný ekvivalent, ...}, ...}} */
 let pillowVariantPrices = {};
 
@@ -4559,20 +4558,17 @@ const pillowFreqForMult = m => 12 / m;
 
 /* mesačný ekvivalent rizika pri danej Pillow frekvencii (fallback na statickú data-price) */
 function monthEqFor(tileId, pillowFreq) {
-  // dlaždica s výberom variantu → súčet rizík so zvoleným variantom
-  // (havária = HP2 podľa výberu + SZ2_0; ostatné majú jedno riziko)
-  const choice = VARIANT_CHOICES[tileId];
-  if (choice) {
-    const vp = pillowVariantPrices[pillowFreq] || {};
-    let sum = 0, complete = true;
-    for (const r of (TILE_RISKS[tileId] || [])) {
-      const variant = (r.risk === choice.risk) ? selectedVariants[tileId] : r.variant;
-      const p = vp[r.risk]?.[variant];
-      if (p == null) { complete = false; break; }
-      sum += p;
-    }
-    if (complete) return sum;
+  // cena dlaždice = súčet rizík; variant určuje jednotná spoluúčasť
+  // (HP2/SZ2/OV2/ZV2/VA2) alebo výber v dlaždici (AS2/UR2/ZA2)
+  const vp = pillowVariantPrices[pillowFreq] || {};
+  const risks = TILE_RISKS[tileId] || [];
+  let sum = 0, complete = risks.length > 0;
+  for (const r of risks) {
+    const p = vp[r.risk]?.[variantFor(r, tileId)];
+    if (p == null) { complete = false; break; }
+    sum += p;
   }
+  if (complete) return sum;
   const fp = pillowFreqPrices[pillowFreq];
   if (fp && fp[tileId] != null) return fp[tileId];
   const el = document.querySelector(`.tile[data-id="${tileId}"]`);
@@ -4605,7 +4601,7 @@ const INFO_CONTENT = {
       'Jazda pod vplyvom alkoholu/drog, súťaže, jazdy mimo ciest, použitie vozidla ako pracovný stroj.',
       'Poruchy a prirodzené opotrebenie, nesprávna obsluha, vjazd do vody v zaplavenom území.',
     ],
-    params: [['Poistná suma', 'Obvyklá cena vozidla'], ['Spoluúčasť havárie (na výber)', '150 / 300 / 600 €'], ['Spoluúčasť (zver)', 'Bez spoluúčasti']],
+    params: [['Poistná suma', 'Obvyklá cena vozidla'], ['Spoluúčasť (na výber)', '150 / 300 / 600 € — jednotná pre havarijné krytia']],
     note: 'Nehodu, ktorú podľa zákona treba hlásiť, oznámte polícii — inak môže poisťovňa plnenie primerane znížiť.',
   },
   zver: {
@@ -4619,7 +4615,7 @@ const INFO_CONTENT = {
       'Škody spôsobené zvieraťom prepravovaným vo vozidle.',
       'Škody výhradne na sklách či pneumatikách — na sklá je pripoistenie Sklá.',
     ],
-    params: [['Poistná suma', 'Obvyklá cena vozidla'], ['Spoluúčasť (na výber)', 'bez / 150 / 300 / 600 €']],
+    params: [['Poistná suma', 'Obvyklá cena vozidla'], ['Spoluúčasť (na výber)', '150 / 300 / 600 € — jednotná pre havarijné krytia']],
     note: 'Stret so zverou bezodkladne nahláste polícii; ak ho polícia nešetrí, spravte si fotodokumentáciu.',
   },
   kradez: {
@@ -4633,7 +4629,7 @@ const INFO_CONTENT = {
       'Zmocnenie sa vozidla podvodom alebo originálnym kľúčom ponechaným bez dozoru.',
       '„Požičanie" vozidla osobou zo spoločnej domácnosti sa nepovažuje za krádež.',
     ],
-    params: [['Poistná suma', 'Obvyklá cena vozidla'], ['Spoluúčasť (na výber)', 'bez / 150 / 300 / 600 €']],
+    params: [['Poistná suma', 'Obvyklá cena vozidla'], ['Spoluúčasť (na výber)', '150 / 300 / 600 € — jednotná pre havarijné krytia']],
     note: 'Krádež bezodkladne nahláste polícii. Technický preukaz a kľúče nenechávajte vo vozidle.',
   },
   priroda: {
@@ -4648,7 +4644,7 @@ const INFO_CONTENT = {
       'Škody výhradne na sklách či pneumatikách — na sklá je pripoistenie Sklá.',
       'Požiar/výbuch spôsobený úmyselne cudzou osobou (to kryje Vandalizmus) alebo poruchou vozidla.',
     ],
-    params: [['Poistná suma', 'Obvyklá cena vozidla'], ['Spoluúčasť (na výber)', 'bez / 150 / 300 / 600 €']],
+    params: [['Poistná suma', 'Obvyklá cena vozidla'], ['Spoluúčasť (na výber)', '150 / 300 / 600 € — jednotná pre havarijné krytia']],
   },
   skla: {
     title: 'Sklá',
@@ -4675,7 +4671,7 @@ const INFO_CONTENT = {
       'Škody výhradne na sklách či pneumatikách — na sklá je pripoistenie Sklá.',
       'Vozidlo opustené neuzamknuté či nezabezpečené.',
     ],
-    params: [['Poistná suma', 'Obvyklá cena vozidla'], ['Spoluúčasť (na výber)', '150 / 300 / 600 €']],
+    params: [['Poistná suma', 'Obvyklá cena vozidla'], ['Spoluúčasť (na výber)', '150 / 300 / 600 € — jednotná pre havarijné krytia']],
     note: 'Vandalizmus bezodkladne nahláste polícii.',
   },
   asistencia: {
@@ -4777,6 +4773,13 @@ function openVariantPopover(e, tileId) {
   }, 0);
 }
 function closeVariantPopover() { document.getElementById('tv-pop')?.remove(); }
+function setSpoluUcast(v) {
+  if (spoluUcast === v) return;
+  spoluUcast = v;
+  document.querySelectorAll('#su-switch .su-opt').forEach(el => el.classList.toggle('active', el.dataset.su === v));
+  renderTilePrices();
+  updateCalc();
+}
 function selectVariant(e, tileId, code) {
   e.stopPropagation();                       // klik nesmie od-vybrať dlaždicu
   closeVariantPopover();
@@ -4942,7 +4945,7 @@ function goToStep3(e) {
       id,
       name: t.querySelector('.tile-name').textContent + (chosenLabel ? ` — ${chosenLabel}` : ''),
       desc: t.querySelector('.tile-desc') ? t.querySelector('.tile-desc').textContent : '',
-      risks: (TILE_RISKS[id] || []).map(r => ({ risk: r.risk, variant: (chosen && r.risk === choice.risk) ? chosen : r.variant })),
+      risks: (TILE_RISKS[id] || []).map(r => ({ risk: r.risk, variant: variantFor(r, id) })),
       priceMonthly: monthEqFor(id, 12),
     };
   });
@@ -4963,8 +4966,9 @@ function goToStep3(e) {
       pillowFreq: 12 / mult,                     // mult 1/3/6/12 → Pillow 12/4/2/1
     },
     freqPrices: pillowFreqPrices,                // {12:{tile:€},4,2,1} — pre zobrazenie
-    variantPrices: pillowVariantPrices,          // ceny všetkých variantov (AS2/UR2/ZA2)
+    variantPrices: pillowVariantPrices,          // ceny všetkých variantov
     selectedVariants: { ...selectedVariants },   // zvolené varianty dlaždíc
+    spoluUcast,                                  // jednotná spoluúčasť havarijných krytí
     poistenieOd: (typeof todayISO === 'function') ? todayISO() : new Date().toISOString().slice(0, 10),
     savedAt: Date.now(),                         // pre obnovu stavu pri návrate na Krok 1
   };
@@ -4997,6 +5001,8 @@ function restoreFromOrder() {
   pillowFreqPrices = order.freqPrices;
   pillowVariantPrices = order.variantPrices || {};
   if (order.selectedVariants) selectedVariants = { ...selectedVariants, ...order.selectedVariants };
+  if (order.spoluUcast) { spoluUcast = order.spoluUcast; }
+  document.querySelectorAll('#su-switch .su-opt').forEach(el => el.classList.toggle('active', el.dataset.su === spoluUcast));
   _vehCacheKey = order.vehicle.ecv;                     // pre-lookup/re-lookup nevolá BCRM zbytočne
   _vehCacheVal = { found: true, data: { ...order.vehicle } };
 
