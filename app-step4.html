@@ -424,8 +424,6 @@ if (typ === 'po') {
     <div class="row c4">
       ${fv('Obec', P.obec)}
       ${fv('PSČ', P.psc, true)}
-      ${fv('', '')}
-      ${fv('', '')}
     </div>`;
 } else if (typ === 'szco') {
   klientFields.innerHTML = `
@@ -445,7 +443,6 @@ if (typ === 'po') {
       ${fv('Ulica', P.ulica)}
       ${fv('Číslo domu', P.cislo)}
       ${fv('Obec', P.obec)}
-      ${fv('', '')}
     </div>`;
 } else if (typ === 'cudzinec') {
   klientFields.innerHTML = `
@@ -463,9 +460,6 @@ if (typ === 'po') {
     </div>
     <div class="row c4">
       ${fv('PSČ', P.psc, true)}
-      ${fv('', '')}
-      ${fv('', '')}
-      ${fv('', '')}
     </div>`;
 } else {
   klientFields.innerHTML = `
@@ -483,9 +477,6 @@ if (typ === 'po') {
     </div>
     <div class="row c4">
       ${fv('PSČ', P.psc, true)}
-      ${fv('', '')}
-      ${fv('', '')}
-      ${fv('', '')}
     </div>`;
 }
 
