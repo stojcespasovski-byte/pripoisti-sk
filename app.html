@@ -452,18 +452,32 @@ select.entry-input option { background: #1a1a1a; color: white; }
 .tile-info:hover { color: var(--o); }
 .tile.unavailable .tile-info { display: none; }
 
-/* Varianty v dlaždici (asistencia/úraz/batožina) — zobrazia sa po vybratí dlaždice */
-.tile-variants { display: none; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
-.tile.sel .tile-variants { display: flex; }
-.tv-chip {
-  border: 1px solid rgba(255,255,255,.18); border-radius: 8px;
-  padding: 5px 10px; cursor: pointer; text-align: center;
-  font-size: 13px; font-weight: 700; color: rgba(255,255,255,.6);
-  line-height: 1.25; transition: all .12s; user-select: none;
+/* Variant dlaždice (asistencia/úraz/batožina) — kompaktný prepínač v riadku ceny,
+   možnosti v plávajúcom menu → dlaždica NEMENÍ veľkosť */
+.tv-cur {
+  display: none; margin-left: 8px; vertical-align: 2px;
+  font-size: 12px; font-weight: 700; color: var(--o);
+  border: 1px solid rgba(232,130,26,.4); border-radius: 7px;
+  padding: 2px 8px; cursor: pointer; white-space: nowrap;
+  transition: background .12s; user-select: none;
 }
-.tv-chip small { display: block; font-size: 10.5px; font-weight: 500; opacity: .7; }
-.tv-chip:hover { border-color: rgba(232,130,26,.5); }
-.tv-chip.on { border-color: var(--o); background: rgba(232,130,26,.14); color: var(--o); }
+.tile.sel .tv-cur { display: inline-block; }
+.tv-cur:hover { background: rgba(232,130,26,.12); }
+.tv-pop {
+  position: fixed; z-index: 300; min-width: 230px;
+  background: #171717; border: 1px solid rgba(255,255,255,.14);
+  border-radius: 10px; padding: 5px; box-shadow: 0 10px 32px rgba(0,0,0,.5);
+}
+.tv-opt {
+  display: flex; justify-content: space-between; align-items: center; gap: 14px;
+  padding: 8px 10px; border-radius: 7px; cursor: pointer; transition: background .1s;
+}
+.tv-opt:hover { background: rgba(255,255,255,.06); }
+.tv-opt.on { background: rgba(232,130,26,.13); }
+.tv-opt .tv-l { font-size: 14px; font-weight: 700; color: rgba(255,255,255,.85); line-height: 1.25; }
+.tv-opt .tv-l small { display: block; font-size: 11.5px; font-weight: 500; color: rgba(255,255,255,.45); }
+.tv-opt.on .tv-l { color: var(--o); }
+.tv-opt .tv-p { font-size: 13px; font-weight: 800; color: var(--o); white-space: nowrap; }
 
 /* Info modal */
 .im-overlay {
@@ -4686,33 +4700,36 @@ document.querySelectorAll('#tiles .tile').forEach(tile => {
   tile.appendChild(btn);
 });
 
-/* kontajner variantov do dlaždíc s výberom (asistencia/úraz/batožina) */
-document.querySelectorAll('#tiles .tile').forEach(tile => {
-  if (!VARIANT_CHOICES[tile.dataset.id]) return;
-  const div = document.createElement('div');
-  div.className = 'tile-variants';
-  tile.insertBefore(div, tile.querySelector('.tile-price'));
-});
-
-/* chips variantov — cena zvoleného obdobia pri každom variante */
-function renderTileVariants() {
+/* Plávajúce menu variantov — otvára ho malý prepínač v riadku ceny */
+function openVariantPopover(e, tileId) {
+  e.stopPropagation();
+  closeVariantPopover();
+  const cfg = VARIANT_CHOICES[tileId];
   const pf = pillowFreqForMult(currentMult);
-  Object.entries(VARIANT_CHOICES).forEach(([tileId, cfg]) => {
-    const box = document.querySelector(`.tile[data-id="${tileId}"] .tile-variants`);
-    if (!box) return;
-    const prices = pillowVariantPrices[pf]?.[cfg.risk] || {};
-    box.innerHTML = cfg.options.map(([code, label, sub]) => {
-      const p = prices[code];
-      const priceTxt = p != null ? `€${(p * currentMult).toFixed(2).replace('.', ',')}` : '';
-      return `<span class="tv-chip${selectedVariants[tileId] === code ? ' on' : ''}" onclick="selectVariant(event,'${tileId}','${code}')">${label}${sub ? `<small>${sub}</small>` : ''}${priceTxt ? `<small>${priceTxt}</small>` : ''}</span>`;
-    }).join('');
-  });
+  const prices = (pillowVariantPrices[pf] || {})[cfg.risk] || {};
+  const pop = document.createElement('div');
+  pop.className = 'tv-pop'; pop.id = 'tv-pop';
+  pop.innerHTML = cfg.options.map(([code, label, sub]) => {
+    const p = prices[code];
+    const pTxt = p != null ? `€${(p * currentMult).toFixed(2).replace('.', ',')}` : '';
+    return `<div class="tv-opt${selectedVariants[tileId] === code ? ' on' : ''}" onclick="selectVariant(event,'${tileId}','${code}')">` +
+           `<div class="tv-l">${label}${sub ? `<small>${sub}</small>` : ''}</div><div class="tv-p">${pTxt}</div></div>`;
+  }).join('');
+  document.body.appendChild(pop);
+  const r = e.currentTarget.getBoundingClientRect();
+  pop.style.left = Math.max(8, Math.min(r.left, window.innerWidth - pop.offsetWidth - 12)) + 'px';
+  pop.style.top  = (r.bottom + 6 + pop.offsetHeight > window.innerHeight ? r.top - pop.offsetHeight - 6 : r.bottom + 6) + 'px';
+  setTimeout(() => {
+    document.addEventListener('click', closeVariantPopover, { once: true });
+    window.addEventListener('scroll', closeVariantPopover, { once: true });
+  }, 0);
 }
+function closeVariantPopover() { document.getElementById('tv-pop')?.remove(); }
 function selectVariant(e, tileId, code) {
-  e.stopPropagation();                       // klik na chip nesmie od-vybrať dlaždicu
+  e.stopPropagation();                       // klik nesmie od-vybrať dlaždicu
+  closeVariantPopover();
   if (selectedVariants[tileId] === code) return;
   selectedVariants[tileId] = code;
-  renderTileVariants();
   renderTilePrices();
   updateCalc();
 }
@@ -4755,10 +4772,16 @@ function renderTilePrices() {
   document.querySelectorAll('.tile').forEach(tile => {
     if (tile.classList.contains('unavailable')) return;   // cena skrytá, poznámku rieši CSS
     const priceEl = tile.querySelector('.tile-price');
-    const val = (monthEqFor(tile.dataset.id, pf) * currentMult).toFixed(2).replace('.', ',');
-    priceEl.innerHTML = `€${val} <span>/${currentFreqLabel}</span>`;
+    const id = tile.dataset.id;
+    const val = (monthEqFor(id, pf) * currentMult).toFixed(2).replace('.', ',');
+    let variantBtn = '';
+    const choice = VARIANT_CHOICES[id];
+    if (choice) {
+      const lbl = (choice.options.find(o => o[0] === selectedVariants[id]) || [])[1] || '';
+      variantBtn = ` <span class="tv-cur" onclick="openVariantPopover(event,'${id}')" title="Zmeniť variant">${lbl} ▾</span>`;
+    }
+    priceEl.innerHTML = `€${val} <span>/${currentFreqLabel}</span>${variantBtn}`;
   });
-  renderTileVariants();   // chips variantov držať v synchróne s frekvenciou/cenami
 }
 
 function toggleTile(el) {
