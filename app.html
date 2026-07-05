@@ -859,6 +859,43 @@ footer {
   .veh-item--vin .v.mono { white-space: nowrap; word-break: normal; font-size: 12px; letter-spacing: 0; }
   .veh-item .v { font-size: 16px; }
 }
+
+/* ===== Kompaktný quote screen ===== */
+.hero { padding: 84px 48px 24px; min-height: 0; }
+.calc-shell { padding: 18px 22px; }
+.calc-label { margin-bottom: 8px; }
+
+.veh-card { margin-top: 10px; padding: 9px 14px; }
+.veh-card-head { margin-bottom: 6px; }
+.veh-grid { gap: 4px 16px; }
+
+.tiles-grid { gap: 9px; margin-bottom: 10px; }
+.tile { padding: 11px 13px; }
+.tile-name { font-size: 15px; }
+.tile-desc {
+  font-size: 12.5px; line-height: 1.35; margin: 6px 0;
+  display: -webkit-box; -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical; overflow: hidden;
+}
+.tile-price { font-size: 16px; }
+
+.sticky-summary-inner { padding: 9px 24px; }
+.calc-cta { padding: 10px 24px; font-size: 14px; }
+
+/* Vyššie okná — dlaždice dostanú viac priestoru */
+@media (min-height: 880px) {
+  .tile { padding: 13px 15px; }
+  .tiles-grid { gap: 11px; margin-bottom: 12px; }
+  .tile-desc { font-size: 13px; line-height: 1.4; margin: 7px 0; }
+  .veh-card { padding: 11px 15px; }
+}
+@media (min-height: 1150px) {
+  .tile { padding: 17px; }
+  .tiles-grid { gap: 13px; }
+  .tile-name { font-size: 16px; }
+  .tile-desc { font-size: 14px; }
+  .tile-price { font-size: 17px; }
+}
 </style>
 </head>
 <body>
