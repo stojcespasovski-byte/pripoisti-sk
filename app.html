@@ -4023,8 +4023,18 @@ function onFieldInput() {
     triggerLookup();
   }
 
+  // Po chybe (zlé IČO, nenájdené vozidlo…): keď používateľ údaje opraví a všetko
+  // je vyplnené, spustiť výpočet automaticky — netreba preklikávať nájazd.
+  if (allFilled && entryErrorShown && !lookupBusy) {
+    clearTimeout(_retryDebounce);
+    _retryDebounce = setTimeout(() => {
+      if (entryErrorShown && !lookupBusy) triggerLookup();
+    }, 900);
+  }
+
   scheduleEcvPreLookup();     // po dopísaní EČV zistiť typ vozidla → správna roleta km
 }
+let _retryDebounce = null;
 
 /* ── Predbežný lookup vozidla hneď po dopísaní EČV ──
    Zistí typ (motorka/auto) skôr, než si človek vyberá nájazd — roleta km sa medzitým
@@ -4062,9 +4072,11 @@ function hideEntryLoader() {
   document.getElementById('entry-loader').classList.remove('show');
 }
 
+let entryErrorShown = false;   // po neúspešnom pokuse → oprava polí spustí lookup sama
 function showEntryError(msg) {
   const el = document.getElementById('entry-error');
   if (el) { el.innerHTML = msg; el.style.display = msg ? '' : 'none'; }
+  entryErrorShown = !!msg;
 }
 
 /* Scroll na dlaždice — #tiles-label má scroll-margin-top, takže sa zastaví pod fixnou navigáciou */
