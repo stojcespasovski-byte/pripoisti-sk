@@ -452,6 +452,19 @@ select.entry-input option { background: #1a1a1a; color: white; }
 .tile-info:hover { color: var(--o); }
 .tile.unavailable .tile-info { display: none; }
 
+/* Varianty v dlaždici (asistencia/úraz/batožina) — zobrazia sa po vybratí dlaždice */
+.tile-variants { display: none; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+.tile.sel .tile-variants { display: flex; }
+.tv-chip {
+  border: 1px solid rgba(255,255,255,.18); border-radius: 8px;
+  padding: 5px 10px; cursor: pointer; text-align: center;
+  font-size: 13px; font-weight: 700; color: rgba(255,255,255,.6);
+  line-height: 1.25; transition: all .12s; user-select: none;
+}
+.tv-chip small { display: block; font-size: 10.5px; font-weight: 500; opacity: .7; }
+.tv-chip:hover { border-color: rgba(232,130,26,.5); }
+.tv-chip.on { border-color: var(--o); background: rgba(232,130,26,.14); color: var(--o); }
+
 /* Info modal */
 .im-overlay {
   position: fixed; inset: 0; z-index: 200; display: none;
@@ -1424,6 +1437,29 @@ const ALL_VARIANTS = (() => {
   return out;
 })();
 const OUR_RISKS = new Set(ALL_VARIANTS.map(r => r.risk));
+
+/* Dlaždice s výberom variantu (Pillow vracia ceny všetkých variantov v jednej rate odpovedi) */
+const VARIANT_CHOICES = {
+  asistencia: { risk: 'AS2', options: [
+    ['AS2_S',  'S',  '50 km pri nehode'],
+    ['AS2_M',  'M',  '50 km v SR'],
+    ['AS2_L',  'L',  'SR a EÚ'],
+    ['AS2_XL', 'XL', 'Neobmedzene SR+EÚ'],
+  ]},
+  uraz: { risk: 'UR2', options: [
+    ['UR2_2', 'Úraz vodiča', ''],
+    ['UR2_1', 'Smrť oboch rodičov', ''],
+  ]},
+  batozina: { risk: 'ZA2', options: [
+    ['ZA2_750',  'do 750 €', ''],
+    ['ZA2_1500', 'do 1 500 €', ''],
+  ]},
+};
+const CHOICE_RISKS = new Set(Object.values(VARIANT_CHOICES).map(c => c.risk));
+/* zvolený variant per dlaždica (default = doterajšie fixné hodnoty) */
+let selectedVariants = { asistencia: 'AS2_L', uraz: 'UR2_2', batozina: 'ZA2_750' };
+/* ceny variantov per frekvencia: {pillowFreq: {AS2: {AS2_S: mesačný ekvivalent, ...}, ...}} */
+let pillowVariantPrices = {};
 
 /* cena dlaždice = súčet cien jej rizík (len ak sú dostupné VŠETKY) */
 function tilePricesFromRisks(byRisk) {
@@ -3748,22 +3784,27 @@ ${variantsXml}
 function parseRateResponse(xmlText) {
   const doc = new DOMParser().parseFromString(xmlText, 'text/xml');
   const calcId = doc.querySelector('calculationId')?.textContent || null;
-  const byRisk = {};
+  const byRisk = {}, byVariant = {};
   doc.querySelectorAll('variantOfSubject').forEach(vs => {
     const inner = vs.querySelector('xml-par-ap2-variant-of-subject-resp');
     if (!inner) return;
     const risk   = inner.querySelector('risk')?.textContent;
     if (!OUR_RISKS.has(risk)) return;
-    const chosen = inner.querySelector('chosenVariant')?.textContent === 'true';
-    const month  = parseFloat(inner.querySelector('monthPremium')?.textContent || '0');
+    const chosen  = inner.querySelector('chosenVariant')?.textContent === 'true';
+    const month   = parseFloat(inner.querySelector('monthPremium')?.textContent || '0');
+    const variant = inner.querySelector('variant')?.textContent;
     if (chosen || byRisk[risk] === undefined) byRisk[risk] = month;
+    // Pillow vracia ceny VŠETKÝCH variantov — pri rizikách s výberom si ich odložíme
+    if (CHOICE_RISKS.has(risk) && variant) {
+      (byVariant[risk] = byVariant[risk] || {})[variant] = month;
+    }
   });
   const errors = [...doc.querySelectorAll('error'), ...doc.querySelectorAll('msgText')]
     .map(e => e.textContent).filter(Boolean);
   // riziká, ktoré Pillow odmietol (napr. "Riziko HP2 není možné...")
   const failedRisks = [...new Set(errors.flatMap(t =>
     [...t.matchAll(/Riziko\s+([A-Z]{2}\d)/g)].map(m => m[1])))];
-  return { calcId, byRisk, pricedRisks: Object.keys(byRisk), errors, failedRisks };
+  return { calcId, byRisk, byVariant, pricedRisks: Object.keys(byRisk), errors, failedRisks };
 }
 
 /* Reálne ceny zo Pillow pre všetky frekvencie (podľa dlaždice):
@@ -3796,9 +3837,14 @@ async function fetchPillowPrices() {
 
     // 1) mesačne (freq=12) s retry na zahodenie odmietnutých rizík
     let byRiskMonthly = {}, workingRisks = [];
+    pillowVariantPrices = {};
     for (let attempt = 0; attempt < 8 && risks.length; attempt++) {
       const res = await rateAttempt(uid, codes, risks, 12);
-      if (res.pricedRisks.length) { byRiskMonthly = res.byRisk; workingRisks = res.pricedRisks; break; }
+      if (res.pricedRisks.length) {
+        byRiskMonthly = res.byRisk; workingRisks = res.pricedRisks;
+        pillowVariantPrices[12] = res.byVariant;
+        break;
+      }
       if (!res.failedRisks.length) { console.warn('Pillow rate:', res.errors); break; }
       console.warn('Pillow odmietol riziká, skúšam bez nich:', res.failedRisks);
       risks = risks.filter(r => !res.failedRisks.includes(r));
@@ -3809,9 +3855,9 @@ async function fetchPillowPrices() {
     if (workingRisks.length) {
       const others = await Promise.all([4, 2, 1].map(async f => {
         const res = await rateAttempt(uid, codes, workingRisks, f);
-        return [f, tilePricesFromRisks(res.byRisk)];
+        return [f, tilePricesFromRisks(res.byRisk), res.byVariant];
       }));
-      others.forEach(([f, p]) => { pillowFreqPrices[f] = p; });
+      others.forEach(([f, p, bv]) => { pillowFreqPrices[f] = p; pillowVariantPrices[f] = bv; });
     }
     return pillowFreqPrices[12];
   } finally {
@@ -4455,6 +4501,12 @@ const pillowFreqForMult = m => 12 / m;
 
 /* mesačný ekvivalent rizika pri danej Pillow frekvencii (fallback na statickú data-price) */
 function monthEqFor(tileId, pillowFreq) {
+  // dlaždica s výberom variantu → cena zvoleného variantu
+  const choice = VARIANT_CHOICES[tileId];
+  if (choice) {
+    const vp = pillowVariantPrices[pillowFreq]?.[choice.risk]?.[selectedVariants[tileId]];
+    if (vp != null) return vp;
+  }
   const fp = pillowFreqPrices[pillowFreq];
   if (fp && fp[tileId] != null) return fp[tileId];
   const el = document.querySelector(`.tile[data-id="${tileId}"]`);
@@ -4571,7 +4623,7 @@ const INFO_CONTENT = {
       'Služby organizované mimo asistenčnej centrály poisťovne sa nepreplácajú.',
       'Materiál a náhradné diely pri oprave na mieste si hradí klient.',
     ],
-    params: [['Variant', 'Optimálne v SR a EÚ']],
+    params: [['Varianty na výber', 'S — 50 km pri nehode · M — 50 km v SR · L — SR a EÚ · XL — neobmedzene']],
     note: 'Pri udalosti vždy volajte asistenčnú linku poisťovne — nikdy „lovcov nehôd".',
   },
   uraz: {
@@ -4585,7 +4637,7 @@ const INFO_CONTENT = {
     excl: [
       'Jazda pod vplyvom alkoholu/drog, súťaže, použitie vozidla na trestnú činnosť.',
     ],
-    params: [['Variant', 'Úraz vodiča']],
+    params: [['Varianty na výber', 'Úraz vodiča · Smrť oboch rodičov']],
     note: 'Spolujazdcov pri nehode kryje PZP vinníka — tento vankúš chráni najmä vodiča.',
   },
   batozina: {
@@ -4600,7 +4652,7 @@ const INFO_CONTENT = {
       'Doklady, peniaze, šperky, umelecké predmety, zvieratá.',
       'Elektronika ponechaná v aute cez noc mimo stráženého parkoviska.',
     ],
-    params: [['Limit plnenia', '750 €']],
+    params: [['Limit plnenia (na výber)', '750 € alebo 1 500 €']],
     note: 'Plnenie sa vypláca v časovej cene (zohľadňuje vek a opotrebenie vecí).',
   },
 };
@@ -4633,6 +4685,37 @@ document.querySelectorAll('#tiles .tile').forEach(tile => {
   btn.addEventListener('click', e => openInfoModal(e, tile.dataset.id));
   tile.appendChild(btn);
 });
+
+/* kontajner variantov do dlaždíc s výberom (asistencia/úraz/batožina) */
+document.querySelectorAll('#tiles .tile').forEach(tile => {
+  if (!VARIANT_CHOICES[tile.dataset.id]) return;
+  const div = document.createElement('div');
+  div.className = 'tile-variants';
+  tile.insertBefore(div, tile.querySelector('.tile-price'));
+});
+
+/* chips variantov — cena zvoleného obdobia pri každom variante */
+function renderTileVariants() {
+  const pf = pillowFreqForMult(currentMult);
+  Object.entries(VARIANT_CHOICES).forEach(([tileId, cfg]) => {
+    const box = document.querySelector(`.tile[data-id="${tileId}"] .tile-variants`);
+    if (!box) return;
+    const prices = pillowVariantPrices[pf]?.[cfg.risk] || {};
+    box.innerHTML = cfg.options.map(([code, label, sub]) => {
+      const p = prices[code];
+      const priceTxt = p != null ? `€${(p * currentMult).toFixed(2).replace('.', ',')}` : '';
+      return `<span class="tv-chip${selectedVariants[tileId] === code ? ' on' : ''}" onclick="selectVariant(event,'${tileId}','${code}')">${label}${sub ? `<small>${sub}</small>` : ''}${priceTxt ? `<small>${priceTxt}</small>` : ''}</span>`;
+    }).join('');
+  });
+}
+function selectVariant(e, tileId, code) {
+  e.stopPropagation();                       // klik na chip nesmie od-vybrať dlaždicu
+  if (selectedVariants[tileId] === code) return;
+  selectedVariants[tileId] = code;
+  renderTileVariants();
+  renderTilePrices();
+  updateCalc();
+}
 
 /* Naplní dlaždice cenami; ktoré Pillow neocenil (napr. NEUVEDENA) → označí nedostupné.
    Vráti počet ocenených dlaždíc. */
@@ -4675,6 +4758,7 @@ function renderTilePrices() {
     const val = (monthEqFor(tile.dataset.id, pf) * currentMult).toFixed(2).replace('.', ',');
     priceEl.innerHTML = `€${val} <span>/${currentFreqLabel}</span>`;
   });
+  renderTileVariants();   // chips variantov držať v synchróne s frekvenciou/cenami
 }
 
 function toggleTile(el) {
@@ -4775,13 +4859,15 @@ function goToStep3(e) {
 
   const selectedTiles = Array.from(document.querySelectorAll('.tile.sel')).map(t => {
     const id = t.dataset.id;
+    const choice = VARIANT_CHOICES[id];
+    const chosen = choice ? selectedVariants[id] : null;
+    const chosenLabel = choice ? (choice.options.find(o => o[0] === chosen) || [])[1] : '';
     return {
       id,
-      name: t.querySelector('.tile-name').textContent,
+      name: t.querySelector('.tile-name').textContent + (chosenLabel ? ` — ${chosenLabel}` : ''),
       desc: t.querySelector('.tile-desc') ? t.querySelector('.tile-desc').textContent : '',
-      risks: (TILE_RISKS[id] || []).map(r => ({ risk: r.risk, variant: r.variant })),
-      priceMonthly: (pillowFreqPrices[12] && pillowFreqPrices[12][id] != null)
-        ? pillowFreqPrices[12][id] : (parseFloat(t.dataset.price) || 0),
+      risks: (TILE_RISKS[id] || []).map(r => ({ risk: r.risk, variant: (chosen && r.risk === choice.risk) ? chosen : r.variant })),
+      priceMonthly: monthEqFor(id, 12),
     };
   });
 
@@ -4801,6 +4887,8 @@ function goToStep3(e) {
       pillowFreq: 12 / mult,                     // mult 1/3/6/12 → Pillow 12/4/2/1
     },
     freqPrices: pillowFreqPrices,                // {12:{tile:€},4,2,1} — pre zobrazenie
+    variantPrices: pillowVariantPrices,          // ceny všetkých variantov (AS2/UR2/ZA2)
+    selectedVariants: { ...selectedVariants },   // zvolené varianty dlaždíc
     poistenieOd: (typeof todayISO === 'function') ? todayISO() : new Date().toISOString().slice(0, 10),
     savedAt: Date.now(),                         // pre obnovu stavu pri návrate na Krok 1
   };
@@ -4831,6 +4919,8 @@ function restoreFromOrder() {
   lookup.vehicle   = { ...order.vehicle };
   lookup.poistnik  = { ...order.poistnik };
   pillowFreqPrices = order.freqPrices;
+  pillowVariantPrices = order.variantPrices || {};
+  if (order.selectedVariants) selectedVariants = { ...selectedVariants, ...order.selectedVariants };
   _vehCacheKey = order.vehicle.ecv;                     // pre-lookup/re-lookup nevolá BCRM zbytočne
   _vehCacheVal = { found: true, data: { ...order.vehicle } };
 
