@@ -3736,7 +3736,9 @@ async function apiLookupVehicle(ecv) {
       vykon:    raw.vykon    != null ? String(Math.round(raw.vykon))    : '',
       objem:    raw.objem    != null ? String(Math.round(raw.objem))    : '',
       hmotnost: raw.hmotnost != null ? String(Math.round(raw.hmotnost)) : '',
-      farba:    raw.farba || '', pohon, tp: raw.cislo_tp || '',
+      farba:    raw.farba || '', pohon,
+      // Číslo TP: priorita tp → poe → oe → oev (novšie autá majú vyplnené len poe)
+      tp:       raw.cislo_tp || raw.cislo_poe || raw.cislo_oe || raw.cislo_oev || '',
     }
   };
 }
