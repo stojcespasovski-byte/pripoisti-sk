@@ -3713,10 +3713,21 @@ async function apiLookupVehicleCached(ecv) {
 }
 
 async function apiLookupCompany(ico) {
-  try {
-    const res = await fetch(`${API_BASE}/bcrm/company?ico=${encodeURIComponent(ico)}&stat=SK`);
-    return await res.json();
-  } catch (e) { return { found: false }; }
+  // ORSR/BCRM lookup občas prechodne zlyhá → až 3 pokusy s pauzou;
+  // error=true znamená, že register NEODPOVEDAL (≠ IČO sa nenašlo)
+  let lastErr = false;
+  for (let i = 0; i < 3; i++) {
+    try {
+      const res = await fetch(`${API_BASE}/bcrm/company?ico=${encodeURIComponent(ico)}&stat=SK`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.found) return data;
+        lastErr = false;                       // register odpovedal: nenašiel
+      } else lastErr = true;                   // 5xx / timeout na strane servera
+    } catch (e) { lastErr = true; }            // sieťová chyba
+    if (i < 2) await new Promise(r => setTimeout(r, 800));
+  }
+  return { found: false, error: lastErr };
 }
 
 /* ── Pillow HTTP vrstva ── */
@@ -4469,7 +4480,10 @@ async function triggerLookup() {
       // Firma MUSÍ byť v registri (bez nej nemáme názov ani adresu) → jasná chyba hneď
       if (t === 'po' && !c.nazov) {
         hideEntryLoader();
-        showEntryError(`IČO ${ico} sa nenašlo v obchodnom registri — skontrolujte ho, prosím.`);
+        const retryBtn = '<br><button type="button" onclick="triggerLookup()" style="margin-top:10px;background:var(--grad);color:#fff;border:none;border-radius:9px;padding:10px 18px;font-size:14px;font-weight:700;font-family:\'Inter\',sans-serif;cursor:pointer;">Skúsiť znova</button>';
+        showEntryError(c.error
+          ? 'Obchodný register momentálne neodpovedá — skúste to o chvíľu znova.' + retryBtn
+          : `IČO ${ico} sa nenašlo v obchodnom registri — skontrolujte ho, prosím.` + retryBtn);
         return;
       }
       // SZČO (živnostník) často nie je v ORSR → lookup zlyhá; PSČ vtedy z číselníka obcí
