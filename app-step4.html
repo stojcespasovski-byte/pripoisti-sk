@@ -882,14 +882,29 @@ if (getParam('platba') === 'navrat') showPaymentReturn();
 /* ── Záznam o sprostredkovaní: poskladá dáta z objednávky a otvorí náhľad ── */
 const ZAZ_CODE_NAZOV = { HP2:'Dopravná nehoda', SZ2:'Stret so zverou', ZV2:'Prírodná udalosť', OV2:'Krádež vozidla', VA2:'Vandalizmus', SK2:'Sklá', ZA2:'Batožina', UR2:'Úraz', AS2:'Asistencia', PR2:'Povinné zmluvné poistenie' };
 const ZAZ_CODE_KRYTIE = { HP2:'Všeobecná hodnota vozidla', SZ2:'Všeobecná hodnota vozidla', ZV2:'Všeobecná hodnota vozidla', OV2:'Všeobecná hodnota vozidla', VA2:'Všeobecná hodnota vozidla', SK2:'Obvyklá cena výmeny skla' };
+// dlaždica → Pillow kód(y) — na rekonštrukciu VŠETKÝCH ocenených dlaždíc z order.freqPrices
+const ZAZ_TILE_CODES = { havaria:['HP2','SZ2'], zver:['SZ2'], kradez:['OV2'], priroda:['ZV2'], skla:['SK2'], vandalizmus:['VA2'], asistencia:['AS2'], uraz:['UR2'], batozina:['ZA2'] };
 function buildZaznamData() {
   const cudzinec = P.typ === 'cudzinec';
   const typ = cudzinec ? 'fo' : (P.typ || 'fo');
   const mult = order.freq?.mult || 1;
   const pf = order.freq?.pillowFreq || 12;
   const fp = (order.freqPrices && order.freqPrices[pf]) || {};
-  // Všetky nacenené dlaždice (allTiles); zvolené majú zvolil=true. Fallback na tiles (staré objednávky).
-  const zaznamTiles = (order.allTiles && order.allTiles.length) ? order.allTiles : (order.tiles || []);
+  // Všetky NACENENÉ dlaždice; zvolené majú zvolil=true.
+  //  1) nové objednávky: order.allTiles (má aj varianty v názve)
+  //  2) staré objednávky bez allTiles: rekonštruuj z order.freqPrices[12] (všetky ocenené id-čka)
+  let zaznamTiles;
+  if (order.allTiles && order.allTiles.length) {
+    zaznamTiles = order.allTiles;
+  } else {
+    const pf12 = (order.freqPrices && order.freqPrices[12]) || {};
+    const selIds = new Set((order.tiles || []).map(t => t.id));
+    const priced = Object.keys(pf12);
+    zaznamTiles = (priced.length ? priced.map(id => ({
+      id, risks: (ZAZ_TILE_CODES[id] || []).map(c => ({ risk: c })),
+      priceMonthly: pf12[id], zvolil: selIds.has(id),
+    })) : (order.tiles || []).map(t => ({ ...t, zvolil: true })));
+  }
   const rizika = zaznamTiles.map(t => {
     const codes = (t.risks || []).map(r => r.risk);
     const nazov = codes.map((c, i) => { const n = ZAZ_CODE_NAZOV[c] || c; return i === 0 ? n : n.charAt(0).toLowerCase() + n.slice(1); }).join(' a ') || t.name || '';
