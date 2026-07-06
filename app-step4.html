@@ -884,33 +884,50 @@ const ZAZ_CODE_NAZOV = { HP2:'Dopravná nehoda', SZ2:'Stret so zverou', ZV2:'Pr�
 const ZAZ_CODE_KRYTIE = { HP2:'Všeobecná hodnota vozidla', SZ2:'Všeobecná hodnota vozidla', ZV2:'Všeobecná hodnota vozidla', OV2:'Všeobecná hodnota vozidla', VA2:'Všeobecná hodnota vozidla', SK2:'Obvyklá cena výmeny skla' };
 // dlaždica → Pillow kód(y) — na rekonštrukciu VŠETKÝCH ocenených dlaždíc z order.freqPrices
 const ZAZ_TILE_CODES = { havaria:['HP2','SZ2'], zver:['SZ2'], kradez:['OV2'], priroda:['ZV2'], skla:['SK2'], vandalizmus:['VA2'], asistencia:['AS2'], uraz:['UR2'], batozina:['ZA2'] };
+// poradie Pillow rizík v Zázname (tabuľka IV)
+const ZAZ_RISK_PORADIE = { HP2:0, SZ2:1, OV2:2, ZV2:3, SK2:4, VA2:5, AS2:6, UR2:7, ZA2:8 };
 function buildZaznamData() {
   const cudzinec = P.typ === 'cudzinec';
   const typ = cudzinec ? 'fo' : (P.typ || 'fo');
   const mult = order.freq?.mult || 1;
   const pf = order.freq?.pillowFreq || 12;
-  const fp = (order.freqPrices && order.freqPrices[pf]) || {};
-  // Všetky NACENENÉ dlaždice; zvolené majú zvolil=true.
-  //  1) nové objednávky: order.allTiles (má aj varianty v názve)
-  //  2) staré objednávky bez allTiles: rekonštruuj z order.freqPrices[12] (všetky ocenené id-čka)
-  let zaznamTiles;
-  if (order.allTiles && order.allTiles.length) {
-    zaznamTiles = order.allTiles;
+  // Do Zvolil dáme každé riziko, ktoré je súčasťou vybraných dlaždíc (combo → obe riziká).
+  const selCodes = new Set((order.tiles || []).flatMap(t => (t.risks || []).map(r => r.risk)));
+  const rpf = (order.riskPrices && order.riskPrices[pf]) || null;
+  let rizika;
+  if (rpf && Object.keys(rpf).length) {
+    // PER-RIZIKO (preferované): každé ocenené Pillow riziko = samostatný riadok s vlastnou cenou.
+    // Combo dlaždica (Dopravná nehoda + Stret so zverou) sa tu ukáže ako 2 oddelené riadky.
+    rizika = Object.keys(rpf)
+      .sort((a, b) => ((ZAZ_RISK_PORADIE[a] ?? 99) - (ZAZ_RISK_PORADIE[b] ?? 99)))
+      .map(code => ({
+        nazov: ZAZ_CODE_NAZOV[code] || code,
+        krytie: ZAZ_CODE_KRYTIE[code] || '',
+        cena: +(rpf[code] * mult).toFixed(2),
+        zvolil: selCodes.has(code),
+      }));
   } else {
-    const pf12 = (order.freqPrices && order.freqPrices[12]) || {};
-    const selIds = new Set((order.tiles || []).map(t => t.id));
-    const priced = Object.keys(pf12);
-    zaznamTiles = (priced.length ? priced.map(id => ({
-      id, risks: (ZAZ_TILE_CODES[id] || []).map(c => ({ risk: c })),
-      priceMonthly: pf12[id], zvolil: selIds.has(id),
-    })) : (order.tiles || []).map(t => ({ ...t, zvolil: true })));
+    // Fallback pre staré objednávky bez riskPrices — po dlaždici (combo zostane spojené).
+    const fp = (order.freqPrices && order.freqPrices[pf]) || {};
+    let zaznamTiles;
+    if (order.allTiles && order.allTiles.length) {
+      zaznamTiles = order.allTiles;
+    } else {
+      const pf12 = (order.freqPrices && order.freqPrices[12]) || {};
+      const selIds = new Set((order.tiles || []).map(t => t.id));
+      const priced = Object.keys(pf12);
+      zaznamTiles = (priced.length ? priced.map(id => ({
+        id, risks: (ZAZ_TILE_CODES[id] || []).map(c => ({ risk: c })),
+        priceMonthly: pf12[id], zvolil: selIds.has(id),
+      })) : (order.tiles || []).map(t => ({ ...t, zvolil: true })));
+    }
+    rizika = zaznamTiles.map(t => {
+      const codes = (t.risks || []).map(r => r.risk);
+      const nazov = codes.map((c, i) => { const n = ZAZ_CODE_NAZOV[c] || c; return i === 0 ? n : n.charAt(0).toLowerCase() + n.slice(1); }).join(' a ') || t.name || '';
+      const monthEq = (fp[t.id] != null) ? fp[t.id] : (t.priceMonthly || 0);
+      return { nazov, krytie: ZAZ_CODE_KRYTIE[codes[0]] || '', cena: +(monthEq * mult).toFixed(2), zvolil: !!t.zvolil };
+    });
   }
-  const rizika = zaznamTiles.map(t => {
-    const codes = (t.risks || []).map(r => r.risk);
-    const nazov = codes.map((c, i) => { const n = ZAZ_CODE_NAZOV[c] || c; return i === 0 ? n : n.charAt(0).toLowerCase() + n.slice(1); }).join(' a ') || t.name || '';
-    const monthEq = (fp[t.id] != null) ? fp[t.id] : (t.priceMonthly || 0);
-    return { nazov, krytie: ZAZ_CODE_KRYTIE[codes[0]] || '', cena: +(monthEq * mult).toFixed(2), zvolil: !!t.zvolil };
-  });
   const palivoTxt = (typeof PALIVO_LABEL !== 'undefined' && PALIVO_LABEL[V.palivo]) || V.palivo || '';
   return {
     klient: { typ, cudzinec, titulPred:P.titulPred||'', titulZa:P.titulZa||'', meno:P.meno||'', priezvisko:P.priezvisko||'',
@@ -920,7 +937,7 @@ function buildZaznamData() {
     vlastnik: (P.vlastnik && P.vlastnik.typ === 'osoba') ? P.vlastnik : { typ:'poistnik' },
     vozidlo: { typ:V.typ||'', znacka:V.znacka||'', model:V.model||'', ecv:V.ecv||'', objem:V.objem||'', vykon:V.vykon||'',
       rokVyroby:(V.datumReg||'').slice(0,4), palivo:palivoTxt, hmotnost:V.hmotnost||'', miest:V.miest||'' },
-    rizika, spoluUcast: order.spolu || '', frekvencia: order.freq?.label || 'ročne',
+    rizika, spoluUcast: order.spoluUcast || '', frekvencia: order.freq?.label || 'ročne',
     cisloNavrhu: '', marketing: !!document.getElementById('suh2')?.checked,
     datum: new Date().toLocaleDateString('sk-SK'),
   };

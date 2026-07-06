@@ -3906,6 +3906,10 @@ function parseRateResponse(xmlText) {
 /* Reálne ceny zo Pillow pre všetky frekvencie (podľa dlaždice):
    { 12:{tile:monthEq}, 4:{...}, 2:{...}, 1:{...} }  (Pillow paymentFrequency) */
 let pillowFreqPrices = {};
+/* Reálne ceny zo Pillow PER PILLOW-RIZIKO (nie po dlaždici) — pre Záznam, kde sa
+   riziká zobrazujú samostatne (Dopravná nehoda a Stret so zverou oddelene).
+   { 12:{HP2:€,SZ2:€,…}, 4:{…}, 2:{…}, 1:{…} } */
+let pillowRiskPrices = {};
 
 /* Jeden rate pokus — nikdy nevyhodí; chyby vráti v errors/failedRisks.
    (Pillow vracia validačné chyby ako HTTP 400, čiže pillowCall vyhodí výnimku.) */
@@ -3948,12 +3952,13 @@ async function fetchPillowPrices() {
 
     // 2) ostatné frekvencie paralelne s funkčnou množinou rizík
     pillowFreqPrices = { 12: tilePricesFromRisks(byRiskMonthly) };
+    pillowRiskPrices = { 12: { ...byRiskMonthly } };   // per-riziko (pre Záznam)
     if (workingRisks.length) {
       const others = await Promise.all([4, 2, 1].map(async f => {
         const res = await rateAttempt(uid, codes, workingRisks, f);
-        return [f, tilePricesFromRisks(res.byRisk), res.byVariant];
+        return [f, tilePricesFromRisks(res.byRisk), res.byVariant, res.byRisk];
       }));
-      others.forEach(([f, p, bv]) => { pillowFreqPrices[f] = p; pillowVariantPrices[f] = bv; });
+      others.forEach(([f, p, bv, br]) => { pillowFreqPrices[f] = p; pillowVariantPrices[f] = bv; pillowRiskPrices[f] = { ...br }; });
     }
     return pillowFreqPrices[12];
   } finally {
@@ -5029,6 +5034,7 @@ function goToStep3(e) {
       pillowFreq: 12 / mult,                     // mult 1/3/6/12 → Pillow 12/4/2/1
     },
     freqPrices: pillowFreqPrices,                // {12:{tile:€},4,2,1} — pre zobrazenie
+    riskPrices: pillowRiskPrices,                // {12:{HP2:€,SZ2:€,…},…} — per-riziko pre Záznam
     variantPrices: pillowVariantPrices,          // ceny všetkých variantov
     selectedVariants: { ...selectedVariants },   // zvolené varianty dlaždíc
     spoluUcast,                                  // jednotná spoluúčasť havarijných krytí
