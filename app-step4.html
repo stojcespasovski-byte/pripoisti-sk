@@ -322,7 +322,7 @@ nav {
           </div>
           <div class="suhlas-item"><input type="checkbox" id="suh1" class="suh-required"><label for="suh1"><a href="https://api.pripoisti.sk/docs/suhlas_elektronicka_komunikacia.pdf" target="_blank" rel="noopener" class="suhlas-link" onclick="event.stopPropagation()">Súhlas s elektronickou komunikáciou</a></label></div>
           <div class="suhlas-item"><input type="checkbox" id="suh2"><label for="suh2"><a href="https://api.pripoisti.sk/docs/suhlas_spracovanie_ou.pdf" target="_blank" rel="noopener" class="suhlas-link" onclick="event.stopPropagation()">Súhlas so spracovaním osobných údajov</a> <span style="color:rgba(255,255,255,.4)">(nepovinné)</span></label></div>
-          <div class="suhlas-item"><input type="checkbox" id="suh3" class="suh-required"><label for="suh3"><a href="https://api.pripoisti.sk/docs/vyjadrenie_rocny_najazd.pdf" target="_blank" rel="noopener" class="suhlas-link" onclick="event.stopPropagation()">Súhlas k vyjadreniu k ročnému nájazdu km</a></label></div>
+          <div class="suhlas-item"><input type="checkbox" id="suh3" class="suh-required"><label for="suh3"><a id="najazdLink" href="https://api.pripoisti.sk/bcrm/docs/najazd" target="_blank" rel="noopener" class="suhlas-link" onclick="event.stopPropagation()">Súhlas k vyjadreniu k ročnému nájazdu km</a></label></div>
           <div class="suhlas-item"><input type="checkbox" id="suh4" class="suh-required"><label for="suh4"><a href="https://api.pripoisti.sk/docs/vyjadrenie_k_zmluve.pdf" target="_blank" rel="noopener" class="suhlas-link" onclick="event.stopPropagation()">Súhlas k vyjadreniu k zmluve o poskytnutí finančnej služby</a></label></div>
           <div class="suhlas-item"><input type="checkbox" id="suh5" class="suh-required"><label for="suh5"><a href="https://api.pripoisti.sk/docs/vyjadrenie_na_ucely_fs.pdf" target="_blank" rel="noopener" class="suhlas-link" onclick="event.stopPropagation()">Súhlas s vyjadrením na účely finančného sprostredkovania</a></label></div>
         </div>
@@ -937,6 +937,12 @@ document.getElementById('docNavrh')?.addEventListener('click', async (e) => {
     window.open(URL.createObjectURL(await pdfRes.blob()), '_blank');
   } catch (err) { if (uid) pillowLogout(uid); alert('Náhľad zmluvy nie je dostupný: ' + err.message); }
 });
+
+/* Vyhlásenie k ročnému nájazdu km — doplní zvolený počet km z objednávky */
+(function () {
+  const a = document.getElementById('najazdLink');
+  if (a && V.najazd) a.href = 'https://api.pripoisti.sk/bcrm/docs/najazd?km=' + encodeURIComponent(V.najazd);
+})();
 </script>
 </body>
 </html>
