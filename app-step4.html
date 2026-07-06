@@ -827,6 +827,18 @@ async function sendClientEmail(policyId, varSym, pdfBase64) {
   try {
     const freqLabel = (order.freq?.label || 'mesačne');
     const retUrl = location.origin + location.pathname + '?platba=navrat&z=' + encodeURIComponent(policyId);
+    // Záznam o sprostredkovaní ako PDF príloha (číslo návrhu = číslo zmluvy)
+    let zaznamPdfBase64 = null;
+    try {
+      const zdata = buildZaznamData(); zdata.cisloNavrhu = policyId || zdata.cisloNavrhu;
+      const zres = await fetch(`${API_BASE}/bcrm/docs/zaznam?format=pdf`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(zdata),
+      });
+      if (zres.ok) {
+        const zblob = await zres.blob();
+        zaznamPdfBase64 = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(String(fr.result).split(',')[1] || null); fr.readAsDataURL(zblob); });
+      }
+    } catch (_) { /* Záznam je doplnková príloha */ }
     const res = await fetch(`${API_BASE}/bcrm/email/send-offer`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -840,6 +852,7 @@ async function sendClientEmail(policyId, varSym, pdfBase64) {
         frekvencia: freqLabel.charAt(0).toUpperCase() + freqLabel.slice(1),
         payLink: `https://api.pripoisti.sk/bcrm/payment/pay?vs=${encodeURIComponent(varSym || '')}&amount=${orderTotal.toFixed(2)}&ret=${encodeURIComponent(retUrl)}`,
         pdfBase64,
+        zaznamPdfBase64,
       }),
     });
     const data = await res.json().catch(() => ({}));
