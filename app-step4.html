@@ -888,11 +888,13 @@ function buildZaznamData() {
   const mult = order.freq?.mult || 1;
   const pf = order.freq?.pillowFreq || 12;
   const fp = (order.freqPrices && order.freqPrices[pf]) || {};
-  const rizika = (order.tiles || []).map(t => {
+  // Všetky nacenené dlaždice (allTiles); zvolené majú zvolil=true. Fallback na tiles (staré objednávky).
+  const zaznamTiles = (order.allTiles && order.allTiles.length) ? order.allTiles : (order.tiles || []);
+  const rizika = zaznamTiles.map(t => {
     const codes = (t.risks || []).map(r => r.risk);
     const nazov = codes.map((c, i) => { const n = ZAZ_CODE_NAZOV[c] || c; return i === 0 ? n : n.charAt(0).toLowerCase() + n.slice(1); }).join(' a ') || t.name || '';
     const monthEq = (fp[t.id] != null) ? fp[t.id] : (t.priceMonthly || 0);
-    return { nazov, krytie: ZAZ_CODE_KRYTIE[codes[0]] || '', cena: +(monthEq * mult).toFixed(2) };
+    return { nazov, krytie: ZAZ_CODE_KRYTIE[codes[0]] || '', cena: +(monthEq * mult).toFixed(2), zvolil: !!t.zvolil };
   });
   const palivoTxt = (typeof PALIVO_LABEL !== 'undefined' && PALIVO_LABEL[V.palivo]) || V.palivo || '';
   return {

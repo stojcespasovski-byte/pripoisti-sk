@@ -4991,7 +4991,7 @@ function goToStep3(e) {
     params.set('ecv', document.getElementById('f-ecv-szco').value);
   }
 
-  const selectedTiles = Array.from(document.querySelectorAll('.tile.sel')).map(t => {
+  const buildTile = (t, zvolil) => {
     const id = t.dataset.id;
     const choice = VARIANT_CHOICES[id];
     const chosen = choice ? selectedVariants[id] : null;
@@ -5002,8 +5002,14 @@ function goToStep3(e) {
       desc: t.querySelector('.tile-desc') ? t.querySelector('.tile-desc').textContent : '',
       risks: (TILE_RISKS[id] || []).map(r => ({ risk: r.risk, variant: variantFor(r, id) })),
       priceMonthly: monthEqFor(id, 12),
+      zvolil,
     };
-  });
+  };
+  const selectedTiles = Array.from(document.querySelectorAll('.tile.sel')).map(t => buildTile(t, true));
+  // Všetky NACENENÉ dlaždice (aj nevybrané) — do Záznamu (tabuľka IV), zvolené majú zvolil=true
+  const allTiles = Array.from(document.querySelectorAll('.tile'))
+    .filter(t => t.dataset.id && pillowFreqPrices && pillowFreqPrices[12] && pillowFreqPrices[12][t.dataset.id] != null)
+    .map(t => buildTile(t, t.classList.contains('sel')));
 
   const activeFreqCard = document.querySelector('.freq-price-card.active');
   const mult = activeFreqCard ? parseInt(activeFreqCard.dataset.mult) : 12;
@@ -5015,6 +5021,7 @@ function goToStep3(e) {
     vehicleCodes: resolveVehicleCodes(),         // brandCode, modelCode, fallback
     poistnik: { ...lookup.poistnik },            // typ, ico/rc, nazov, obec, psc
     tiles: selectedTiles,                        // vybrané dlaždice + ich Pillow riziká
+    allTiles,                                    // všetky nacenené dlaždice (pre Záznam, tabuľka IV)
     freq: {
       mult,
       label: activeFreqCard ? activeFreqCard.dataset.label : 'ročne',
