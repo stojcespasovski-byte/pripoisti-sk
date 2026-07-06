@@ -931,7 +931,10 @@ document.getElementById('docNavrh')?.addEventListener('click', async (e) => {
     uid = await pillowAuth();
     const rate = parseRate(await pillowCall(uid, 'par/policies/rate/AP2', buildRateXML(freq)));
     if (!rate.calcId) throw new Error((rate.errors && rate.errors[0]) || 'Kalkulácia zlyhala.');
-    const pdfRes = await fetch(`${PILLOW.BASE}/par/policies/print/AP2/policyPreview/${rate.calcId}/print`, {
+    // print policyPreview funguje len v stave PRE → najprv kontrolný save (createPolicy=false)
+    const check = parseSave(await pillowCall(uid, 'par/policies/save/AP2', buildSaveXML(rate.calcId, false, freq)));
+    if (check.errors.length && !check.calcId && !check.policyId) throw new Error(check.errors[0]);
+    const pdfRes = await fetch(`${PILLOW.BASE}/par/policies/print/AP2/policyPreview/${check.calcId || rate.calcId}/print`, {
       method: 'POST', headers: { 'Content-Type': 'text/xml; charset=utf-8', 'RestUid': uid },
     });
     await pillowLogout(uid); uid = null;
