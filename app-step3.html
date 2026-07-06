@@ -162,6 +162,16 @@ nav {
 
 select option { background: #1a1a1a; color: white; }
 
+/* Kompaktné prepínače (vlastník) — 2 tlačidlá vedľa seba, nie na celú šírku */
+.seg-row { display: inline-flex; gap: 6px; margin-bottom: 14px; padding: 4px; background: rgba(255,255,255,.04); border-radius: 11px; }
+.seg-btn {
+  border: 1px solid transparent; background: transparent; color: rgba(255,255,255,.55);
+  font-size: 14px; font-weight: 700; font-family: inherit; padding: 8px 18px; border-radius: 8px; cursor: pointer;
+  transition: all .12s; white-space: nowrap;
+}
+.seg-btn:hover { color: rgba(255,255,255,.8); }
+.seg-btn.on { background: var(--o); color: #fff; }
+
 /* FOOTER */
 .card-foot {
   padding: 22px 32px;
@@ -375,7 +385,7 @@ select option { background: #1a1a1a; color: white; }
 
         <div class="row c4">
           <div class="field"><label>Rodné číslo</label><input class="mono" id="szco-rc" data-required="true" placeholder="9001011234"><div class="field-error">Zadajte rodné číslo</div></div>
-          <div class="field"><label>Číslo dokladu</label><input class="mono" placeholder="EA000000"></div>
+          <div class="field"><label>OP, Pas, Pobyt.preukaz</label><input class="mono" id="szco-doklad" placeholder="číslo dokladu"></div>
           <div class="field"><label>Telefón</label><input class="mono" id="szco-telefon" data-required="true" placeholder="+421 900 000 000"><div class="field-error">Zadajte telefónne číslo</div></div>
           <div class="field"><label>E-mail</label><input type="email" id="szco-email" data-required="true" placeholder="meno@email.sk"><div class="field-error">Zadajte e-mail</div></div>
         </div>
@@ -406,7 +416,7 @@ select option { background: #1a1a1a; color: white; }
 
         <div class="row c4">
           <div class="field"><label>Rodné číslo</label><input class="mono" id="fo-rc" value="" readonly></div>
-          <div class="field"><label>Číslo dokladu</label><input class="mono" placeholder="EA000000"></div>
+          <div class="field"><label>OP, Pas, Pobyt.preukaz</label><input class="mono" id="fo-doklad" placeholder="číslo dokladu"></div>
           <div class="field"><label>Telefón</label><input class="mono" id="fo-telefon" data-required="true" placeholder="+421 900 000 000"><div class="field-error">Zadajte telefónne číslo</div></div>
           <div class="field"><label>E-mail</label><input type="email" id="fo-email" data-required="true" placeholder="meno@email.sk"><div class="field-error">Zadajte e-mail</div></div>
         </div>
@@ -437,9 +447,13 @@ select option { background: #1a1a1a; color: white; }
 
         <div class="row c4">
           <div class="field"><label>Dátum narodenia</label><input type="date" id="cz-datum-narodenia" data-required="true"><div class="field-error">Zadajte dátum narodenia</div></div>
-          <div class="field"><label>Číslo dokladu</label><input class="mono" placeholder="EA000000"></div>
+          <div class="field"><label>OP, Pas, Pobyt.preukaz</label><input class="mono" id="cz-doklad" placeholder="číslo dokladu"></div>
           <div class="field"><label>Telefón</label><input class="mono" id="cz-telefon" data-required="true" placeholder="+421 900 000 000"><div class="field-error">Zadajte telefónne číslo</div></div>
           <div class="field"><label>E-mail</label><input type="email" id="cz-email" data-required="true" placeholder="meno@email.com"><div class="field-error">Zadajte e-mail</div></div>
+        </div>
+
+        <div class="row c4">
+          <div class="field"><label>Štátna príslušnosť</label><input id="cz-statna" data-required="true" placeholder="napr. Česká"><div class="field-error">Zadajte štátnu príslušnosť</div></div>
         </div>
 
         <div class="row addr">
@@ -450,6 +464,62 @@ select option { background: #1a1a1a; color: white; }
         </div>
       </div>
 
+    </div>
+  </div>
+
+  <!-- VLASTNÍK VOZIDLA -->
+  <div class="card">
+    <div class="card-body">
+      <div class="block" style="margin-bottom:0;">
+        <div class="block-hd">
+          <div class="block-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5V7a2 2 0 0 0-2-2h-3l-2-2H8a2 2 0 0 0-2 2"/><circle cx="7.5" cy="15.5" r="5.5"/><path d="M7.5 12.5v6M4.5 15.5h6"/></svg>
+          </div>
+          <div class="block-title">Vlastník vozidla</div>
+        </div>
+
+        <div class="seg-row" id="vl-seg">
+          <button type="button" class="seg-btn on" data-vl="poistnik" onclick="setVlastnik('poistnik')">Poistník</button>
+          <button type="button" class="seg-btn" data-vl="osoba" onclick="setVlastnik('osoba')">Iná osoba</button>
+        </div>
+
+        <div id="vlastnik-osoba" style="display:none;">
+          <div class="seg-row" id="vl-forma-seg">
+            <button type="button" class="seg-btn on" data-vf="fo" onclick="setVlastnikForma('fo')">Fyzická osoba</button>
+            <button type="button" class="seg-btn" data-vf="po" onclick="setVlastnikForma('po')">Právnická osoba</button>
+          </div>
+
+          <!-- FO vlastník -->
+          <div id="vl-fo">
+            <div class="row c4">
+              <div class="field"><label>Meno</label><input id="vl-meno" placeholder="Ján"><div class="field-error">Zadajte meno</div></div>
+              <div class="field"><label>Priezvisko</label><input id="vl-priezvisko" placeholder="Novák"><div class="field-error">Zadajte priezvisko</div></div>
+              <div class="field"><label>Rodné číslo</label><input class="mono" id="vl-rc" placeholder="9001011234"><div class="field-error">Zadajte RČ alebo dátum narodenia</div></div>
+              <div class="field"><label>Dátum narodenia</label><input type="date" id="vl-datum"></div>
+            </div>
+            <div class="row addr">
+              <div class="field"><label>Ulica</label><input id="vl-ulica" placeholder="Hlavná"><div class="field-error">Zadajte ulicu</div></div>
+              <div class="field"><label>Číslo domu</label><input id="vl-cislo" placeholder="1"><div class="field-error">Povinné</div></div>
+              <div class="field"><label>Obec</label><input id="vl-obec" placeholder="Bratislava"><div class="field-error">Zadajte obec</div></div>
+              <div class="field"><label>PSČ</label><input class="mono" id="vl-psc" placeholder="84101"><div class="field-error">Zadajte PSČ</div></div>
+            </div>
+          </div>
+
+          <!-- PO vlastník -->
+          <div id="vl-po" style="display:none;">
+            <div class="row" style="grid-template-columns:160px 1fr;">
+              <div class="field"><label>IČO</label><input class="mono" id="vl-ico" placeholder="12345678"><div class="field-error">Zadajte IČO</div></div>
+              <div class="field"><label>Názov firmy</label><input id="vl-nazov" placeholder="Firma s.r.o."><div class="field-error">Zadajte názov</div></div>
+            </div>
+            <div class="row addr">
+              <div class="field"><label>Ulica</label><input id="vl-po-ulica" placeholder="Hlavná"><div class="field-error">Zadajte ulicu</div></div>
+              <div class="field"><label>Číslo domu</label><input id="vl-po-cislo" placeholder="1"><div class="field-error">Povinné</div></div>
+              <div class="field"><label>Obec</label><input id="vl-po-obec" placeholder="Bratislava"><div class="field-error">Zadajte obec</div></div>
+              <div class="field"><label>PSČ</label><input class="mono" id="vl-po-psc" placeholder="84101"><div class="field-error">Zadajte PSČ</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -469,6 +539,9 @@ select option { background: #1a1a1a; color: white; }
 </div>
 
 <script>
+const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? '' : 'https://api.pripoisti.sk';
+
 function getParam(name) {
   const params = new URLSearchParams(window.location.search);
   return params.get(name) || '';
@@ -611,8 +684,66 @@ document.querySelectorAll('input[data-required="true"]').forEach(input => {
   });
 });
 
+/* ── Vlastník vozidla ── */
+function setVlastnik(v) {
+  document.querySelectorAll('#vl-seg .seg-btn').forEach(b => b.classList.toggle('on', b.dataset.vl === v));
+  document.getElementById('vlastnik-osoba').style.display = v === 'osoba' ? '' : 'none';
+}
+function setVlastnikForma(f) {
+  document.querySelectorAll('#vl-forma-seg .seg-btn').forEach(b => b.classList.toggle('on', b.dataset.vf === f));
+  document.getElementById('vl-fo').style.display = f === 'fo' ? '' : 'none';
+  document.getElementById('vl-po').style.display = f === 'po' ? '' : 'none';
+}
+/* ORSR autofill pre PO vlastníka (rovnaký endpoint ako Krok 1) */
+let _vlOrsrTimer = null;
+document.getElementById('vl-ico')?.addEventListener('input', function () {
+  const ico = this.value.replace(/\D/g, '');
+  clearTimeout(_vlOrsrTimer);
+  if (ico.length !== 8) return;
+  _vlOrsrTimer = setTimeout(async () => {
+    try {
+      const c = await fetch(`${API_BASE}/bcrm/company?ico=${ico}&stat=SK`).then(r => r.json());
+      if (!c || !c.nazov) return;
+      const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
+      set('vl-nazov', c.nazov); set('vl-po-ulica', c.ulica); set('vl-po-cislo', c.cislo);
+      set('vl-po-obec', c.mesto); set('vl-po-psc', c.psc);
+    } catch (_) {}
+  }, 500);
+});
+function collectVlastnik() {
+  const g = id => (document.getElementById(id)?.value || '').trim();
+  const t = document.querySelector('#vl-seg .seg-btn.on')?.dataset.vl || 'poistnik';
+  if (t === 'poistnik') return { typ: 'poistnik' };
+  const forma = document.querySelector('#vl-forma-seg .seg-btn.on')?.dataset.vf || 'fo';
+  if (forma === 'fo') return { typ: 'osoba', forma: 'fo',
+    meno: g('vl-meno'), priezvisko: g('vl-priezvisko'), rc: g('vl-rc'), datumNar: g('vl-datum'),
+    ulica: g('vl-ulica'), cislo: g('vl-cislo'), obec: g('vl-obec'), psc: g('vl-psc') };
+  return { typ: 'osoba', forma: 'po',
+    nazov: g('vl-nazov'), ico: g('vl-ico'),
+    ulica: g('vl-po-ulica'), cislo: g('vl-po-cislo'), obec: g('vl-po-obec'), psc: g('vl-po-psc') };
+}
+/* Validácia vlastníka len keď je „Iná osoba" (vek sa NEkontroluje — vlastník môže byť ktokoľvek) */
+function validateVlastnik() {
+  const vl = collectVlastnik();
+  if (vl.typ !== 'osoba') return true;
+  const need = vl.forma === 'fo'
+    ? [['vl-meno', vl.meno], ['vl-priezvisko', vl.priezvisko], ['vl-ulica', vl.ulica], ['vl-cislo', vl.cislo], ['vl-obec', vl.obec], ['vl-psc', vl.psc]]
+    : [['vl-ico', vl.ico], ['vl-nazov', vl.nazov], ['vl-po-ulica', vl.ulica], ['vl-po-cislo', vl.cislo], ['vl-po-obec', vl.obec], ['vl-po-psc', vl.psc]];
+  // FO musí mať aspoň RČ alebo dátum narodenia (Pillow party potrebuje identifikátor)
+  if (vl.forma === 'fo' && !vl.rc && !vl.datumNar) need.push(['vl-rc', '']);
+  let ok = true, first = null;
+  need.forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    const bad = !String(val || '').trim();
+    if (el) el.classList.toggle('error', bad);
+    if (bad) { ok = false; if (!first) first = el; }
+  });
+  if (!ok && first) { first.scrollIntoView({ behavior: 'smooth', block: 'center' }); first.focus(); }
+  return ok;
+}
+
 function goToSummary() {
-  if (!validateForm()) return;
+  if (!validateForm() || !validateVlastnik()) return;
   const g = id => (document.getElementById(id)?.value || '').trim();
 
   order.poistenieOd = document.getElementById('poistenie-od').value || today;
@@ -623,6 +754,7 @@ function goToSummary() {
   // Doplniť poistníka o kontakt / adresu / meno (readonly polia už sú v order.poistnik z kroku 1)
   const pk = order.poistnik || (order.poistnik = {});
   pk.typ = typ;
+  pk.statnaPrislusnost = 'Slovenská';   // default pre všetkých okrem cudzinca (pre Záznam o sprostredkovaní)
   if (typ === 'po') {
     pk.meno = g('po-meno'); pk.priezvisko = g('po-priezvisko');
     pk.email = g('po-email'); pk.tel = g('po-telefon'); pk.ulica = g('po-ulica'); pk.cislo = g('po-cislo');
@@ -630,13 +762,18 @@ function goToSummary() {
     pk.meno = g('szco-meno'); pk.priezvisko = g('szco-priezvisko');
     pk.nazov = g('szco-nazov'); pk.rc = g('szco-rc');            // editovateľné — lookup živnostníka nemusí nájsť
     pk.email = g('szco-email'); pk.tel = g('szco-telefon'); pk.ulica = g('szco-ulica'); pk.cislo = g('szco-cislo');
+    pk.dokladCislo = g('szco-doklad');
   } else if (typ === 'cudzinec') {
     pk.meno = g('cz-meno'); pk.priezvisko = g('cz-priezvisko'); pk.datumNar = g('cz-datum-narodenia');
     pk.email = g('cz-email'); pk.tel = g('cz-telefon'); pk.ulica = g('cz-ulica'); pk.cislo = g('cz-cislo');
+    pk.dokladCislo = g('cz-doklad');
+    pk.statnaPrislusnost = g('cz-statna');                       // cudzinec zadáva sám
   } else { // fo
     pk.meno = g('fo-meno'); pk.priezvisko = g('fo-priezvisko');
     pk.email = g('fo-email'); pk.tel = g('fo-telefon'); pk.ulica = g('fo-ulica'); pk.cislo = g('fo-cislo');
+    pk.dokladCislo = g('fo-doklad');
   }
+  pk.vlastnik = collectVlastnik();       // vlastník vozidla (task 5)
 
   localStorage.setItem('pripoisti_order', JSON.stringify(order));
   window.location.href = 'app-step4.html?typ=' + encodeURIComponent(typ);

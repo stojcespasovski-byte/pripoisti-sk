@@ -321,7 +321,7 @@ nav {
             <div class="block-title">Súhlasy</div>
           </div>
           <div class="suhlas-item"><input type="checkbox" id="suh1" class="suh-required"><label for="suh1">Súhlas s elektronickou komunikáciou</label></div>
-          <div class="suhlas-item"><input type="checkbox" id="suh2" class="suh-required"><label for="suh2">Súhlas so spracovaním osobných údajov</label></div>
+          <div class="suhlas-item"><input type="checkbox" id="suh2"><label for="suh2">Súhlas so spracovaním osobných údajov <span style="color:rgba(255,255,255,.4)">(nepovinné)</span></label></div>
           <div class="suhlas-item"><input type="checkbox" id="suh3" class="suh-required"><label for="suh3">Súhlas k vyjadreniu k ročnému nájazdu km</label></div>
           <div class="suhlas-item"><input type="checkbox" id="suh4" class="suh-required"><label for="suh4">Súhlas k vyjadreniu k zmluve o poskytnutí finančnej služby</label></div>
           <div class="suhlas-item"><input type="checkbox" id="suh5" class="suh-required"><label for="suh5">Súhlas s vyjadrením na účely finančného sprostredkovania</label></div>
@@ -574,25 +574,48 @@ function vehicleXML() {
   </xml-par-ap2-vehicle></vehicle>`;
 }
 const cleanRc = rc => (rc || '').replace(/\D/g, '');   // RČ bez lomky/medzier
-function partyXML() {
-  const pt = PARTYTYPE[typ] || 'FORC';
+/* marketingový súhlas (nepovinný checkbox suh2) → hodnota do save XML */
+function marketingApproved() { return document.getElementById('suh2')?.checked ? 'true' : 'false'; }
+
+/* partyXML(o?) — bez argumentu = poistník (P); s objektom = iná party (napr. vlastník vozidla) */
+function partyXML(o) {
+  const s = o || {
+    pt: PARTYTYPE[typ] || 'FORC',
+    ico: P.ico, nazov: P.nazov, rc: P.rc,
+    meno: P.meno, priezvisko: P.priezvisko, datumNar: P.datumNar,
+    email: P.email, tel: P.tel, marketing: marketingApproved(),
+    psc: P.psc, obec: P.obec, ulica: P.ulica, cislo: P.cislo,
+  };
+  const pt = s.pt;
   const isCo = pt === 'PO' || pt === 'OSVC';
   const hasName = 'FORC FODN OSVC PO'.includes(pt);   // Pillow vyžaduje meno kontaktnej osoby aj pri firme
   return `<xml-par-party>
     ${xe('partyType', pt)}
-    ${isCo ? xe('companyIdentification', P.ico) : ''}
-    ${isCo ? xe('companyName', P.nazov) : ''}
-    ${(pt === 'FORC' || pt === 'OSVC') ? xe('personalIdentification', cleanRc(P.rc)) : ''}
-    ${hasName ? xe('forename', P.meno) : ''}
-    ${hasName ? xe('surname', P.priezvisko) : ''}
-    ${P.datumNar ? xe('birthdate', P.datumNar) : ''}
-    ${xe('email', P.email)}${xe('phone', P.tel)}
-    ${xe('marketingApproval', 'false')}
+    ${isCo ? xe('companyIdentification', s.ico) : ''}
+    ${isCo ? xe('companyName', s.nazov) : ''}
+    ${(pt === 'FORC' || pt === 'OSVC') ? xe('personalIdentification', cleanRc(s.rc)) : ''}
+    ${hasName ? xe('forename', s.meno) : ''}
+    ${hasName ? xe('surname', s.priezvisko) : ''}
+    ${s.datumNar ? xe('birthdate', s.datumNar) : ''}
+    ${xe('email', s.email)}${xe('phone', s.tel)}
+    ${xe('marketingApproval', s.marketing || 'false')}
     <address><xml-par-address>
-      ${xe('country', 'SVK')}${xe('zipCode', cleanPsc(P.psc))}${xe('city', P.obec)}
-      ${xe('street', P.ulica)}${xe('landRegistryNumber', P.cislo)}
+      ${xe('country', 'SVK')}${xe('zipCode', cleanPsc(s.psc))}${xe('city', s.obec)}
+      ${xe('street', s.ulica)}${xe('landRegistryNumber', s.cislo)}
     </xml-par-address></address>
   </xml-par-party>`;
+}
+/* Vlastník vozidla ako party — len ak je iná osoba než poistník */
+function vehicleOwnerXML() {
+  const vl = P.vlastnik;
+  if (!vl || vl.typ !== 'osoba') return null;
+  const pt = vl.forma === 'po' ? 'PO' : (cleanRc(vl.rc) ? 'FORC' : 'FODN');
+  return partyXML({
+    pt, ico: vl.ico, nazov: vl.nazov, rc: vl.rc,
+    meno: vl.meno, priezvisko: vl.priezvisko, datumNar: vl.datumNar,
+    email: '', tel: '', marketing: 'false',
+    psc: vl.psc, obec: vl.obec, ulica: vl.ulica, cislo: vl.cislo,
+  });
 }
 function buildRateXML(freq) {
   const pt = PARTYTYPE[typ] || 'FORC';
@@ -612,6 +635,7 @@ ${variantsXML()}
 }
 function buildSaveXML(calcId, createPolicy, freq) {
   const party = partyXML();
+  const owner = vehicleOwnerXML();
   return `<?xml version="1.0" encoding="utf-8"?>
 <xml-par-ap2-save-policy-req xmlns="www.ais.cz" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="www.ais.cz XmlParAp2SavePolicyReq.xsd">
   ${xe('calculationId', calcId)}
@@ -623,7 +647,8 @@ function buildSaveXML(calcId, createPolicy, freq) {
   ${xe('createPolicy', createPolicy ? 'true' : 'false')}
   ${vehicleXML()}
   <policyHolder>${party}</policyHolder>
-  ${xe('policyHolderSameAsVehicleOwner', 'true')}
+  ${xe('policyHolderSameAsVehicleOwner', owner ? 'false' : 'true')}
+  ${owner ? `<vehicleOwner>${owner}</vehicleOwner>` : ''}
   ${xe('policyHolderSameAsVehicleHolder', 'true')}
   <vehicleHolder>${party}</vehicleHolder>
 ${variantsXML()}
