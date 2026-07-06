@@ -865,6 +865,46 @@ function showPaymentReturn() {
     </div>`;
 }
 if (getParam('platba') === 'navrat') showPaymentReturn();
+
+/* ── Záznam o sprostredkovaní: poskladá dáta z objednávky a otvorí náhľad ── */
+const ZAZ_CODE_NAZOV = { HP2:'Dopravná nehoda', SZ2:'Stret so zverou', ZV2:'Prírodná udalosť', OV2:'Krádež vozidla', VA2:'Vandalizmus', SK2:'Sklá', ZA2:'Batožina', UR2:'Úraz', AS2:'Asistencia', PR2:'Povinné zmluvné poistenie' };
+const ZAZ_CODE_KRYTIE = { HP2:'Všeobecná hodnota vozidla', SZ2:'Všeobecná hodnota vozidla', ZV2:'Všeobecná hodnota vozidla', OV2:'Všeobecná hodnota vozidla', VA2:'Všeobecná hodnota vozidla', SK2:'Obvyklá cena výmeny skla' };
+function buildZaznamData() {
+  const cudzinec = P.typ === 'cudzinec';
+  const typ = cudzinec ? 'fo' : (P.typ || 'fo');
+  const mult = order.freq?.mult || 1;
+  const pf = order.freq?.pillowFreq || 12;
+  const fp = (order.freqPrices && order.freqPrices[pf]) || {};
+  const rizika = (order.tiles || []).map(t => {
+    const codes = (t.risks || []).map(r => r.risk);
+    const nazov = codes.map((c, i) => { const n = ZAZ_CODE_NAZOV[c] || c; return i === 0 ? n : n.charAt(0).toLowerCase() + n.slice(1); }).join(' a ') || t.name || '';
+    const monthEq = (fp[t.id] != null) ? fp[t.id] : (t.priceMonthly || 0);
+    return { nazov, krytie: ZAZ_CODE_KRYTIE[codes[0]] || '', cena: +(monthEq * mult).toFixed(2) };
+  });
+  const palivoTxt = (typeof PALIVO_LABEL !== 'undefined' && PALIVO_LABEL[V.palivo]) || V.palivo || '';
+  return {
+    klient: { typ, cudzinec, titulPred:P.titulPred||'', titulZa:P.titulZa||'', meno:P.meno||'', priezvisko:P.priezvisko||'',
+      rodneCislo:P.rc||'', datumNar:P.datumNar||'', dokladCislo:P.dokladCislo||'', statnaPrislusnost:P.statnaPrislusnost||'',
+      ico:P.ico||'', nazov:P.nazov||'', zapisanyV:P.zapisanyV||'', ulica:P.ulica||'', cislo:P.cislo||'',
+      obec:P.obec||'', psc:P.psc||'', email:P.email||'', tel:P.tel||'' },
+    vlastnik: (P.vlastnik && P.vlastnik.typ === 'osoba') ? P.vlastnik : { typ:'poistnik' },
+    vozidlo: { typ:V.typ||'', znacka:V.znacka||'', model:V.model||'', ecv:V.ecv||'', objem:V.objem||'', vykon:V.vykon||'',
+      rokVyroby:(V.datumReg||'').slice(0,4), palivo:palivoTxt, hmotnost:V.hmotnost||'', miest:V.miest||'' },
+    rizika, spoluUcast: order.spolu || '', frekvencia: order.freq?.label || 'ročne',
+    cisloNavrhu: '', marketing: !!document.getElementById('suh2')?.checked,
+    datum: new Date().toLocaleDateString('sk-SK'),
+  };
+}
+document.getElementById('docZaznam')?.addEventListener('click', async (e) => {
+  e.preventDefault();
+  try {
+    const res = await fetch(API_BASE + '/bcrm/docs/zaznam', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(buildZaznamData())
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    window.open(URL.createObjectURL(await res.blob()), '_blank');
+  } catch (err) { alert('Záznam sa nepodarilo vygenerovať: ' + err.message); }
+});
 </script>
 </body>
 </html>
