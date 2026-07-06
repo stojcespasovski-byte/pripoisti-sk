@@ -918,6 +918,25 @@ document.getElementById('docZaznam')?.addEventListener('click', async (e) => {
     window.open(URL.createObjectURL(await res.blob()), '_blank');
   } catch (err) { alert('Záznam sa nepodarilo vygenerovať: ' + err.message); }
 });
+
+/* Návrh poistnej zmluvy (s VPP a IPID) — Pillow náhľad z rate kalkulácie */
+document.getElementById('docNavrh')?.addEventListener('click', async (e) => {
+  e.preventDefault();
+  if (!order.tiles || !order.tiles.length) { alert('Náhľad nie je dostupný — najprv vyberte pripoistenia.'); return; }
+  let uid;
+  try {
+    const freq = order.freq?.pillowFreq || 12;
+    uid = await pillowAuth();
+    const rate = parseRate(await pillowCall(uid, 'par/policies/rate/AP2', buildRateXML(freq)));
+    if (!rate.calcId) throw new Error((rate.errors && rate.errors[0]) || 'Kalkulácia zlyhala.');
+    const pdfRes = await fetch(`${PILLOW.BASE}/par/policies/print/AP2/policyPreview/${rate.calcId}/print`, {
+      method: 'POST', headers: { 'Content-Type': 'text/xml; charset=utf-8', 'RestUid': uid },
+    });
+    await pillowLogout(uid); uid = null;
+    if (!pdfRes.ok) throw new Error('HTTP ' + pdfRes.status);
+    window.open(URL.createObjectURL(await pdfRes.blob()), '_blank');
+  } catch (err) { if (uid) pillowLogout(uid); alert('Náhľad zmluvy nie je dostupný: ' + err.message); }
+});
 </script>
 </body>
 </html>
