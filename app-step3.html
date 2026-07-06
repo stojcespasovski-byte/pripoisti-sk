@@ -115,6 +115,7 @@ nav {
 }
 .field input:focus, .field select:focus { border-color: var(--o); }
 .field input::placeholder { color: rgba(255,255,255,.2); font-weight: 400; }
+.field input[type="date"].date-empty { color: rgba(255,255,255,.2); font-weight: 400; }
 .field input.mono { font-variant-numeric: tabular-nums; letter-spacing: .5px; }
 
 .field-input-inline {
@@ -683,6 +684,28 @@ document.querySelectorAll('input[data-required="true"]').forEach(input => {
     if (input.value.trim().length > 0) input.classList.remove('error');
   });
 });
+
+/* Vlastník FO: dátum narodenia sa dopočíta z RČ; prázdne date pole má stlmený placeholder */
+function birthFromRc(rc) {
+  const d = (rc || '').replace(/\D/g, '');
+  if (d.length !== 9 && d.length !== 10) return '';
+  let mm = parseInt(d.slice(2, 4), 10) % 50; if (mm > 20) mm -= 20;
+  const dd = parseInt(d.slice(4, 6), 10);
+  if (mm < 1 || mm > 12 || dd < 1 || dd > 31) return '';
+  const yy = parseInt(d.slice(0, 2), 10);
+  const year = d.length === 9 ? 1900 + yy : (yy < 54 ? 2000 + yy : 1900 + yy);
+  return `${year}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
+}
+(function () {
+  const rc = document.getElementById('vl-rc');
+  const dt = document.getElementById('vl-datum');
+  if (!dt) return;
+  const updEmpty = () => dt.classList.toggle('date-empty', !dt.value);
+  updEmpty();
+  dt.addEventListener('input', updEmpty);
+  dt.addEventListener('change', updEmpty);
+  if (rc) rc.addEventListener('input', () => { const b = birthFromRc(rc.value); if (b) { dt.value = b; updEmpty(); } });
+})();
 
 /* ── Vlastník vozidla ── */
 function setVlastnik(v) {
