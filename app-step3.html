@@ -162,12 +162,12 @@ nav {
 
 select option { background: #1a1a1a; color: white; }
 
-/* Kompaktné prepínače (vlastník) — 2 tlačidlá vedľa seba, nie na celú šírku */
-.seg-row { display: inline-flex; gap: 6px; margin-bottom: 14px; padding: 4px; background: rgba(255,255,255,.04); border-radius: 11px; }
+/* Kompaktné prepínače (vlastník) — 2 tlačidlá vedľa seba (150+150), nie na celú šírku */
+.seg-row { display: inline-grid; grid-template-columns: 150px 150px; gap: 6px; margin-bottom: 14px; padding: 4px; background: rgba(255,255,255,.04); border-radius: 11px; }
 .seg-btn {
   border: 1px solid transparent; background: transparent; color: rgba(255,255,255,.55);
-  font-size: 14px; font-weight: 700; font-family: inherit; padding: 8px 18px; border-radius: 8px; cursor: pointer;
-  transition: all .12s; white-space: nowrap;
+  font-size: 14px; font-weight: 700; font-family: inherit; padding: 8px 12px; border-radius: 8px; cursor: pointer;
+  transition: all .12s; white-space: nowrap; text-align: center;
 }
 .seg-btn:hover { color: rgba(255,255,255,.8); }
 .seg-btn.on { background: var(--o); color: #fff; }
