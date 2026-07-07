@@ -4312,6 +4312,7 @@ function openVehModal(e, prefill) {
   g('vm-ina-wrap').style.display = 'none';
   g('vm-warn').style.display = 'none';
   g('vm-error').style.display = 'none';
+  const vh = g('vm-vin-hint'); if (vh) vh.textContent = '';
 
   if (prefill) prefillVehModal();                   // predvyplniť z lookupu (netreba prepisovať všetko)
   onVmTypChange();                                   // ukáže správne polia + km číselník
@@ -4351,6 +4352,31 @@ function prefillVehModal() {
   g('vm-hmotnost').value = v.hmotnost || '';
   g('vm-vin').value      = v.vin      || '';
   // km + cena doplní onVmTypChange (km predvyberie z v.najazd); cena ostáva prázdna
+}
+
+/* Pole EČV/VIN v modáli — hľadá v databáze; ak vozidlo nájde, doplní údaje (dajú sa prepísať) */
+let _vmIdTimer = null;
+function onVmVinInput() {
+  clearTimeout(_vmIdTimer);
+  const inp = document.getElementById('vm-vin');
+  const hint = document.getElementById('vm-vin-hint');
+  const val = (inp.value || '').trim().toUpperCase().replace(/[\s-]/g, '');
+  if (val.length < 6) { if (hint) hint.textContent = ''; return; }
+  _vmIdTimer = setTimeout(async () => {
+    if (hint) { hint.textContent = 'Overujem v databáze…'; hint.style.color = 'rgba(255,255,255,.4)'; }
+    const veh = await apiLookupVehicleCached(val).catch(() => null);
+    // medzitým sa vstup zmenil → výsledok už neplatí
+    if ((inp.value || '').trim().toUpperCase().replace(/[\s-]/g, '') !== val) return;
+    if (veh && veh.found) {
+      const najazd = (lookup.vehicle && lookup.vehicle.najazd) || '';
+      lookup.vehicle = { ...veh.data, najazd };
+      prefillVehModal();                    // doplní polia (vrátane VIN); používateľ môže prepísať
+      if (hint) { hint.textContent = '✓ Vozidlo nájdené v databáze — údaje doplnené, môžete ich upraviť.'; hint.style.color = '#4ade80'; }
+    } else if (hint) {
+      hint.textContent = 'Vozidlo v databáze nenájdené — vyplňte údaje ručne (VIN povinný, 17 znakov).';
+      hint.style.color = 'rgba(255,255,255,.4)';
+    }
+  }, 600);
 }
 function closeVehModal() { document.getElementById('vm-overlay').style.display = 'none'; }
 
@@ -5165,10 +5191,11 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
     <div class="vm-title">Vypíšte vozidlo</div>
     <div class="vm-sub">Zadajte údaje o vozidle, ktoré chcete poistiť.</div>
     <div class="vm-grid">
-      <!-- 0) VIN — identifikátor vozidla (povinný pre uzatvorenie) -->
+      <!-- 0) EČV/VIN — hľadá v databáze (pri uzatvorení treba VIN 17 znakov) -->
       <div class="vm-field full">
-        <label>VIN (17 znakov)</label>
-        <input id="vm-vin" placeholder="TMBLJ7NSXP8012326" maxlength="17" autocapitalize="characters" style="text-transform:uppercase">
+        <label>EČV/VIN</label>
+        <input id="vm-vin" placeholder="EČV alebo VIN" maxlength="17" autocapitalize="characters" style="text-transform:uppercase" oninput="onVmVinInput()">
+        <div class="vm-vin-hint" id="vm-vin-hint" style="font-size:12px;margin-top:5px;line-height:1.4;"></div>
       </div>
       <!-- 1) Typ vozidla — riadi, čo sa ďalej zobrazí -->
       <div class="vm-field full">
