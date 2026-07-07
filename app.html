@@ -5218,6 +5218,7 @@ function goToStep3(e) {
     garaged: vehGaraged,                         // cenové parametre vozidla
     contractualService: vehContractualService,
     poistenieOd: (typeof todayISO === 'function') ? todayISO() : new Date().toISOString().slice(0, 10),
+    v: DRAFT_VERSION,                            // verzia schémy draftu (staré sa ignorujú)
     savedAt: Date.now(),                         // pre obnovu stavu pri návrate na Krok 1
   };
   localStorage.setItem('pripoisti_order', JSON.stringify(order));
@@ -5229,10 +5230,11 @@ function goToStep3(e) {
 /* ── Návrat na Krok 1 — obnoviť ceny, výber dlaždíc aj formulár z rozpracovanej
       objednávky (po úspešnom odoslaní sa objednávka maže, takže sa obnoví len
       rozpracovaná; staršia ako 12 h sa ignoruje — ceny by mohli byť neplatné) ── */
+const DRAFT_VERSION = 2;   // bump pri zmene defaultov (napr. variant Úrazu) → staré drafty sa ignorujú, nepresadia starý default
 function restoreFromOrder() {
   let order = null;
   try { order = JSON.parse(localStorage.getItem('pripoisti_order') || 'null'); } catch (_) {}
-  if (!order || !order.savedAt || (Date.now() - order.savedAt) > 12 * 3600 * 1000) return;
+  if (!order || order.v !== DRAFT_VERSION || !order.savedAt || (Date.now() - order.savedAt) > 12 * 3600 * 1000) return;
   if (!order.vehicle || !order.vehicle.ecv || !order.freqPrices || !order.freqPrices[12]) return;
 
   const setVal = (id, v) => { const el = document.getElementById(id); if (el && v != null && v !== '') el.value = v; };
