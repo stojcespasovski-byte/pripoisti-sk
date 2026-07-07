@@ -524,6 +524,7 @@ select.entry-input option { background: #1a1a1a; color: white; }
 .su-switch { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px 16px; margin: 12px 0 16px; }
 .su-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .su-lbl { font-size: 14px; font-weight: 700; color: rgba(255,255,255,.65); }
+.su-hintable { cursor: help; text-decoration: underline dotted rgba(255,255,255,.3); text-underline-offset: 3px; }
 .su-opt {
   border: 1px solid rgba(255,255,255,.18); border-radius: 8px;
   padding: 6px 14px; font-size: 14px; font-weight: 700; color: rgba(255,255,255,.55);
@@ -1194,12 +1195,12 @@ footer {
           <span class="su-opt" data-su="600" onclick="setSpoluUcast('600')">600 €</span>
         </div>
         <div class="su-group">
-          <span class="su-lbl">Garáž:</span>
+          <span class="su-lbl su-hintable" title="Ak vozidlo parkujete v garáži, môžete získať zľavu z ceny.">Garáž:</span>
           <span class="su-opt" data-g="ano" onclick="setGaraged(true)">Áno</span>
           <span class="su-opt active" data-g="nie" onclick="setGaraged(false)">Nie</span>
         </div>
         <div class="su-group">
-          <span class="su-lbl">Zmluvný servis:</span>
+          <span class="su-lbl su-hintable" title="Ak súhlasíte s opravou v zmluvnom servise, môžete získať zľavu z ceny.">Zmluvný servis:</span>
           <span class="su-opt" data-s="ano" onclick="setServis(true)">Áno</span>
           <span class="su-opt active" data-s="nie" onclick="setServis(false)">Nie</span>
           <a class="su-serv-link" id="su-serv-link" href="https://www.mypillow.sk/zmluvne-servisy/" target="_blank" rel="noopener">Zoznam zmluvných servisov ↗</a>
