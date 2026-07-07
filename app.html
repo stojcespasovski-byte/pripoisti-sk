@@ -515,6 +515,8 @@ select.entry-input option { background: #1a1a1a; color: white; }
 .im-params { display: flex; flex-direction: column; }
 .im-param { display: flex; justify-content: space-between; gap: 14px; font-size: 15px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
 .im-param span:first-child { color: rgba(255,255,255,.5); }
+.im-param-solo { justify-content: flex-start; }
+.im-param-solo span { white-space: nowrap; }
 .im-param span:last-child { color: #fff; font-weight: 600; text-align: right; }
 .im-note { font-size: 14px; color: rgba(255,255,255,.42); margin-top: 14px; line-height: 1.5; }
 .im-cover-note { font-size: 13.5px; color: rgba(255,255,255,.5); line-height: 1.5; margin: -3px 0 10px; }
@@ -4755,6 +4757,7 @@ const INFO_CONTENT = {
       'Služby organizované mimo asistenčnej centrály poisťovne sa nepreplácajú.',
       'Materiál a náhradné diely pri oprave na mieste si hradí klient.',
     ],
+    params: [['Varianty na výber', '']],
     pdfUrl: 'pdf/asistencia_podmienky.pdf',
     pdfLabel: 'Podmienky asistencie — rozsah balíkov (PDF)',
     note: 'Pri udalosti vždy volajte asistenčnú linku poisťovne — nikdy „lovcov nehôd".',
@@ -4804,7 +4807,9 @@ function openInfoModal(e, id) {
   if (c.excl && c.excl.length)
     html += '<div class="im-section-label im-excl-label">Čo nekryje (hlavné výluky)</div><ul class="im-list im-excl">' + c.excl.map(x => `<li>${x}</li>`).join('') + '</ul>';
   if (c.params && c.params.length)
-    html += '<div class="im-section-label">Parametre</div><div class="im-params">' + c.params.map(p => `<div class="im-param"><span>${p[0]}</span><span>${p[1]}</span></div>`).join('') + '</div>';
+    html += '<div class="im-section-label">Parametre</div><div class="im-params">' + c.params.map(p => p[1]
+      ? `<div class="im-param"><span>${p[0]}</span><span>${p[1]}</span></div>`
+      : `<div class="im-param im-param-solo"><span>${p[0]}</span></div>`).join('') + '</div>';
   if (c.pdfUrl) html += `<a class="im-pdf" href="${c.pdfUrl}" target="_blank" rel="noopener"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> ${c.pdfLabel || 'Zobraziť podmienky (PDF)'}</a>`;
   if (c.note) html += `<div class="im-note">${c.note}</div>`;
   html += '<div class="im-note">Presné sumy, limity a spoluúčasť sa riadia poistnou zmluvou a poistnými podmienkami Pillow.</div>';
