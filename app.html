@@ -479,6 +479,16 @@ select.entry-input option { background: #1a1a1a; color: white; }
   100% { box-shadow: 0 0 0 0 rgba(232,130,26,0); }
 }
 .tile.su-flash { animation: suTileFlash .7s ease-out; }
+/* spinner v poli EČV/VIN počas overovania v databáze */
+.vm-vin-wrap { position: relative; }
+.vm-spinner {
+  position: absolute; right: 14px; top: 50%; margin-top: -8px;
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.18); border-top-color: var(--o);
+  display: none; pointer-events: none; animation: vmSpin .7s linear infinite;
+}
+.vm-spinner.on { display: block; }
+@keyframes vmSpin { to { transform: rotate(360deg); } }
 
 /* Variant dlaždice (asistencia/úraz/batožina) — kompaktný prepínač v riadku ceny,
    možnosti v plávajúcom menu → dlaždica NEMENÍ veľkosť */
@@ -4381,11 +4391,15 @@ function onVmVinInput() {
   clearTimeout(_vmIdTimer);
   const inp = document.getElementById('vm-vin');
   const hint = document.getElementById('vm-vin-hint');
+  const spin = document.getElementById('vm-spinner');
   const val = (inp.value || '').trim().toUpperCase().replace(/[\s-]/g, '');
-  if (val.length < 6) { if (hint) hint.textContent = ''; return; }
+  if (val.length < 6) { if (hint) hint.textContent = ''; if (spin) spin.classList.remove('on'); return; }
   _vmIdTimer = setTimeout(async () => {
+    if (spin) spin.classList.add('on');
     if (hint) { hint.textContent = 'Overujem v databáze…'; hint.style.color = 'rgba(255,255,255,.4)'; }
-    const veh = await apiLookupVehicleCached(val).catch(() => null);
+    let veh = null;
+    try { veh = await apiLookupVehicleCached(val).catch(() => null); }
+    finally { if (spin) spin.classList.remove('on'); }
     // medzitým sa vstup zmenil → výsledok už neplatí
     if ((inp.value || '').trim().toUpperCase().replace(/[\s-]/g, '') !== val) return;
     if (veh && veh.found) {
@@ -5230,7 +5244,10 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
       <!-- 0) EČV/VIN — hľadá v databáze (pri uzatvorení treba VIN 17 znakov) -->
       <div class="vm-field full">
         <label>EČV/VIN</label>
-        <input id="vm-vin" placeholder="EČV alebo VIN" maxlength="17" autocapitalize="characters" style="text-transform:uppercase" oninput="onVmVinInput()">
+        <div class="vm-vin-wrap">
+          <input id="vm-vin" placeholder="EČV alebo VIN" maxlength="17" autocapitalize="characters" style="text-transform:uppercase;padding-right:38px" oninput="onVmVinInput()">
+          <span class="vm-spinner" id="vm-spinner" aria-hidden="true"></span>
+        </div>
         <div class="vm-vin-hint" id="vm-vin-hint" style="font-size:12px;margin-top:5px;line-height:1.4;"></div>
       </div>
       <!-- 1) Typ vozidla — riadi, čo sa ďalej zobrazí -->
