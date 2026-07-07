@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kontakt — pripoisti.sk</title>
+<meta name="description" content="Kontakt na prevádzkovateľa pripoisti.sk — automanager s.r.o., Praha. E-mail, telefón a adresa sídla.">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root { --r:#D63B1F; --o:#E8821A; --a:#F0A500; --grad:linear-gradient(120deg,var(--r),var(--o),var(--a)); }
+body {
+  font-family:'Inter',sans-serif; background:#111; color:rgba(255,255,255,.9);
+  min-height:100vh; display:flex; flex-direction:column; align-items:center;
+  padding:48px 20px; line-height:1.6;
+}
+.wrap { width:100%; max-width:560px; }
+.logo { display:inline-block; font-size:26px; font-weight:900; letter-spacing:-.5px; text-decoration:none; margin-bottom:40px; }
+.logo span { background:var(--grad); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+.logo small { color:rgba(255,255,255,.35); font-weight:700; font-size:13px; letter-spacing:.5px; margin-left:2px; }
+h1 { font-size:30px; font-weight:800; margin-bottom:8px; }
+.lead { color:rgba(255,255,255,.5); font-size:16px; margin-bottom:32px; }
+.card { background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1); border-radius:16px; padding:26px 28px; margin-bottom:16px; }
+.row { display:flex; flex-direction:column; gap:3px; padding:14px 0; border-bottom:1px solid rgba(255,255,255,.07); }
+.row:first-child { padding-top:0; } .row:last-child { border-bottom:none; padding-bottom:0; }
+.label { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--o); }
+.val { font-size:17px; font-weight:600; }
+.val a { color:rgba(255,255,255,.92); text-decoration:none; }
+.val a:hover { color:var(--a); }
+.note { font-size:13px; color:rgba(255,255,255,.35); margin-top:4px; }
+.back { display:inline-block; margin-top:28px; color:rgba(255,255,255,.45); text-decoration:none; font-size:14px; font-weight:600; }
+.back:hover { color:rgba(255,255,255,.8); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a href="app.html" class="logo"><span>pripoisti.sk</span><small>automanager</small></a>
+
+  <h1>Kontakt</h1>
+  <p class="lead">Napíšte alebo zavolajte — radi vám s pripoistením poradíme.</p>
+
+  <div class="card">
+    <div class="row">
+      <span class="label">E-mail</span>
+      <span class="val"><a href="mailto:info@pripoisti.sk">info@pripoisti.sk</a></span>
+    </div>
+    <div class="row">
+      <span class="label">Telefón</span>
+      <span class="val"><a href="tel:+421948105090">0948 105 090</a></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <span class="label">Prevádzkovateľ</span>
+      <span class="val">automanager s.r.o.</span>
+    </div>
+    <div class="row">
+      <span class="label">Sídlo</span>
+      <span class="val">Školská 660/3, 110 00 Praha 1</span>
+    </div>
+  </div>
+
+  <a href="app.html" class="back">← Späť na pripoisti.sk</a>
+</div>
+</body>
+</html>
