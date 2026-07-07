@@ -182,8 +182,8 @@ h1 {
   font-size: 15px; font-weight: 600; text-decoration: none; white-space: nowrap;
   padding: 5px 12px; border-radius: 8px; transition: background .15s, border-color .15s, color .15s;
 }
-.veh-link { color: rgba(255,255,255,.6); border: 1px solid rgba(255,255,255,.14); }
-.veh-link:hover { color: var(--o); border-color: rgba(232,130,26,.4); }
+.veh-link { color: rgba(255,255,255,.6); border: 1px solid rgba(232,130,26,.4); }
+.veh-link:hover { color: var(--o); border-color: rgba(232,130,26,.6); }
 .veh-change { color: var(--o); border: 1px solid rgba(232,130,26,.4); }
 .veh-change:hover { background: rgba(232,130,26,.12); }
 .veh-warn {
@@ -268,6 +268,12 @@ h1 {
   padding: 24px;
   margin-bottom: 28px;
 }
+/* Efekt „upozornenie na sekciu Vyberte" — pulzujúci glow po kliknutí na Zmeniť */
+@keyframes entryHi {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(232,130,26,0); border-color: rgba(255,255,255,.08); }
+  45% { box-shadow: 0 0 28px 5px rgba(232,130,26,.55); border-color: rgba(232,130,26,.7); }
+}
+.entry-card.entry-hi { animation: entryHi 0.85s ease-in-out 2; }
 .entry-fields { margin-bottom: 4px; }
 .entry-row {
   display: flex;
@@ -4227,7 +4233,13 @@ function hideVehCard() { const el = document.getElementById('veh-card'); if (el)
 /* „Zmeniť" — scroll späť hore k vstupným poliam */
 function scrollToEntry(e) {
   if (e) e.preventDefault();
-  document.getElementById('entry-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const el = document.getElementById('entry-card');
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    el.classList.remove('entry-hi'); void el.offsetWidth;   // reštart animácie
+    el.classList.add('entry-hi');
+    setTimeout(() => el.classList.remove('entry-hi'), 1900);
+  }
   return false;
 }
 
