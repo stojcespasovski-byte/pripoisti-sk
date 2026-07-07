@@ -530,6 +530,9 @@ select.entry-input option { background: #1a1a1a; color: white; }
 }
 .su-opt:hover { border-color: rgba(232,130,26,.5); }
 .su-opt.active { border-color: var(--o); background: rgba(232,130,26,.14); color: var(--o); }
+.su-div { width: 1px; height: 20px; background: rgba(255,255,255,.14); margin: 0 4px; }
+.su-serv-link { font-size: 13px; color: var(--o); text-decoration: underline; text-underline-offset: 2px; white-space: nowrap; margin-left: 4px; }
+.su-serv-link:hover { color: var(--a); }
 .su-hint { font-size: 12px; color: rgba(255,255,255,.35); }
 
 /* Info modal */
@@ -1188,7 +1191,14 @@ footer {
         <span class="su-opt" data-su="150" onclick="setSpoluUcast('150')">150 €</span>
         <span class="su-opt active" data-su="300" onclick="setSpoluUcast('300')">300 €</span>
         <span class="su-opt" data-su="600" onclick="setSpoluUcast('600')">600 €</span>
-        <span class="su-hint">platí spoločne pre haváriu, zver, krádež, živel a vandalizmus</span>
+        <span class="su-div"></span>
+        <span class="su-lbl">Garáž:</span>
+        <span class="su-opt" data-g="ano" onclick="setGaraged(true)">Áno</span>
+        <span class="su-opt active" data-g="nie" onclick="setGaraged(false)">Nie</span>
+        <span class="su-lbl">Zmluvný servis:</span>
+        <span class="su-opt" data-s="ano" onclick="setServis(true)">Áno</span>
+        <span class="su-opt active" data-s="nie" onclick="setServis(false)">Nie</span>
+        <a class="su-serv-link" id="su-serv-link" href="#" target="_blank" rel="noopener">Zoznam zmluvných servisov ↗</a>
       </div>
       <div class="tiles-partial" id="tiles-partial">
         Toto vozidlo sa nenašlo v cenníku — vieme oceniť len <b>asistenciu, úraz a batožinu</b>.
@@ -1573,6 +1583,10 @@ const SU_RISKS = new Set(['HP2', 'SZ2', 'OV2', 'ZV2', 'VA2']);
 let spoluUcast = '300';
 /* dlaždice, ktoré nesú jednotnú havarijnú spoluúčasť (Sklá má vlastnú fixnú 10 % v HTML) */
 const SU_SHARED_TILES = ['havaria', 'zver', 'kradez', 'priroda', 'vandalizmus'];
+/* cenové parametre vozidla — do rate XML (garaged / contractualService); default false ako doteraz */
+let vehGaraged = false;
+let vehContractualService = false;
+let reRateBusy = false;
 /* variant rizika: SÚ riziká podľa jednotnej spoluúčasti, výberové podľa dlaždice */
 function variantFor(r, tileId) {
   if (SU_RISKS.has(r.risk)) return r.risk + '_' + spoluUcast;
@@ -3897,8 +3911,8 @@ function buildRateXML(freq = 12, codes = null, riskList = null) {
     ${v.vin ? xe('VIN', v.vin) : ''}
     ${v.datumReg ? xe('firstRegistrationDate', v.datumReg) : ''}
     ${xe('notRegistered', 'false')}
-    ${xe('garaged', 'false')}
-    ${xe('contractualService', 'false')}
+    ${xe('garaged', vehGaraged ? 'true' : 'false')}
+    ${xe('contractualService', vehContractualService ? 'true' : 'false')}
     ${xe('equipment', v.pohon ? 'A' : 'NA')}
     ${xe('x4x4', v.pohon ? 'true' : 'false')}
     ${xe('expectedKm', parseInt(v.najazd) || 15000)}
@@ -4936,7 +4950,7 @@ function closeVariantPopover() { document.getElementById('tv-pop')?.remove(); }
 function setSpoluUcast(v) {
   if (spoluUcast === v) return;
   spoluUcast = v;
-  document.querySelectorAll('#su-switch .su-opt').forEach(el => el.classList.toggle('active', el.dataset.su === v));
+  document.querySelectorAll('#su-switch [data-su]').forEach(el => el.classList.toggle('active', el.dataset.su === v));
   renderTilePrices();
   SU_SHARED_TILES.forEach(id => {
     const tile = document.querySelector(`.tile[data-id="${id}"]`);
@@ -4946,6 +4960,32 @@ function setSpoluUcast(v) {
     if (el) { el.classList.remove('su-pulse'); void el.offsetWidth; el.classList.add('su-pulse'); }
   });
   updateCalc();
+}
+/* Garáž / Zmluvný servis → cenové parametre vozidla; pri zmene ľahký re-rate (fetch cien + prekreslenie) */
+function setGaraged(on) {
+  if (vehGaraged === on) return;
+  vehGaraged = on;
+  document.querySelectorAll('#su-switch [data-g]').forEach(el => el.classList.toggle('active', (el.dataset.g === 'ano') === on));
+  reRateVehParams();
+}
+function setServis(on) {
+  if (vehContractualService === on) return;
+  vehContractualService = on;
+  document.querySelectorAll('#su-switch [data-s]').forEach(el => el.classList.toggle('active', (el.dataset.s === 'ano') === on));
+  reRateVehParams();
+}
+async function reRateVehParams() {
+  if (!pricesReady || reRateBusy) return;         // len keď už máme kalkuláciu
+  reRateBusy = true;
+  const grid = document.getElementById('tiles');
+  if (grid) grid.style.opacity = '.45';
+  try {
+    const prices = await fetchPillowPrices();
+    applyTilePrices(prices);
+    renderTilePrices();
+    updateCalc();
+  } catch (e) { console.error(e); }
+  finally { if (grid) grid.style.opacity = ''; reRateBusy = false; }
 }
 function selectVariant(e, tileId, code) {
   e.stopPropagation();                       // klik nesmie od-vybrať dlaždicu
@@ -5175,6 +5215,8 @@ function goToStep3(e) {
     variantPrices: pillowVariantPrices,          // ceny všetkých variantov
     selectedVariants: { ...selectedVariants },   // zvolené varianty dlaždíc
     spoluUcast,                                  // jednotná spoluúčasť havarijných krytí
+    garaged: vehGaraged,                         // cenové parametre vozidla
+    contractualService: vehContractualService,
     poistenieOd: (typeof todayISO === 'function') ? todayISO() : new Date().toISOString().slice(0, 10),
     savedAt: Date.now(),                         // pre obnovu stavu pri návrate na Krok 1
   };
@@ -5208,7 +5250,11 @@ function restoreFromOrder() {
   pillowVariantPrices = order.variantPrices || {};
   if (order.selectedVariants) selectedVariants = { ...selectedVariants, ...order.selectedVariants };
   if (order.spoluUcast) { spoluUcast = order.spoluUcast; }
-  document.querySelectorAll('#su-switch .su-opt').forEach(el => el.classList.toggle('active', el.dataset.su === spoluUcast));
+  document.querySelectorAll('#su-switch [data-su]').forEach(el => el.classList.toggle('active', el.dataset.su === spoluUcast));
+  vehGaraged = !!order.garaged;
+  vehContractualService = !!order.contractualService;
+  document.querySelectorAll('#su-switch [data-g]').forEach(el => el.classList.toggle('active', (el.dataset.g === 'ano') === vehGaraged));
+  document.querySelectorAll('#su-switch [data-s]').forEach(el => el.classList.toggle('active', (el.dataset.s === 'ano') === vehContractualService));
   _vehCacheKey = order.vehicle.ecv;                     // pre-lookup/re-lookup nevolá BCRM zbytočne
   _vehCacheVal = { found: true, data: { ...order.vehicle } };
 
