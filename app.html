@@ -1001,7 +1001,7 @@ footer {
             <input class="entry-input" id="f-ico" placeholder="12345678" inputmode="numeric" oninput="onFieldInput()">
           </div>
           <div class="entry-field-sm">
-            <div class="entry-label">EČV</div>
+            <div class="entry-label">EČV alebo VIN</div>
             <input class="entry-input" id="f-ecv-po" placeholder="BA123AB" autocapitalize="characters" autocorrect="off" spellcheck="false" oninput="onFieldInput()">
           </div>
           <div class="entry-field-sm">
@@ -1045,7 +1045,7 @@ footer {
             <input type="hidden" id="f-psc-fo">
           </div>
           <div class="entry-field-sm">
-            <div class="entry-label">EČV</div>
+            <div class="entry-label">EČV alebo VIN</div>
             <input class="entry-input" id="f-ecv-fo" placeholder="BA123AB" autocapitalize="characters" autocorrect="off" spellcheck="false" oninput="onFieldInput()">
           </div>
           <div class="entry-field-sm">
@@ -1089,7 +1089,7 @@ footer {
             <input type="hidden" id="f-psc-szco">
           </div>
           <div class="entry-field-sm">
-            <div class="entry-label">EČV</div>
+            <div class="entry-label">EČV alebo VIN</div>
             <input class="entry-input" id="f-ecv-szco" placeholder="BA123AB" autocapitalize="characters" autocorrect="off" spellcheck="false" oninput="onFieldInput()">
           </div>
           <div class="entry-field-sm">
@@ -3721,10 +3721,12 @@ function todayISO() { return new Date().toISOString().slice(0, 10); }
 function fieldVal(id) { return (document.getElementById(id)?.value || '').trim(); }
 
 /* ── BCRM lookupy ── */
-async function apiLookupVehicle(ecv) {
+async function apiLookupVehicle(idInput) {
+  // EČV má ≤7 znakov, VIN 17 → nad 7 znakov hľadáme podľa VIN, inak podľa EČV
+  const byVin = (idInput || '').length > 7;
   let raw;
   try {
-    const res = await fetch(`${API_BASE}/bcrm/vehicle?ecv=${encodeURIComponent(ecv)}`);
+    const res = await fetch(`${API_BASE}/bcrm/vehicle?${byVin ? 'vin' : 'ecv'}=${encodeURIComponent(idInput)}`);
     raw = await res.json();
   } catch (e) { return { found: false }; }
   if (!raw.found) return { found: false };
@@ -3737,7 +3739,7 @@ async function apiLookupVehicle(ecv) {
     found: true,
     ecvWarning: !!raw.ecv_warning,
     data: {
-      vin:      raw.vin || '', ecv: raw.ecv || ecv,
+      vin:      raw.vin || (byVin ? idInput : ''), ecv: raw.ecv || (byVin ? '' : idInput),
       znacka:   raw.znacka || '', model: raw.model || '', typ,
       datumReg: raw.reg || '', palivo,
       vykon:    raw.vykon    != null ? String(Math.round(raw.vykon))    : '',
@@ -4152,8 +4154,9 @@ async function ecvPreLookup() {
   if (seq !== _preSeq) return;                                  // medzitým sa EČV zmenilo
   if (sel) { sel.disabled = false; if (firstOpt) firstOpt.textContent = 'Vyberte...'; }
   if (veh && veh.found) {
-    const prevCena = (lookup.vehicle && lookup.vehicle.ecv === ecv) ? lookup.vehicle.cenaVozidla : '';
-    lookup.vehicle = { ...veh.data, ecv, najazd: sel ? sel.value : '' };
+    // vozidlo mohlo byť nájdené cez EČV aj VIN → porovnaj vstup s oboma
+    const prevCena = (lookup.vehicle && (lookup.vehicle.ecv === ecv || lookup.vehicle.vin === ecv)) ? lookup.vehicle.cenaVozidla : '';
+    lookup.vehicle = { ...veh.data, najazd: sel ? sel.value : '' };   // ecv/vin z veh.data (DB), nie zo vstupu
     if (prevCena) lookup.vehicle.cenaVozidla = prevCena;
     updateEntryKmOptions();
   }
@@ -4515,12 +4518,11 @@ async function triggerLookup() {
       return;
     }
 
-    // 1. Vozidlo podľa EČV
-    // cenu vozidla si pamätať, ak ide o to isté EČV (zmena km nesmie vypýtať cenu znova)
-    const prevCena = (lookup.vehicle && lookup.vehicle.ecv === ecv) ? lookup.vehicle.cenaVozidla : '';
+    // 1. Vozidlo podľa EČV alebo VIN (>7 znakov = VIN)
+    // cenu vozidla si pamätať, ak ide o to isté vozidlo (zmena km nesmie vypýtať cenu znova)
+    const prevCena = (lookup.vehicle && (lookup.vehicle.ecv === ecv || lookup.vehicle.vin === ecv)) ? lookup.vehicle.cenaVozidla : '';
     const veh = await apiLookupVehicleCached(ecv);
-    lookup.vehicle = veh.found ? veh.data : {};
-    lookup.vehicle.ecv = ecv;
+    lookup.vehicle = veh.found ? veh.data : (ecv.length > 7 ? { vin: ecv } : { ecv });   // ecv/vin z DB, inak zo vstupu
     lookup.vehicle.najazd = najazd;
     if (prevCena && !lookup.vehicle.cenaVozidla) lookup.vehicle.cenaVozidla = prevCena;
     updateEntryKmOptions();                 // motorka → moto pásma nájazdu aj v Kroku 1
@@ -4557,7 +4559,7 @@ async function triggerLookup() {
     if (!veh.found) {
       hideEntryLoader();
       showEntryError(
-        `Vozidlo s EČV <b>${ecv}</b> sa nenašlo v databáze.<br>` +
+        `Vozidlo (${ecv.length > 7 ? 'VIN' : 'EČV'}) <b>${ecv}</b> sa nenašlo v databáze.<br>` +
         `<button type="button" onclick="openVehModal(event)" style="margin-top:10px;background:var(--grad);color:#fff;border:none;border-radius:9px;padding:10px 18px;font-size:15px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;">Vypísať údaje vozidla ručne</button>`
       );
       return;
