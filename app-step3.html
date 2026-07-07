@@ -115,6 +115,14 @@ nav {
 }
 .field input:focus, .field select:focus { border-color: var(--o); }
 .field input::placeholder { color: rgba(255,255,255,.2); font-weight: 400; }
+/* Chrome autofill/paste — tmavé pozadie + biely text (nie biele s čiernym) */
+input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, input:-webkit-autofill:active,
+textarea:-webkit-autofill, select:-webkit-autofill {
+  -webkit-text-fill-color: #fff;
+  caret-color: #fff;
+  -webkit-box-shadow: 0 0 0 1000px #1c1c1c inset;
+  transition: background-color 9999s ease-in-out 0s;
+}
 .field input[type="date"].date-empty { color: rgba(255,255,255,.2); font-weight: 400; }
 .field input.mono { font-variant-numeric: tabular-nums; letter-spacing: .5px; }
 

@@ -301,6 +301,14 @@ h1 {
 .entry-input::placeholder { color: rgba(255,255,255,.2); font-weight: 400; }
 .entry-input:focus { border-color: var(--o); }
 .entry-input.ready { border-color: rgba(232,130,26,.55); background: rgba(232,130,26,.05); }
+/* Chrome autofill/paste — zabrániť bielemu pozadiu s čiernym textom (tmavé + biele ako pri písaní) */
+input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, input:-webkit-autofill:active,
+textarea:-webkit-autofill, select:-webkit-autofill {
+  -webkit-text-fill-color: #fff;
+  caret-color: #fff;
+  -webkit-box-shadow: 0 0 0 1000px #1c1c1c inset;
+  transition: background-color 9999s ease-in-out 0s;
+}
 select.entry-input { cursor: pointer; }
 select.entry-input option { background: #1a1a1a; color: white; }
 
