@@ -517,6 +517,9 @@ select.entry-input option { background: #1a1a1a; color: white; }
 .im-param span:first-child { color: rgba(255,255,255,.5); }
 .im-param span:last-child { color: #fff; font-weight: 600; text-align: right; }
 .im-note { font-size: 14px; color: rgba(255,255,255,.42); margin-top: 14px; line-height: 1.5; }
+.im-cover-note { font-size: 13.5px; color: rgba(255,255,255,.5); line-height: 1.5; margin: -3px 0 10px; }
+.im-pdf { display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; padding: 10px 16px; border-radius: 10px; background: rgba(232,130,26,.12); border: 1px solid rgba(232,130,26,.4); color: var(--o); font-size: 14px; font-weight: 700; text-decoration: none; transition: background .15s; }
+.im-pdf:hover { background: rgba(232,130,26,.2); }
 .im-close { margin-top: 22px; width: 100%; padding: 12px; border-radius: 10px; background: rgba(255,255,255,.08); color: #fff; border: none; font-size: 16px; font-weight: 700; cursor: pointer; transition: background .15s; }
 .im-close:hover { background: rgba(255,255,255,.14); }
 
@@ -4741,6 +4744,8 @@ const INFO_CONTENT = {
   },
   asistencia: {
     title: 'Asistencia',
+    coverLabel: 'Čo kryje (vyberte si zo 4 balíkov)',
+    coverNote: 'Rozsah sa líši podľa balíka (S / M / L / XL) — nižšie balíky nemusia obsahovať všetky nižšie uvedené služby a majú menšiu územnú platnosť. Presné rozdiely nájdete v podmienkach nižšie.',
     cover: [
       'Pomoc pri nehode, poruche, vandalizme, prírodnej udalosti aj krádeži.',
       'Oprava na mieste (do 1 hod.) alebo odťah — v SR bez limitu km, v zahraničí do najbližšieho servisu.',
@@ -4751,6 +4756,8 @@ const INFO_CONTENT = {
       'Materiál a náhradné diely pri oprave na mieste si hradí klient.',
     ],
     params: [['Varianty na výber', 'S — 50 km pri nehode · M — 50 km v SR · L — SR a EÚ · XL — neobmedzene']],
+    pdfUrl: 'pdf/asistencia_podmienky.pdf',
+    pdfLabel: 'Podmienky asistencie — rozsah balíkov (PDF)',
     note: 'Pri udalosti vždy volajte asistenčnú linku poisťovne — nikdy „lovcov nehôd".',
   },
   uraz: {
@@ -4790,12 +4797,16 @@ function openInfoModal(e, id) {
   if (!c) return;
   document.getElementById('im-title').textContent = c.title;
   let html = '';
-  if (c.cover && c.cover.length)
-    html += '<div class="im-section-label">Čo kryje</div><ul class="im-list">' + c.cover.map(x => `<li>${x}</li>`).join('') + '</ul>';
+  if (c.cover && c.cover.length) {
+    html += `<div class="im-section-label">${c.coverLabel || 'Čo kryje'}</div>`;
+    if (c.coverNote) html += `<div class="im-cover-note">${c.coverNote}</div>`;
+    html += '<ul class="im-list">' + c.cover.map(x => `<li>${x}</li>`).join('') + '</ul>';
+  }
   if (c.excl && c.excl.length)
     html += '<div class="im-section-label im-excl-label">Čo nekryje (hlavné výluky)</div><ul class="im-list im-excl">' + c.excl.map(x => `<li>${x}</li>`).join('') + '</ul>';
   if (c.params && c.params.length)
     html += '<div class="im-section-label">Parametre</div><div class="im-params">' + c.params.map(p => `<div class="im-param"><span>${p[0]}</span><span>${p[1]}</span></div>`).join('') + '</div>';
+  if (c.pdfUrl) html += `<a class="im-pdf" href="${c.pdfUrl}" target="_blank" rel="noopener"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> ${c.pdfLabel || 'Zobraziť podmienky (PDF)'}</a>`;
   if (c.note) html += `<div class="im-note">${c.note}</div>`;
   html += '<div class="im-note">Presné sumy, limity a spoluúčasť sa riadia poistnou zmluvou a poistnými podmienkami Pillow.</div>';
   document.getElementById('im-body').innerHTML = html;
