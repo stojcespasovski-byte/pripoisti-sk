@@ -371,7 +371,7 @@ select.entry-input option { background: #1a1a1a; color: white; }
   user-select: none;
   display: grid;
   grid-template-columns: auto 1fr;
-  grid-template-areas: "icon name" "desc desc" "price price" "su su";
+  grid-template-areas: "icon name" "desc desc" "price price" "info info";
   align-items: center;
   column-gap: 13px;
 }
@@ -410,7 +410,7 @@ select.entry-input option { background: #1a1a1a; color: white; }
 .tile-icon-wrap { grid-area: icon; margin-bottom: 0; display: flex; }
 .tile-name { grid-area: name; font-size: 17px; color: white; font-weight: 700; margin-bottom: 0; line-height: 1.25; padding-right: 26px; }
 .tile-desc { grid-area: desc; font-size: 16px; color: rgba(255,255,255,.42); line-height: 1.55; margin-top: 14px; margin-bottom: 14px; }
-.tile-price { grid-area: price; font-size: 19px; font-weight: 800; color: var(--o); display: flex; align-items: center; min-height: 24px; }  /* rezerva pre variant-pill → dlaždica sa pri výbere nezväčší */
+.tile-price { grid-area: price; font-size: 19px; font-weight: 800; color: var(--o); display: flex; align-items: center; flex-wrap: wrap; row-gap: 2px; min-height: 24px; }  /* rezerva pre variant-pill → dlaždica sa pri výbere nezväčší */
 .tile-price span { font-size: 14px; font-weight: 400; color: rgba(255,255,255,.32); }
 
 /* dlaždica vypnutá inou voľbou (napr. zver, keď je zvolená Havária) */
@@ -458,23 +458,20 @@ select.entry-input option { background: #1a1a1a; color: white; }
 
 /* „Viac info" spúšťač v dlaždici (oddelený od výberu) */
 .tile-info {
-  position: absolute; bottom: 14px; right: 16px;
+  grid-area: info; justify-self: end; margin-top: 6px;
   font-size: 14px; font-weight: 600;
   color: rgba(255,255,255,.4); cursor: pointer;
   display: inline-flex; align-items: center; gap: 4px;
-  transition: color .15s; z-index: 2;
+  transition: color .15s;
 }
 .tile-info:hover { color: var(--o); }
 .tile.unavailable .tile-info { display: none; }
-.tile-su {
-  grid-area: su; display: flex; align-items: center; gap: 5px;
-  margin-top: 7px; font-size: 13px; font-weight: 700;
-  color: var(--o); white-space: nowrap; transform-origin: left center;
-}
-.tile-su .su-ico { width: 14px; height: 14px; flex-shrink: 0; }
-.tile.unavailable .tile-su { display: none; }
-@keyframes suPulse { 0% { transform: scale(1); } 40% { transform: scale(1.14); } 100% { transform: scale(1); } }
-.tile-su.su-pulse { animation: suPulse .42s ease; }
+/* spoluúčasť inline na riadku ceny: slovo sivé ako lehota, hodnota oranžová */
+.tile-su-in { margin-left: 10px; font-size: 14px; white-space: nowrap; }
+.tile-su-in .su-lbl { color: rgba(255,255,255,.32); font-weight: 400; }
+.tile-su-in .su-val { color: var(--o); font-weight: 700; display: inline-block; transform-origin: center; }
+@keyframes suPulse { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
+.tile-su-in .su-val.su-pulse { animation: suPulse .42s ease; }
 
 /* Variant dlaždice (asistencia/úraz/batožina) — kompaktný prepínač v riadku ceny,
    možnosti v plávajúcom menu → dlaždica NEMENÍ veľkosť */
@@ -1184,50 +1181,38 @@ footer {
           <div class="tile-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="2" y1="12" x2="22" y2="12"/></svg></div>
           <div class="tile-name">Sklá</div>
           <div class="tile-desc">Čelné, zadné aj bočné sklá. Oprava alebo výmena.</div>
-          <div class="tile-price">€2,9 <span>/mes</span></div>
-          <div class="tile-su"><svg class="su-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.4-3 7.3-7 8-4-.7-7-3.6-7-8V6z"/></svg><span>Spoluúčasť 10 %</span></div>
-        </div>
+          <div class="tile-price">€2,9 <span>/mes</span></div>        </div>
         <div class="tile" data-id="zver" data-price="3.9" onclick="toggleTile(this)">
           <div class="tile-chk"></div>
           <div class="tile-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M3 12c0-4.4 3.6-8 8-8s8 3.6 8 8"/><path d="M7 16l2-2 2 2 2-2 2 2"/></svg></div>
           <div class="tile-name">Zrážka so zverou</div>
           <div class="tile-desc">Cielená ochrana pre tých, čo nepotrebujú plnú havárku.</div>
-          <div class="tile-price">€3,9 <span>/mes</span></div>
-          <div class="tile-su"><svg class="su-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.4-3 7.3-7 8-4-.7-7-3.6-7-8V6z"/></svg><span>Spoluúčasť 300 €</span></div>
-          <div class="tile-note">Už zahrnuté v „Havárii"</div>
+          <div class="tile-price">€3,9 <span>/mes</span></div>          <div class="tile-note">Už zahrnuté v „Havárii"</div>
         </div>
         <div class="tile" data-id="havaria" data-price="12.5" onclick="toggleTile(this)">
           <div class="tile-chk"></div>
           <div class="tile-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><rect x="1" y="13" width="22" height="7" rx="2"/><path d="M7 13l2-5h6l2 5"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
           <div class="tile-name">Havária a zrážka so zverou</div>
           <div class="tile-desc">Škody z dopravnej nehody aj zrážky so zverou. Bez ohľadu na vinníka.</div>
-          <div class="tile-price">€12,5 <span>/mes</span></div>
-          <div class="tile-su"><svg class="su-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.4-3 7.3-7 8-4-.7-7-3.6-7-8V6z"/></svg><span>Spoluúčasť 300 €</span></div>
-        </div>
+          <div class="tile-price">€12,5 <span>/mes</span></div>        </div>
         <div class="tile" data-id="kradez" data-price="8.2" onclick="toggleTile(this)">
           <div class="tile-chk"></div>
           <div class="tile-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
           <div class="tile-name">Krádež vozidla</div>
           <div class="tile-desc">Odcudzenie vozidla, jeho časti, alebo škody pri pokuse o krádež.</div>
-          <div class="tile-price">€8,2 <span>/mes</span></div>
-          <div class="tile-su"><svg class="su-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.4-3 7.3-7 8-4-.7-7-3.6-7-8V6z"/></svg><span>Spoluúčasť 300 €</span></div>
-        </div>
+          <div class="tile-price">€8,2 <span>/mes</span></div>        </div>
         <div class="tile" data-id="priroda" data-price="4.5" onclick="toggleTile(this)">
           <div class="tile-chk"></div>
           <div class="tile-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25"/><polyline points="16 13 12 17 8 13"/></svg></div>
           <div class="tile-name">Prírodná udalosť</div>
           <div class="tile-desc">Búrka, krupobitie, povodeň, víchrica, pád stromu.</div>
-          <div class="tile-price">€4,5 <span>/mes</span></div>
-          <div class="tile-su"><svg class="su-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.4-3 7.3-7 8-4-.7-7-3.6-7-8V6z"/></svg><span>Spoluúčasť 300 €</span></div>
-        </div>
+          <div class="tile-price">€4,5 <span>/mes</span></div>        </div>
         <div class="tile" data-id="vandalizmus" data-price="3.1" onclick="toggleTile(this)">
           <div class="tile-chk"></div>
           <div class="tile-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg></div>
           <div class="tile-name">Vandalizmus</div>
           <div class="tile-desc">Poškriabanie, poškodenie zrkadiel, karosérie cudzou osobou.</div>
-          <div class="tile-price">€3,1 <span>/mes</span></div>
-          <div class="tile-su"><svg class="su-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.4-3 7.3-7 8-4-.7-7-3.6-7-8V6z"/></svg><span>Spoluúčasť 300 €</span></div>
-        </div>
+          <div class="tile-price">€3,1 <span>/mes</span></div>        </div>
         <div class="tile" data-id="asistencia" data-price="5.5" onclick="toggleTile(this)">
           <div class="tile-chk"></div>
           <div class="tile-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M22 16.92V22h-5.09a10 10 0 1 1 5.09-5.08z"/><path d="M12 8v4l2 2"/></svg></div>
@@ -4924,7 +4909,7 @@ function setSpoluUcast(v) {
   document.querySelectorAll('#su-switch .su-opt').forEach(el => el.classList.toggle('active', el.dataset.su === v));
   renderTilePrices();
   SU_SHARED_TILES.forEach(id => {
-    const el = document.querySelector(`.tile[data-id="${id}"] .tile-su`);
+    const el = document.querySelector(`.tile[data-id="${id}"] .tile-su-in .su-val`);
     if (el) { el.classList.remove('su-pulse'); void el.offsetWidth; el.classList.add('su-pulse'); }
   });
   updateCalc();
@@ -4985,12 +4970,16 @@ function renderTilePrices() {
       const lbl = opt[3] || opt[1] || '';                 // krátky názov; plný je v roletke
       variantBtn = ` <span class="tv-cur" onclick="openVariantPopover(event,'${id}')" title="Zmeniť variant">${lbl} ▾</span>`;
     }
-    priceEl.innerHTML = `€${val} <span>/${currentFreqLabel}</span>${variantBtn}`;
-    if (SU_SHARED_TILES.includes(id)) {
-      const suSpan = tile.querySelector('.tile-su span');
-      if (suSpan) suSpan.textContent = `Spoluúčasť ${spoluUcast} €`;
-    }
+    const suTxt = suInlineFor(id);
+    const suIn = suTxt ? ` <span class="tile-su-in"><span class="su-lbl">Spoluúčasť</span> <span class="su-val">${suTxt}</span></span>` : '';
+    priceEl.innerHTML = `€${val} <span>/${currentFreqLabel}</span>${suIn}${variantBtn}`;
   });
+}
+/* text spoluúčasti pre inline štítok v riadku ceny (havarijné = jednotná, Sklá = fixná 10 %) */
+function suInlineFor(id) {
+  if (SU_SHARED_TILES.includes(id)) return `${spoluUcast} €`;
+  if (id === 'skla') return '10 %';
+  return '';
 }
 
 function toggleTile(el) {
