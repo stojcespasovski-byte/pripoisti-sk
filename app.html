@@ -521,7 +521,8 @@ select.entry-input option { background: #1a1a1a; color: white; }
 .tv-title { padding: 7px 10px 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: rgba(255,255,255,.4); }
 
 /* Jednotná spoluúčasť nad mriežkou */
-.su-switch { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; margin: 12px 0 16px; }
+.su-switch { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px 16px; margin: 12px 0 16px; }
+.su-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .su-lbl { font-size: 14px; font-weight: 700; color: rgba(255,255,255,.65); }
 .su-opt {
   border: 1px solid rgba(255,255,255,.18); border-radius: 8px;
@@ -530,7 +531,6 @@ select.entry-input option { background: #1a1a1a; color: white; }
 }
 .su-opt:hover { border-color: rgba(232,130,26,.5); }
 .su-opt.active { border-color: var(--o); background: rgba(232,130,26,.14); color: var(--o); }
-.su-div { width: 1px; height: 20px; background: rgba(255,255,255,.14); margin: 0 4px; }
 .su-serv-link { font-size: 13px; color: var(--o); text-decoration: underline; text-underline-offset: 2px; white-space: nowrap; margin-left: 4px; }
 .su-serv-link:hover { color: var(--a); }
 .su-hint { font-size: 12px; color: rgba(255,255,255,.35); }
@@ -1187,18 +1187,23 @@ footer {
 
       <div class="calc-label" id="tiles-label" style="margin-top:24px;">Vyberte pripoistenia, ktoré chcete:</div>
       <div class="su-switch" id="su-switch">
-        <span class="su-lbl">Spoluúčasť:</span>
-        <span class="su-opt" data-su="150" onclick="setSpoluUcast('150')">150 €</span>
-        <span class="su-opt active" data-su="300" onclick="setSpoluUcast('300')">300 €</span>
-        <span class="su-opt" data-su="600" onclick="setSpoluUcast('600')">600 €</span>
-        <span class="su-div"></span>
-        <span class="su-lbl">Garáž:</span>
-        <span class="su-opt" data-g="ano" onclick="setGaraged(true)">Áno</span>
-        <span class="su-opt active" data-g="nie" onclick="setGaraged(false)">Nie</span>
-        <span class="su-lbl">Zmluvný servis:</span>
-        <span class="su-opt" data-s="ano" onclick="setServis(true)">Áno</span>
-        <span class="su-opt active" data-s="nie" onclick="setServis(false)">Nie</span>
-        <a class="su-serv-link" id="su-serv-link" href="https://www.mypillow.sk/zmluvne-servisy/" target="_blank" rel="noopener">Zoznam zmluvných servisov ↗</a>
+        <div class="su-group">
+          <span class="su-lbl">Spoluúčasť:</span>
+          <span class="su-opt" data-su="150" onclick="setSpoluUcast('150')">150 €</span>
+          <span class="su-opt active" data-su="300" onclick="setSpoluUcast('300')">300 €</span>
+          <span class="su-opt" data-su="600" onclick="setSpoluUcast('600')">600 €</span>
+        </div>
+        <div class="su-group">
+          <span class="su-lbl">Garáž:</span>
+          <span class="su-opt" data-g="ano" onclick="setGaraged(true)">Áno</span>
+          <span class="su-opt active" data-g="nie" onclick="setGaraged(false)">Nie</span>
+        </div>
+        <div class="su-group">
+          <span class="su-lbl">Zmluvný servis:</span>
+          <span class="su-opt" data-s="ano" onclick="setServis(true)">Áno</span>
+          <span class="su-opt active" data-s="nie" onclick="setServis(false)">Nie</span>
+          <a class="su-serv-link" id="su-serv-link" href="https://www.mypillow.sk/zmluvne-servisy/" target="_blank" rel="noopener">Zoznam zmluvných servisov ↗</a>
+        </div>
       </div>
       <div class="tiles-partial" id="tiles-partial">
         Toto vozidlo sa nenašlo v cenníku — vieme oceniť len <b>asistenciu, úraz a batožinu</b>.
