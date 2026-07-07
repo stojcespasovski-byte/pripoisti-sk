@@ -593,6 +593,7 @@ select.entry-input option { background: #1a1a1a; color: white; }
   box-shadow: 0 2px 8px rgba(0,0,0,.35);
 }
 .freq-price-card:hover { border-color: rgba(232,130,26,.35); background: rgba(232,130,26,.05); }
+.freq-price-card.freq-locked { opacity: .35; cursor: not-allowed; pointer-events: none; filter: grayscale(1); }
 .freq-price-card.active {
   border-color: var(--o);
   background: rgba(232,130,26,.12);
@@ -973,7 +974,7 @@ footer {
     </h1>
 
     <p class="hero-sub">
-      Pripoistite si auto alebo motorku <strong>kedykoľvek počas roka</strong>,<br>nie len pri uzatváraní PZP alebo havarijného poistenia.<br>
+      Pripoistite si auto alebo motorku <strong>kedykoľvek počas roka</strong>,<br>len na to čo naozaj potrebujete.<br>
       Vyberte si jedno alebo kombináciu z 9 pripoistení, <strong>efektívne podľa seba</strong>.<br><strong>Nie podľa potrieb poisťovne</strong>.
     </p>
 
@@ -1422,7 +1423,7 @@ footer {
         Začať pripoistenie
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
       </a>
-      <div style="margin-top:14px;font-size:15px;color:var(--slate-lt);">Bez záväzkov. Vypovie sa kedykoľvek.</div>
+      <div style="margin-top:14px;font-size:15px;color:var(--slate-lt);">Nečakajte kým bude neskoro.</div>
     </div>
   </div>
 </section>
@@ -4639,6 +4640,7 @@ function monthEqFor(tileId, pillowFreq) {
 }
 
 function setFreq(mult, label, el) {
+  if (el.classList.contains('freq-locked')) return;   // asistencia sólo → len ročne
   currentMult = mult;
   currentFreqLabel = label;
   document.querySelectorAll('.freq-price-card').forEach(c => c.classList.remove('active'));
@@ -4976,7 +4978,30 @@ function updateCalc() {
     }
   });
 
+  // Pillow pravidlo: SAMOSTATNÁ asistencia sa dá uzatvoriť len ROČNE.
+  applyAsistOnlyFreqLock(selIds.length === 1 && selIds[0] === 'asistencia');
+
   document.body.style.paddingBottom = (stickyBar.offsetHeight + 16) + 'px';
+}
+
+/* Ak je vybraná IBA asistencia → mesačne/štvrťročne/polročne zamknuté, vynúť ročne */
+function applyAsistOnlyFreqLock(lock) {
+  document.querySelectorAll('.freq-price-card').forEach(c => {
+    const disabled = lock && c.dataset.mult !== '12';
+    c.classList.toggle('freq-locked', disabled);
+    if (disabled) c.title = 'Samostatnú asistenciu možno uzatvoriť len s ročnou platbou.';
+    else c.removeAttribute('title');
+  });
+  // ak bola zvolená iná než ročná frekvencia, prepni na ročnú
+  if (lock && currentMult !== 12) {
+    const yearly = document.querySelector('.freq-price-card[data-mult="12"]');
+    if (yearly) {
+      currentMult = 12; currentFreqLabel = 'ročne';
+      document.querySelectorAll('.freq-price-card').forEach(c => c.classList.remove('active'));
+      yearly.classList.add('active');
+      renderTilePrices();
+    }
+  }
 }
 
 /* ─── GO TO STEP 3 ─── */
