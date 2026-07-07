@@ -489,6 +489,8 @@ select.entry-input option { background: #1a1a1a; color: white; }
 }
 .vm-spinner.on { display: block; }
 @keyframes vmSpin { to { transform: rotate(360deg); } }
+/* počas overovania sú ostatné polia modalu zablokované (okrem EČV/VIN) */
+#vm-overlay.vm-loading .vm-field:not(.vm-vin-field) { opacity: .5; pointer-events: none; }
 
 /* Variant dlaždice (asistencia/úraz/batožina) — kompaktný prepínač v riadku ceny,
    možnosti v plávajúcom menu → dlaždica NEMENÍ veľkosť */
@@ -4387,19 +4389,26 @@ function prefillVehModal() {
 
 /* Pole EČV/VIN v modáli — hľadá v databáze; ak vozidlo nájde, doplní údaje (dajú sa prepísať) */
 let _vmIdTimer = null;
+/* počas overovania EČV/VIN: spinner ON + ostatné polia modalu zablokované (na pomalom nete
+   nech klient neklikne/nepíše do polí, kým sa doplnia z databázy); vin pole ostáva aktívne */
+function setVehModalLoading(on) {
+  const ov = document.getElementById('vm-overlay');
+  if (ov) ov.classList.toggle('vm-loading', on);
+  const spin = document.getElementById('vm-spinner');
+  if (spin) spin.classList.toggle('on', on);
+}
 function onVmVinInput() {
   clearTimeout(_vmIdTimer);
   const inp = document.getElementById('vm-vin');
   const hint = document.getElementById('vm-vin-hint');
-  const spin = document.getElementById('vm-spinner');
   const val = (inp.value || '').trim().toUpperCase().replace(/[\s-]/g, '');
-  if (val.length < 6) { if (hint) hint.textContent = ''; if (spin) spin.classList.remove('on'); return; }
+  if (val.length < 6) { if (hint) hint.textContent = ''; setVehModalLoading(false); return; }
   _vmIdTimer = setTimeout(async () => {
-    if (spin) spin.classList.add('on');
+    setVehModalLoading(true);
     if (hint) { hint.textContent = 'Overujem v databáze…'; hint.style.color = 'rgba(255,255,255,.4)'; }
     let veh = null;
     try { veh = await apiLookupVehicleCached(val).catch(() => null); }
-    finally { if (spin) spin.classList.remove('on'); }
+    finally { setVehModalLoading(false); }
     // medzitým sa vstup zmenil → výsledok už neplatí
     if ((inp.value || '').trim().toUpperCase().replace(/[\s-]/g, '') !== val) return;
     if (veh && veh.found) {
@@ -5242,7 +5251,7 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
     <div class="vm-sub">Zadajte údaje o vozidle, ktoré chcete poistiť.</div>
     <div class="vm-grid">
       <!-- 0) EČV/VIN — hľadá v databáze (pri uzatvorení treba VIN 17 znakov) -->
-      <div class="vm-field full">
+      <div class="vm-field full vm-vin-field">
         <label>EČV/VIN</label>
         <div class="vm-vin-wrap">
           <input id="vm-vin" placeholder="EČV alebo VIN" maxlength="17" autocapitalize="characters" style="text-transform:uppercase;padding-right:38px" oninput="onVmVinInput()">
