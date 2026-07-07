@@ -809,6 +809,37 @@ function goToSummary() {
   localStorage.setItem('pripoisti_order', JSON.stringify(order));
   window.location.href = 'app-step4.html?typ=' + encodeURIComponent(typ);
 }
+
+/* ── PSČ → obec (číselník z backendu /ciselnik/obec) ──
+   Smer PSČ→obec: opačne je pre mestá nepoužiteľné. 1 obec = autofill,
+   viac obcí (zdieľané vidiecke PSČ) = datalist na výber. */
+(function () {
+  function wirePsc(pscId, obecId) {
+    const psc = document.getElementById(pscId);
+    const obec = document.getElementById(obecId);
+    if (!psc || !obec) return;
+    let dl = document.getElementById('dl-' + obecId);
+    if (!dl) { dl = document.createElement('datalist'); dl.id = 'dl-' + obecId; obec.parentNode.appendChild(dl); }
+    obec.setAttribute('list', dl.id);
+    let last = '';
+    async function lookup() {
+      const clean = (psc.value || '').replace(/\D/g, '');
+      if (clean.length !== 5 || clean === last) return;
+      last = clean;
+      try {
+        const r = await fetch(`${API_BASE}/ciselnik/obec?psc=${clean}`);
+        const obce = (await r.json()).obce || [];
+        dl.innerHTML = obce.map(o => `<option value="${o.replace(/"/g, '&quot;')}"></option>`).join('');
+        if (obce.length === 1) obec.value = obce[0];   // jednoznačné → doplní; viac → user vyberie z datalistu
+      } catch (e) { /* ticho — nechaj voľný text */ }
+    }
+    psc.addEventListener('blur', lookup);
+    psc.addEventListener('input', () => { if ((psc.value || '').replace(/\D/g, '').length === 5) lookup(); });
+  }
+  [['fo-psc','fo-obec'],['szco-psc','szco-obec'],['po-psc','po-obec'],
+   ['cz-psc','cz-obec'],['vl-psc','vl-obec'],['vl-po-psc','vl-po-obec']]
+    .forEach(([p, o]) => wirePsc(p, o));
+})();
 </script>
 </body>
 </html>
