@@ -4349,7 +4349,7 @@ function prefillVehModal() {
   g('vm-objem').value    = v.objem    || '';
   g('vm-vykon').value    = v.vykon    || '';
   g('vm-hmotnost').value = v.hmotnost || '';
-  g('vm-vin').value      = v.vin      || '';
+  g('vm-vin').value      = v.vin || v.ecv || '';   // EČV/VIN identifikátor
   // km + cena doplní onVmTypChange (km predvyberie z v.najazd); cena ostáva prázdna
 }
 function closeVehModal() { document.getElementById('vm-overlay').style.display = 'none'; }
@@ -4440,8 +4440,7 @@ function saveVehModal() {
   if (!palivo) errs.push('palivo');
   if (!objem) errs.push('objem'); if (!vykon) errs.push('výkon'); if (!hmotnost) errs.push('hmotnosť');
   if (needsCena && !(parseFloat(cena) > 0)) errs.push('cenu vozidla');
-  const vin = g('vm-vin').value.trim().toUpperCase();
-  if (vin.length !== 17) errs.push('VIN (presne 17 znakov)');
+  const ident = g('vm-vin').value.trim().toUpperCase();   // EČV/VIN — nepovinné
   if (errs.length) { const e = g('vm-error'); e.textContent = 'Vyplňte: ' + errs.join(', ') + '.'; e.style.display = ''; return; }
 
   let znacka, model;
@@ -4455,7 +4454,9 @@ function saveVehModal() {
   }
   const v = lookup.vehicle || (lookup.vehicle = {});
   Object.assign(v, { znacka, model, typ, datumReg: datum, palivo, objem, vykon, hmotnost,
-                     vin, cenaVozidla: needsCena ? cena : '', pohon: false });
+                     cenaVozidla: needsCena ? cena : '', pohon: false });
+  // EČV/VIN identifikátor (nepovinný): >7 znakov = VIN, inak EČV
+  if (ident) { if (ident.length > 7) v.vin = ident; else v.ecv = ident; }
   // km z modalu (non-OA); inak ostáva z Kroku 1
   const kmWrap = g('vm-km-wrap');
   if (kmWrap && kmWrap.style.display !== 'none' && g('vm-km').value) v.najazd = g('vm-km').value;
@@ -5165,6 +5166,11 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
     <div class="vm-title">Vypíšte vozidlo</div>
     <div class="vm-sub">Zadajte údaje o vozidle, ktoré chcete poistiť.</div>
     <div class="vm-grid">
+      <!-- 0) EČV/VIN — identifikátor vozidla (nepovinné) -->
+      <div class="vm-field full">
+        <label>EČV/VIN</label>
+        <input id="vm-vin" placeholder="Nepovinné" maxlength="17" autocapitalize="characters" style="text-transform:uppercase">
+      </div>
       <!-- 1) Typ vozidla — riadi, čo sa ďalej zobrazí -->
       <div class="vm-field full">
         <label>Typ vozidla</label>
@@ -5242,10 +5248,6 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
         <input type="number" id="vm-cena" placeholder="Obvyklá cena vozidla (€)" min="0" step="1" style="border-color:var(--o);">
       </div>
 
-      <div class="vm-field full">
-        <label>VIN (17 znakov)</label>
-        <input id="vm-vin" placeholder="TMBLJ7NSXP8012326" maxlength="17" autocapitalize="characters" style="text-transform:uppercase">
-      </div>
       <div class="vm-error" id="vm-error" style="display:none;"></div>
     </div>
     <div class="vm-btns">
