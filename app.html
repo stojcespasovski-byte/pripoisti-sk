@@ -472,6 +472,13 @@ select.entry-input option { background: #1a1a1a; color: white; }
 .tile-su-in .su-val { color: var(--o); font-weight: 700; display: inline-block; transform-origin: center; }
 @keyframes suPulse { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
 .tile-su-in .su-val.su-pulse { animation: suPulse .42s ease; }
+/* pri prepnutí spoluúčasti krátko rozžiari rámik dotknutých (5 havarijných) dlaždíc */
+@keyframes suTileFlash {
+  0%   { box-shadow: 0 0 0 0 rgba(232,130,26,0); }
+  35%  { box-shadow: 0 0 20px 3px rgba(232,130,26,.5); }
+  100% { box-shadow: 0 0 0 0 rgba(232,130,26,0); }
+}
+.tile.su-flash { animation: suTileFlash .7s ease-out; }
 
 /* Variant dlaždice (asistencia/úraz/batožina) — kompaktný prepínač v riadku ceny,
    možnosti v plávajúcom menu → dlaždica NEMENÍ veľkosť */
@@ -4909,7 +4916,10 @@ function setSpoluUcast(v) {
   document.querySelectorAll('#su-switch .su-opt').forEach(el => el.classList.toggle('active', el.dataset.su === v));
   renderTilePrices();
   SU_SHARED_TILES.forEach(id => {
-    const el = document.querySelector(`.tile[data-id="${id}"] .tile-su-in .su-val`);
+    const tile = document.querySelector(`.tile[data-id="${id}"]`);
+    if (!tile) return;
+    tile.classList.remove('su-flash'); void tile.offsetWidth; tile.classList.add('su-flash');
+    const el = tile.querySelector('.tile-su-in .su-val');
     if (el) { el.classList.remove('su-pulse'); void el.offsetWidth; el.classList.add('su-pulse'); }
   });
   updateCalc();
