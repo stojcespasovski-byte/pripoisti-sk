@@ -283,7 +283,10 @@ h1 {
 }
 .entry-row[data-for]:not(.show) { display: none; }
 .entry-field { flex: 1; }
-.entry-field-sm { width: 130px; flex-shrink: 0; }
+.entry-field-sm { width: 130px; flex-shrink: 0; position: relative; }
+.entry-obec-hint { position: absolute; top: 100%; left: 2px; margin-top: 4px; font-size: 12px; color: rgba(255,255,255,.42); line-height: 1.3; white-space: nowrap; }
+.entry-obec-hint.ok { color: #4ade80; }
+.entry-obec-sel { font-size: 12px; background: #241d16; color: #fff; border: 1px solid rgba(232,130,26,.45); border-radius: 6px; padding: 2px 6px; max-width: 128px; }
 .entry-label {
   font-size: 12px; font-weight: 700;
   color: rgba(255,255,255,.3);
@@ -1099,9 +1102,10 @@ footer {
             <input class="entry-input" id="f-rc" placeholder="900101/1234" inputmode="numeric" oninput="onFieldInput()">
           </div>
           <div class="entry-field-sm">
-            <div class="entry-label">Obec</div>
-            <input class="entry-input" id="f-obec-fo" placeholder="Bratislava" autocomplete="off" oninput="onFieldInput()">
-            <input type="hidden" id="f-psc-fo">
+            <div class="entry-label">PSČ</div>
+            <input class="entry-input" id="f-psc-fo" placeholder="841 01" inputmode="numeric" autocomplete="off" oninput="onFieldInput()">
+            <div class="entry-obec-hint" id="f-obec-hint-fo"></div>
+            <input type="hidden" id="f-obec-fo">
           </div>
           <div class="entry-field-sm">
             <div class="entry-label">EČV alebo VIN</div>
@@ -1143,9 +1147,10 @@ footer {
             <input class="entry-input" id="f-ico-szco" placeholder="12345678" inputmode="numeric" oninput="onFieldInput()">
           </div>
           <div class="entry-field-sm">
-            <div class="entry-label">Obec</div>
-            <input class="entry-input" id="f-obec-szco" placeholder="Bratislava" autocomplete="off" oninput="onFieldInput()">
-            <input type="hidden" id="f-psc-szco">
+            <div class="entry-label">PSČ</div>
+            <input class="entry-input" id="f-psc-szco" placeholder="841 01" inputmode="numeric" autocomplete="off" oninput="onFieldInput()">
+            <div class="entry-obec-hint" id="f-obec-hint-szco"></div>
+            <input type="hidden" id="f-obec-szco">
           </div>
           <div class="entry-field-sm">
             <div class="entry-label">EČV alebo VIN</div>
@@ -4149,8 +4154,49 @@ function setupObecAutocomplete(inputId, pscInputId) {
   input.addEventListener('blur', () => setTimeout(closeDropdown, 150));
 }
 
+/* PSČ → obec (číselník /ciselnik/obec): klient píše PSČ, obec doplníme (deterministické;
+   pri zdieľanom PSČ = malý výber). Nahrádza staré obec→PSČ (to hádalo PSČ pri mestách). */
+function setupPscToObec(pscId, obecId, hintId) {
+  const psc = document.getElementById(pscId);
+  const obec = document.getElementById(obecId);
+  const hint = document.getElementById(hintId);
+  if (!psc || !obec || !hint) return;
+  let last = null, t = null;
+  const setObec = v => { obec.value = v; onFieldInput(); };
+  async function lookup() {
+    const clean = (psc.value || '').replace(/\D/g, '');
+    if (clean.length !== 5) { hint.textContent = ''; hint.className = 'entry-obec-hint'; if (obec.value) setObec(''); return; }
+    if (clean === last) return;
+    last = clean;
+    hint.textContent = 'Overujem…'; hint.className = 'entry-obec-hint';
+    try {
+      const r = await fetch(`${API_BASE}/ciselnik/obec?psc=${clean}`);
+      const obce = ((await r.json()) || {}).obce || [];
+      hint.textContent = '';
+      if (obce.length === 1) {
+        setObec(obce[0]); hint.textContent = '→ ' + obce[0]; hint.className = 'entry-obec-hint ok';
+      } else if (obce.length > 1) {
+        setObec(obce[0]);                       // default prvá, klient môže zmeniť
+        const sel = document.createElement('select'); sel.className = 'entry-obec-sel';
+        obce.forEach(o => { const op = document.createElement('option'); op.textContent = o; sel.appendChild(op); });
+        sel.value = obce[0];
+        sel.addEventListener('change', () => setObec(sel.value));
+        hint.className = 'entry-obec-hint'; hint.appendChild(sel);
+      } else {
+        setObec(''); hint.textContent = 'PSČ sa nenašlo'; hint.className = 'entry-obec-hint';
+      }
+    } catch (e) { hint.textContent = ''; last = null; }
+  }
+  psc.addEventListener('input', () => { clearTimeout(t); t = setTimeout(lookup, 350); });
+  psc.addEventListener('blur', lookup);
+}
+/* pri obnove draftu ukáž potvrdenie obce (bez opätovného volania číselníka) */
+function restoreObecHint(hintId, obec) {
+  const h = document.getElementById(hintId);
+  if (h && obec) { h.textContent = '→ ' + obec; h.className = 'entry-obec-hint ok'; }
+}
 document.addEventListener('DOMContentLoaded', () => {
-  setupObecAutocomplete('f-obec-fo', 'f-psc-fo');
+  setupPscToObec('f-psc-fo', 'f-obec-fo', 'f-obec-hint-fo');
   // Oprava ktoréhokoľvek poľa (napr. zlého IČO) po opustení poľa spustí prepočet,
   // ak sú všetky viditeľné polia vyplnené — nielen zmena nájazdu.
   document.querySelectorAll('.entry-input').forEach(inp => {
@@ -4159,7 +4205,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (visible.length && visible.every(i => i.value.trim().length > 0)) triggerLookup();
     });
   });
-  setupObecAutocomplete('f-obec-szco', 'f-psc-szco');
+  setupPscToObec('f-psc-szco', 'f-obec-szco', 'f-obec-hint-szco');
 });
 
 /* ─── TYPE SWITCHER + ENTRY FIELDS ─── */
@@ -5275,8 +5321,8 @@ function restoreFromOrder() {
   if (tab) setType(t, tab);
   const p = order.poistnik || {};
   if (t === 'po')      { setVal('f-ico', p.ico); setVal('f-ecv-po', order.vehicle.ecv); }
-  else if (t === 'fo') { setVal('f-rc', p.rc); setVal('f-obec-fo', p.obec); setVal('f-ecv-fo', order.vehicle.ecv); }
-  else                 { setVal('f-ico-szco', p.ico); setVal('f-obec-szco', p.obec); setVal('f-ecv-szco', order.vehicle.ecv); }
+  else if (t === 'fo') { setVal('f-rc', p.rc); setVal('f-psc-fo', p.psc); setVal('f-obec-fo', p.obec); setVal('f-ecv-fo', order.vehicle.ecv); restoreObecHint('f-obec-hint-fo', p.obec); }
+  else                 { setVal('f-ico-szco', p.ico); setVal('f-psc-szco', p.psc); setVal('f-obec-szco', p.obec); setVal('f-ecv-szco', order.vehicle.ecv); restoreObecHint('f-obec-hint-szco', p.obec); }
 
   lookup.vehicle   = { ...order.vehicle };
   lookup.poistnik  = { ...order.poistnik };
