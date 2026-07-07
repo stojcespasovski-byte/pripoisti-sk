@@ -4161,13 +4161,13 @@ function setupPscToObec(pscId, obecId, hintId) {
   const obec = document.getElementById(obecId);
   const hint = document.getElementById(hintId);
   if (!psc || !obec || !hint) return;
-  let last = null, t = null;
+  let t = null;
   const setObec = v => { obec.value = v; onFieldInput(); };
   async function lookup() {
     const clean = (psc.value || '').replace(/\D/g, '');
-    if (clean.length !== 5) { hint.textContent = ''; hint.className = 'entry-obec-hint'; if (obec.value) setObec(''); return; }
-    if (clean === last) return;
-    last = clean;
+    if (clean.length !== 5) { hint.textContent = ''; hint.className = 'entry-obec-hint'; delete psc.dataset.lastPsc; if (obec.value) setObec(''); return; }
+    if (clean === psc.dataset.lastPsc) return;
+    psc.dataset.lastPsc = clean;
     hint.textContent = 'Overujem…'; hint.className = 'entry-obec-hint';
     try {
       const r = await fetch(`${API_BASE}/ciselnik/obec?psc=${clean}`);
@@ -4185,7 +4185,7 @@ function setupPscToObec(pscId, obecId, hintId) {
       } else {
         setObec(''); hint.textContent = 'PSČ sa nenašlo'; hint.className = 'entry-obec-hint';
       }
-    } catch (e) { hint.textContent = ''; last = null; }
+    } catch (e) { hint.textContent = ''; delete psc.dataset.lastPsc; }
   }
   psc.addEventListener('input', () => { clearTimeout(t); t = setTimeout(lookup, 350); });
   psc.addEventListener('blur', lookup);
@@ -4220,7 +4220,11 @@ function setType(type, btn) {
   document.querySelectorAll('.entry-input').forEach(inp => {
     inp.value = '';
     inp.classList.remove('ready');
+    delete inp.dataset.lastPsc;                 // reset PSČ→obec cache (inak by rovnaké PSČ znova nenaskočilo)
   });
+  // reset PSČ→obec potvrdenie (hint aj prípadný <select>) + skryté obec polia
+  document.querySelectorAll('.entry-obec-hint').forEach(h => { h.textContent = ''; h.className = 'entry-obec-hint'; });
+  document.querySelectorAll('input[id^="f-obec-"]').forEach(o => { o.value = ''; });
   hideEntryLoader();
   hideVehCard();
 
