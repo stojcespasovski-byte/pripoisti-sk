@@ -363,6 +363,10 @@ select.entry-input option { background: #1a1a1a; color: white; }
   gap: 14px;
   margin-bottom: 28px;
 }
+/* WOW efekt A: sekcia dlaždíc skrytá do prvého načítania cien, potom fade-in stagger */
+.wow-hidden { display: none !important; }
+.tile.wow { opacity: 0; transform: scale(.94); transition: opacity .42s ease, transform .42s ease; }
+.tile.wow.wow-vis { opacity: 1; transform: scale(1); }
 .tile {
   border: 1.5px solid rgba(255,255,255,.1);
   border-radius: 14px;
@@ -1207,8 +1211,8 @@ footer {
         <div class="veh-grid" id="veh-grid"></div>
       </div>
 
-      <div class="calc-label" id="tiles-label" style="margin-top:24px;">Vyberte pripoistenia, ktoré chcete:</div>
-      <div class="su-switch" id="su-switch">
+      <div class="calc-label wow-hidden" id="tiles-label" style="margin-top:24px;">Vyberte pripoistenia, ktoré chcete:</div>
+      <div class="su-switch wow-hidden" id="su-switch">
         <div class="su-group">
           <span class="su-lbl su-hintable" data-tip="Vaša časť škody pri poistnej udalosti. Čím vyššia spoluúčasť, tým nižšia cena poistenia.">Spoluúčasť:</span>
           <span class="su-opt" data-su="150" onclick="setSpoluUcast('150')">150 €</span>
@@ -1231,7 +1235,7 @@ footer {
         Toto vozidlo sa nenašlo v cenníku — vieme oceniť len <b>asistenciu, úraz a batožinu</b>.
         Pre plné krytie kliknite <b>„Je to iné auto?"</b> pri vozidle a vyplňte ho ručne.
       </div>
-      <div class="tiles-grid" id="tiles">
+      <div class="tiles-grid wow-hidden" id="tiles">
         <div class="tile" data-id="skla" data-price="2.9" onclick="toggleTile(this)">
           <div class="tile-chk"></div>
           <div class="tile-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="2" y1="12" x2="22" y2="12"/></svg></div>
@@ -4347,6 +4351,26 @@ function renderVehCard(ecvWarning) {
 }
 function hideVehCard() { const el = document.getElementById('veh-card'); if (el) el.style.display = 'none'; }
 
+/* WOW efekt A: sekcia dlaždíc (label + spoluúčasť + dlaždice) je skrytá do prvého
+   načítania cien; potom sa objaví a 9 dlaždíc sa fade-in staggerom naskladá.
+   Animácia sa spustí LEN RAZ — pri zmene frekvencie/spoluúčasti/re-rate sa už neanimuje. */
+let wowShown = false;
+function revealQuote() {
+  const label = document.getElementById('tiles-label');
+  const sw = document.getElementById('su-switch');
+  const grid = document.getElementById('tiles');
+  if (wowShown) {                                   // už odhalené → len zabezpeč viditeľnosť (bez animácie)
+    [label, sw, grid].forEach(el => el && el.classList.remove('wow-hidden'));
+    return;
+  }
+  wowShown = true;
+  const tiles = grid ? [...grid.querySelectorAll('.tile')] : [];
+  tiles.forEach(t => t.classList.add('wow'));        // opacity 0, kým je grid ešte skrytý (žiadny záblesk)
+  [label, sw, grid].forEach(el => el && el.classList.remove('wow-hidden'));   // sekcia sa objaví (stránka narastie)
+  if (grid) void grid.offsetWidth;                   // reflow → transition zaberie
+  tiles.forEach((t, i) => setTimeout(() => t.classList.add('wow-vis'), 60 + i * 45));
+}
+
 /* „Zmeniť" — scroll späť hore k vstupným poliam */
 function scrollToEntry(e) {
   if (e) e.preventDefault();
@@ -4646,6 +4670,7 @@ async function recalcPrices(ecvWarning) {
     if (!applied) { showEntryError('Ceny sa nepodarilo načítať. Skontrolujte údaje vozidla.'); return; }
     pricesReady = true; updateCalc();
     renderVehCard(ecvWarning);
+    revealQuote();
     document.getElementById('veh-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (e) {
     console.error(e);
@@ -4773,6 +4798,7 @@ async function triggerLookup() {
     }
     pricesReady = true; updateCalc();
     renderVehCard(veh.ecvWarning);
+    revealQuote();
     document.getElementById('veh-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (e) {
     console.error(e);
@@ -5362,6 +5388,7 @@ function restoreFromOrder() {
   renderTilePrices();
   pricesReady = true;
   renderVehCard(false);
+  wowShown = true; revealQuote();                 // návrat na Krok 1: dlaždice hneď, bez WOW animácie
   updateCalc();
   onFieldInput();                                       // označí vyplnené polia
 }
