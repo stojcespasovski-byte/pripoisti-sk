@@ -3956,7 +3956,7 @@ function buildRateXML(freq = 12, codes = null, riskList = null) {
     ${xe('vehicleName', [v.znacka, v.model].filter(Boolean).join(' '))}
     ${xe('noTechnicalCertificate', v.tp ? 'false' : 'true')}
     ${v.tp ? xe('technicalCertificateNumber', v.tp) : ''}
-    ${v.farba ? xe('colour', v.farba) : ''}
+    ${v.farba ? xe('colour', String(v.farba).slice(0, 20)) : ''}
     ${xe('withoutRegistration', 'false')}
   </xml-par-ap2-vehicle></vehicle>
   ${xe('partyType', partyType)}
