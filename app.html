@@ -3839,6 +3839,10 @@ async function apiLookupVehicle(idInput) {
       farba:    raw.farba || '', pohon,
       // Číslo TP: priorita tp → poe → oe → oev (novšie autá majú vyplnené len poe)
       tp:       raw.cislo_tp || raw.cislo_poe || raw.cislo_oe || raw.cislo_oev || '',
+      // Pillow kódy značky/modelu už dorieši backend (resolver + overrides,
+      // karoséria spresní variantu). Frontend ich len konzumuje.
+      pillowBrandKod: raw.pillow_brand_kod || null,
+      pillowModelKod: raw.pillow_model_kod || null,
     }
   };
 }
@@ -3908,6 +3912,12 @@ const FALLBACK_RISKS = ['AS2', 'UR2', 'ZA2'];
 /* Zistí brand/model kódy a či ide o fallback (neznáme vozidlo) */
 function resolveVehicleCodes() {
   const v = lookup.vehicle;
+  // Zdroj pravdy = backend (resolver + overrides + karoséria). Ak dorieši model,
+  // konzumujeme jeho kódy. Lokálny getModelCode je len fallback pre staršie
+  // odpovede bez pillow_model_kod.
+  if (v.pillowModelKod) {
+    return { brandCode: v.pillowBrandKod || 'NEUVEDENA', modelCode: v.pillowModelKod, fallback: false };
+  }
   let brandCode = getBrandCode(v.znacka);
   let modelCode = getModelCode(brandCode, v.model);
   if (!brandCode || brandCode === 'OSTATNE' || !modelCode) {
