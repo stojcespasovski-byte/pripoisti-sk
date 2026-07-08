@@ -49,10 +49,10 @@
   "mainEntity": [
     { "@type": "Question", "name": "Kryje poistenie aj panoramatickú strechu?", "acceptedAnswer": { "@type": "Answer", "text": "Áno. Naše poistenie kryje všetky sklá vozidla vrátane panoramatickej strechy a strešných okien — to je jeden z hlavných rozdielov oproti bežným poisteniam čelného skla." } },
     { "@type": "Question", "name": "Existuje horný limit poistného plnenia?", "acceptedAnswer": { "@type": "Answer", "text": "Nie. Poistnou sumou je obvyklá cena výmeny skla, ktorú garantujeme. Či bude výmena stáť 1 400 €, 3 500 € alebo 12 000 €, plnenie sa neobmedzuje pevným limitom." } },
-    { "@type": "Question", "name": "Opraví sa sklo vždy, alebo sa musí meniť?", "acceptedAnswer": { "@type": "Answer", "text": "Nie vždy. Malé poškodenie mimo zorného poľa vodiča sa dá opraviť živicou; ak oprava už nie je bezpečná, robí sa výmena." } },
+    { "@type": "Question", "name": "Čo ak sa poškodenie objaví až niekoľko dní po náraze kamienka?", "acceptedAnswer": { "@type": "Answer", "text": "Stáva sa to často — z drobnej hviezdičky sa vplyvom vibrácií a teploty stane prasklina. Preto navštívte servis čo najskôr; čím skôr sa poškodenie posúdi, tým väčšia šanca na opravu namiesto výmeny." } },
+    { "@type": "Question", "name": "Musím po výmene čelného skla kalibrovať kameru?", "acceptedAnswer": { "@type": "Answer", "text": "Ak má vozidlo asistenčné systémy, vo väčšine prípadov áno. Kamera za čelným sklom (núdzové brzdenie, asistent pruhov, tempomat) sa po výmene skla musí nakalibrovať podľa postupu výrobcu." } },
     { "@type": "Question", "name": "Ovplyvní škoda na skle bonus na PZP?", "acceptedAnswer": { "@type": "Answer", "text": "Nie. Poistenie skiel je samostatné pripoistenie — likvidácia škody na skle nemá vplyv na bonus za bezškodový priebeh PZP." } },
-    { "@type": "Question", "name": "Môžem si poistenie uzatvoriť aj počas roka?", "acceptedAnswer": { "@type": "Answer", "text": "Áno, nie ste odkázaný len na výročie PZP. Súčasťou uzatvorenia je fotoobhliadka vozidla." } },
-    { "@type": "Question", "name": "Kryje poistenie poškodenie spôsobené vandalom?", "acceptedAnswer": { "@type": "Answer", "text": "Áno. Rozbité bočné alebo zadné sklo pri pokuse o vlámanie patrí medzi typické poistné udalosti." } }
+    { "@type": "Question", "name": "Dá sa poistenie skiel uzatvoriť aj samostatne?", "acceptedAnswer": { "@type": "Answer", "text": "Áno. Nemusíte uzatvárať celé havarijné poistenie — ak chcete chrániť iba riziko poškodenia skiel, nemusíte platiť za krytia, ktoré nevyužijete." } }
   ]
 }
 </script>
@@ -80,8 +80,9 @@ p{margin:0 0 16px}
 strong{color:#fff;font-weight:700}
 ul,ol{margin:0 0 18px;padding-left:22px}
 li{margin-bottom:8px}
+.lead{font-size:19px;color:#fff;font-weight:600;margin:0 0 18px}
 .tbl{overflow-x:auto;margin:0 0 22px;border:1px solid var(--bd);border-radius:12px}
-table{width:100%;border-collapse:collapse;font-size:15.5px;min-width:420px}
+table{width:100%;border-collapse:collapse;font-size:15.5px;min-width:460px}
 th,td{text-align:left;padding:11px 15px;border-bottom:1px solid var(--bd)}
 th{background:rgba(232,130,26,.12);color:var(--o);font-weight:800}
 tr:last-child td{border-bottom:none}
@@ -89,15 +90,21 @@ tr:last-child td{border-bottom:none}
 .yes{color:#3fb950;font-weight:800}
 .no{color:#e5534b;font-weight:800}
 blockquote{border-left:3px solid var(--o);background:var(--card);padding:14px 18px;margin:0 0 22px;border-radius:0 10px 10px 0;color:rgba(255,255,255,.75)}
+.mind{background:linear-gradient(135deg,rgba(214,59,31,.10),rgba(240,165,0,.06));border:1px solid rgba(232,130,26,.28);border-radius:14px;padding:20px 22px;margin:0 0 22px;font-size:17px;color:#fff}
+.mind b{color:var(--a)}
 .tl{list-style:none;margin:6px 0 24px;padding:0}
 .tl li{position:relative;padding:0 0 18px 30px;border-left:2px solid var(--bd);margin-left:8px}
 .tl li:last-child{border-left-color:transparent;padding-bottom:0}
 .tl li::before{content:"";position:absolute;left:-9px;top:1px;width:16px;height:16px;border-radius:50%;background:var(--grad)}
 .tl b{color:#fff;display:block;margin-bottom:2px}
+.chk{list-style:none;margin:0 0 22px;padding:0}
+.chk li{position:relative;padding:0 0 10px 30px;color:rgba(255,255,255,.85)}
+.chk li::before{content:"✓";position:absolute;left:0;top:0;color:#3fb950;font-weight:800}
 .cta{background:var(--card);border:1px solid rgba(232,130,26,.3);border-radius:16px;padding:26px 28px;margin:34px 0;text-align:center}
 .cta h3{font-size:20px;font-weight:800;color:#fff;margin-bottom:8px}
 .cta p{color:rgba(255,255,255,.6);font-size:15px;margin-bottom:18px}
 .cta a{display:inline-flex;align-items:center;gap:8px;background:var(--grad);color:#fff;font-weight:800;font-size:16px;padding:14px 30px;border-radius:13px}
+.cta ul{text-align:left;max-width:440px;margin:0 auto 18px}
 .faq h3{font-size:17px;font-weight:700;color:#fff;margin:22px 0 6px}
 .disclaimer,.sources{font-size:13.5px;color:rgba(255,255,255,.4);margin-top:26px}
 .sources li{margin-bottom:5px}
@@ -126,35 +133,40 @@ hr{border:none;border-top:1px solid var(--bd);margin:36px 0}
   <article>
     <h1>Poistenie skiel na aute: všetky sklá vrátane panoramatickej strechy a bez horného limitu</h1>
 
-    <p>Prasknuté čelné sklo patrí medzi vôbec najčastejšie poistné udalosti na slovenských cestách. Stačí niekoľko sekúnd jazdy za nákladným autom, kamiónom alebo dodávkou prevážajúcou štrk a odletujúci kamienok dokáže spôsobiť škodu za stovky až tisíce eur.</p>
+    <p class="lead">Koľko stojí jeden kamienok? Väčšina vodičov odpovie „pár eur". V skutočnosti môže stáť oveľa viac.</p>
+    <ul>
+      <li><strong>800 €</strong>, ak poškodí bežné čelné sklo,</li>
+      <li><strong>1 500 €</strong>, ak má vozidlo kameru ADAS,</li>
+      <li><strong>10 000 € a viac</strong>, ak poškodí panoramatickú strechu moderného auta.</li>
+    </ul>
+    <p>Pritom samotný kamienok má hodnotu niekoľkých centov. Nie je preto dôležité, čo poškodilo vaše sklo — dôležité je, <strong>koľko bude stáť jeho oprava a kto ju zaplatí</strong>. Prasknuté sklo patrí medzi vôbec najčastejšie poistné udalosti na slovenských cestách a malá „hviezdička" sa už po pár dňoch môže zmeniť na prasklinu cez pol skla.</p>
 
-    <p>Malá bodka alebo „hviezdička" na skle sa už po niekoľkých dňoch môže zmeniť na dlhú prasklinu — stačí prudké zabrzdenie, prejazd výtlkom alebo veľký rozdiel medzi vonkajšou teplotou a horúcim vzduchom z kúrenia. Namiesto jednoduchej opravy je potom potrebná kompletná výmena. Pri moderných autách nejde iba o sklo: vymieňajú sa lepidlá a tesnenia, demontujú sa senzory a kamery asistenčných systémov a následne sa robí ich softvérová kalibrácia. Celková faktúra tak dnes bežne presahuje <strong>1 000 až 2 000 €</strong>, pri prémiových vozidlách ešte podstatne viac.</p>
-
-    <p>A čoraz častejšie už nejde len o čelné sklo. Moderné autá majú panoramatické strechy, veľké strešné okná, akustické bočné sklá aj zadné okná s vyhrievaním. Práve panoramatická strecha patrí medzi najdrahšie sklenené diely — jej výmena môže stáť <strong>10 000 € aj viac</strong>, pričom väčšina bežných poistiek ju vôbec nekryje.</p>
+    <p>Pri moderných autách pritom nejde iba o sklo: vymieňajú sa lepidlá a tesnenia, demontujú sa senzory a kamery asistenčných systémov a následne sa robí ich softvérová kalibrácia. A čoraz častejšie už nejde len o čelné sklo — moderné autá majú panoramatické strechy, veľké strešné okná aj akustické bočné sklá, ktoré väčšina bežných poistiek vôbec nekryje.</p>
 
     <h2>Prečo sú dnešné autosklá také drahé</h2>
-    <p>Mnohí vodiči si pamätajú časy, keď výmena čelného skla znamenala účet 150 – 250 €. To dnes pri väčšine nových vozidiel neplatí. Čelné sklo sa za posledných desať rokov zmenilo z obyčajného kusu skla na súčasť bezpečnostných systémov vozidla. Dnes v ňom alebo na ňom nájdete kameru núdzového brzdenia a rozpoznávania značiek, kameru sledovania jazdných pruhov, dažďový a svetelný senzor, vyhrievanie, akustickú fóliu, reflexnú vrstvu aj projekčný HUD displej.</p>
-    <p>Po výmene nestačí nalepiť nové sklo — servis musí vykonať presnú <strong>kalibráciu</strong> kamier a senzorov. Bez nej môže kamera nesprávne vyhodnotiť vzdialenosť od auta pred vami, čo ovplyvní adaptívny tempomat aj núdzové brzdenie. Samotná kalibrácia pritom často predstavuje niekoľko stoviek eur z celkovej ceny.</p>
+    <p>Mnohí vodiči si pamätajú časy, keď výmena čelného skla znamenala účet 150 – 250 €. To dnes pri väčšine nových vozidiel neplatí. Čelné sklo sa zmenilo z obyčajného kusu skla na súčasť bezpečnostných systémov — nájdete v ňom kameru núdzového brzdenia a rozpoznávania značiek, kameru sledovania jazdných pruhov, dažďový a svetelný senzor, vyhrievanie, akustickú fóliu aj HUD displej. Po výmene servis musí vykonať presnú <strong>kalibráciu</strong> kamier a senzorov; bez nej môže kamera nesprávne vyhodnotiť vzdialenosť od auta pred vami. Samotná kalibrácia pritom často predstavuje niekoľko stoviek eur z celkovej ceny.</p>
 
-    <h2>Čím sa naše poistenie skiel líši od bežných poistiek</h2>
-    <p>Väčšina produktov na trhu sa volá <strong>„poistenie čelného skla"</strong>. Už názov veľa napovedá — vo väčšine prípadov nejde o poistenie všetkých skiel, ale iba o jediné sklo, čelné. Mnohí vodiči sa o tom dozvedia až vtedy, keď im vandal rozbije bočné okno alebo krúpy poškodia panoramatickú strechu. Naše poistenie je postavené inak:</p>
+    <h2>PZP, bežné poistenie čelného skla a pripoisti.sk — porovnanie</h2>
+    <p>Väčšina produktov na trhu sa volá „poistenie čelného skla" — a rieši naozaj iba jediné sklo. Rozdiely medzi jednotlivými riešeniami vidno najlepšie v prehľade:</p>
     <div class="tbl"><table>
-      <thead><tr><th>Vlastnosť</th><th>Bežné „poistenie čelného skla"</th><th class="ours">Naše poistenie skiel</th></tr></thead>
+      <thead><tr><th>Situácia</th><th>PZP</th><th>Bežné „poistenie čelného skla"</th><th class="ours">pripoisti.sk</th></tr></thead>
       <tbody>
-        <tr><td>Čelné sklo</td><td><span class="yes">✓</span></td><td class="ours"><span class="yes">✓</span></td></tr>
-        <tr><td>Bočné a zadné sklá</td><td><span class="no">✗</span> často nie</td><td class="ours"><span class="yes">✓</span></td></tr>
-        <tr><td>Panoramatická strecha</td><td><span class="no">✗</span> nekryté</td><td class="ours"><span class="yes">✓</span></td></tr>
-        <tr><td>Horný limit plnenia</td><td>300 – 1 000 €</td><td class="ours"><span class="yes">bez limitu</span></td></tr>
-        <tr><td>Spoluúčasť oprava / výmena</td><td>5 % / 10 % / fix. 100 €</td><td class="ours">0 % / 10 %</td></tr>
+        <tr><td>Čelné sklo (kamienok)</td><td><span class="no">✗</span></td><td><span class="yes">✓</span></td><td class="ours"><span class="yes">✓</span></td></tr>
+        <tr><td>Bočné sklá</td><td><span class="no">✗</span></td><td><span class="no">✗</span> často nie</td><td class="ours"><span class="yes">✓</span></td></tr>
+        <tr><td>Zadné sklo</td><td><span class="no">✗</span></td><td><span class="no">✗</span> často nie</td><td class="ours"><span class="yes">✓</span></td></tr>
+        <tr><td>Panoramatická strecha</td><td><span class="no">✗</span></td><td><span class="no">✗</span> spravidla nie</td><td class="ours"><span class="yes">✓</span></td></tr>
+        <tr><td>Horný limit plnenia</td><td>—</td><td>často 300 – 1 000 €</td><td class="ours"><span class="yes">bez limitu</span></td></tr>
+        <tr><td>Spoluúčasť oprava / výmena</td><td>—</td><td>5 % / 10 % / fix. 100 €</td><td class="ours">0 % / 10 %</td></tr>
       </tbody>
     </table></div>
+    <p><strong>PZP</strong> kryje len škody spôsobené iným — vaše vlastné sklo nerieši. A pri „poistení čelného skla" sa mnohí vodiči až pri škode dozvedia, že bočné, zadné či panoramatické sklo poistené nemajú, prípadne že plnenie brzdí nízky horný limit.</p>
 
-    <h2>Druhý rozdiel: bez horného limitu poistného plnenia</h2>
-    <p>Táto vlastnosť rozhoduje až pri samotnej škode. Mnohé poistenia síce sľubujú „poistené sklo", ale v podmienkach majú maximálnu poistnú sumu — typicky <strong>300 €, 500 €, 800 € alebo 1 000 €</strong>. Ak výmena moderného vyhrievaného skla s kamerou ADAS stojí 1 500 € a poistka má limit 500 €, poisťovňa vyplatí maximálne 500 € a zvyšných <strong>1 000 € dopláca majiteľ</strong>.</p>
+    <h2>Bez horného limitu poistného plnenia</h2>
+    <p>Táto vlastnosť rozhoduje až pri samotnej škode. Ak výmena moderného vyhrievaného skla s kamerou ADAS stojí 1 500 € a poistka má limit 500 €, poisťovňa vyplatí maximálne 500 € a zvyšných <strong>1 000 € dopláca majiteľ</strong>.</p>
     <blockquote><strong>U nás horný limit neexistuje.</strong> Poistnou sumou je <strong>obvyklá cena výmeny skla</strong>, ktorú garantujeme. Ak sa cena originálneho skla medzičasom zvýši, poistná suma sa prispôsobí — neplatíte rozdiel len preto, že oprava je drahšia než pred rokmi.</blockquote>
 
     <h2>Panoramatická strecha je dnes najdrahším sklom na aute</h2>
-    <p>Ešte pred pár rokmi bola panoramatická strecha výsadou luxusných áut. Dnes ju nájdeme aj v rodinných SUV, elektromobiloch či vyšších výbavách bežných vozidiel. Pri výmene sa nemení len sklo — často aj nosné rámy, tesnenia, mechanizmus otvárania, vodiace lišty, elektrické ovládanie a tienenie. Nie je preto výnimočné, že faktúra dosiahne <strong>10 000 až 15 000 €</strong>, pri niektorých luxusných vozidlách aj viac. Ak poistka kryje iba čelné sklo, panoramatická strecha poistená nie je. <strong>Naše poistenie ju kryje rovnako ako ostatné sklá a bez horného limitu.</strong></p>
+    <p>Ešte pred pár rokmi bola panoramatická strecha výsadou luxusných áut. Dnes ju nájdeme aj v rodinných SUV, elektromobiloch či vyšších výbavách bežných vozidiel. Pri výmene sa nemení len sklo — často aj nosné rámy, tesnenia, mechanizmus otvárania, vodiace lišty a tienenie. Nie je preto výnimočné, že faktúra dosiahne <strong>10 000 až 15 000 €</strong>, pri niektorých luxusných vozidlách aj viac. Ak poistka kryje iba čelné sklo, panoramatická strecha poistená nie je. <strong>Naše poistenie ju kryje rovnako ako ostatné sklá a bez horného limitu.</strong></p>
 
     <h2>Modelová situácia č. 1 — kamienok na diaľnici</h2>
     <p>Idete na diaľnici za nákladným autom, spoza jeho kolies odletí kamienok a na čelnom skle vznikne prasklina. O pár dní sa rozšíri — oprava už nie je možná, potrebná je výmena za <strong>1 480 €</strong> (sklo + lepidlá + montáž + kalibrácia ADAS).</p>
@@ -181,6 +193,8 @@ hr{border:none;border-top:1px solid var(--bd);margin:36px 0}
     </table></div>
     <p><em>Krúpy sú síce živel, no poškodenie skla krúpami sa rieši práve z pripoistenia skiel — v plnej cene výmeny.</em></p>
 
+    <div class="mind">Nikto si nekupuje poistenie preto, že chce meniť sklo. Kupujeme ho preto, aby sme <b>nemuseli rozmýšľať</b>: či si môžeme dovoliť opravu, či ešte môžeme jazdiť, či prejdeme STK, či musíme odložiť dovolenku. Dobré poistenie neodstráni kamienok — odstráni neistotu, čo bude po ňom.</div>
+
     <div class="cta">
       <h3>Zistite cenu poistenia skiel pre vaše auto</h3>
       <p>Stačí zadať EČV — cenu pripoistenia k vášmu PZP dopočítame za minútu.</p>
@@ -190,8 +204,12 @@ hr{border:none;border-top:1px solid var(--bd);margin:36px 0}
     <h2>Prečo PZP poškodené sklo väčšinou nezaplatí</h2>
     <p>Rozšírená predstava je, že kamienok odletel spod auta pred vami, a preto škodu zaplatí jeho PZP. Realita je zložitejšia — poisťovňa vinníka by musela mať jednoznačne preukázané, z ktorého vozidla kamienok odletel, že poškodil práve vaše sklo a že existuje príčinná súvislosť. Bez kvalitného záznamu z autokamery, priznania vodiča alebo svedkov je taký nárok ťažko uplatniteľný. Preto je vlastné poistenie skiel najistejším riešením — nemusíte riešiť, kto škodu spôsobil.</p>
 
+    <h2>Prečo vzniklo pripoisti.sk</h2>
+    <p>Kedysi existovali len dve možnosti: buď iba <strong>PZP</strong>, alebo <strong>celé havarijné poistenie</strong>. Mnohým vodičom však nevyhovovala ani jedna — PZP ich vlastné vozidlo nechránilo a plné havarijné bolo zbytočne široké alebo drahé.</p>
+    <p>Práve preto vzniklo pripoisti.sk — nie ako ďalší porovnávač PZP, ale ako miesto, kde si vodič doplní ochranu presne o tie riziká, ktoré chce mať kryté: poškodené sklá, stret so zverou, vandalizmus, krádež, živel, úraz vodiča, batožinu či asistenciu. Niekto jazdí denne po diaľnici, iný parkuje na sídlisku, ďalší cestuje do zahraničia — každý má iné potreby. <strong>Vyberiete si iba pripoistenia, ktoré dávajú zmysel práve vám, bez toho, aby ste museli platiť za celé havarijné.</strong></p>
+
     <h2>Oprava alebo výmena? Rozdiel môže byť stovky eur</h2>
-    <p>Nie každé poškodenie musí ísť na výmenu. Ak je malé a mimo zorného poľa vodiča, servis často odporučí opravu živicou — pôvodné sklo zostáva, oprava trvá 30 – 60 minút, netreba demontovať senzory a auto použijete takmer okamžite.</p>
+    <p>Nie každé poškodenie musí ísť na výmenu. Ak je malé a mimo zorného poľa vodiča, servis často odporučí opravu živicou — pôvodné sklo zostáva, oprava trvá 30 – 60 minút a auto použijete takmer okamžite.</p>
     <ul>
       <li><strong>Oprava skla: spoluúčasť 0 %</strong> — ak sa poškodenie dá bezpečne opraviť, klient neplatí nič.</li>
       <li><strong>Výmena skla: spoluúčasť 10 %</strong> — pri prasknutí v zornom poli, veľkom poškodení alebo zásahu okraja; zvyšok uhradí poisťovňa.</li>
@@ -199,7 +217,6 @@ hr{border:none;border-top:1px solid var(--bd);margin:36px 0}
     <p>Práve preto poškodenie riešte čo najskôr — malý kamienok, ktorý by sa dal opraviť bez doplatku, sa po pár dňoch zmení na prasklinu cez celé sklo a bude nutná výmena.</p>
 
     <h2>Ako prebieha likvidácia poistnej udalosti</h2>
-    <p>Pri poškodení skla je postup väčšinou veľmi jednoduchý:</p>
     <ol class="tl">
       <li><b>Nahlásenie škody</b>Online alebo telefonicky, väčšinou postačí niekoľko fotografií.</li>
       <li><b>Odporúčanie servisu</b>Poisťovňa odporučí najbližšie partnerské autosklo.</li>
@@ -212,9 +229,19 @@ hr{border:none;border-top:1px solid var(--bd);margin:36px 0}
     <p>Ak uzatvárate poistenie na vozidlo, ktoré už používate, poisťovňa potrebuje overiť, že sklá neboli poškodené ešte pred začiatkom poistenia. Slúži na to <strong>fotoobhliadka</strong> — cez mobilnú aplikáciu podľa pokynov nafotíte vozidlo a detail skiel. Trvá to pár minút.</p>
     <p>Dôležité: <strong>kým poisťovňa fotografie neschváli, platí pri poistnej udalosti zvýšená spoluúčasť 90 %.</strong> Nie je to sankcia — je to ochrana pred uzatvorením poistenia až po tom, ako už bolo sklo poškodené. Po schválení fotografií platí štandardná spoluúčasť (<strong>0 % oprava / 10 % výmena</strong>). Ak fotografie schválime ešte pred začiatkom poistenia, zvýšená spoluúčasť sa na vás vôbec nevzťahuje. Fotoobhliadku preto vybavte hneď.</p>
 
+    <h2>Čo si skontrolovať ešte dnes</h2>
+    <p>Ak už poistenie skiel máte, venujte mu päť minút a v poistnej zmluve nájdite odpovede na štyri otázky:</p>
+    <ul>
+      <li><strong>Aké sklá mám poistené?</strong> Len čelné, alebo aj bočné, zadné a panoramatickú strechu?</li>
+      <li><strong>Aký je môj limit plnenia?</strong> Poznáte konkrétnu sumu, alebo len viete, že „nejaké poistenie skla máte"?</li>
+      <li><strong>Poznám svoju spoluúčasť?</strong> Viete povedať, koľko by ste doplatili pri výmene?</li>
+      <li><strong>Viem, čo robiť po poškodení?</strong> Máte číslo asistenčnej linky a viete, komu škodu nahlásiť?</li>
+    </ul>
+    <p>Tieto informácie sa hľadajú oveľa jednoduchšie doma na gauči než pri poškodenom aute na krajnici diaľnice.</p>
+
     <h2>Najčastejšie chyby vodičov po poškodení skla</h2>
     <ul>
-      <li><strong>Ignorovanie malej praskliny</strong> — karoséria pracuje, sklo reaguje na teplotu a drobná prasklina sa za pár dní rozšíri cez celé sklo. To, čo šlo opraviť bez spoluúčasti, skončí výmenou.</li>
+      <li><strong>Ignorovanie malej praskliny</strong> — sklo reaguje na teplotu a vibrácie a drobná prasklina sa za pár dní rozšíri. To, čo šlo opraviť bez spoluúčasti, skončí výmenou.</li>
       <li><strong>Prudké ochladzovanie/zohrievanie</strong> — horúci vzduch naplno na namrznuté sklo (alebo studená klimatizácia v lete) prasklinu rýchlo zväčší.</li>
       <li><strong>Umývanie vysokotlakovým čističom</strong> — silný prúd na poškodené miesto urýchli šírenie; miesto radšej dočasne prelepte priesvitnou páskou.</li>
       <li><strong>Odkladanie opravy</strong> — do poškodenia sa dostáva prach, voda a mastnota, čo môže znemožniť opravu živicou.</li>
@@ -226,15 +253,25 @@ hr{border:none;border-top:1px solid var(--bd);margin:36px 0}
       <p>Áno. Naše poistenie kryje všetky sklá vozidla vrátane panoramatickej strechy a strešných okien — to je jeden z hlavných rozdielov oproti bežným poisteniam čelného skla.</p>
       <h3>Existuje horný limit poistného plnenia?</h3>
       <p>Nie. Poistnou sumou je obvyklá cena výmeny skla, ktorú garantujeme. Či bude výmena stáť 1 400 €, 3 500 € alebo 12 000 €, plnenie sa neobmedzuje pevným limitom.</p>
-      <h3>Opraví sa sklo vždy, alebo sa musí meniť?</h3>
-      <p>Nie vždy. Malé poškodenie mimo zorného poľa vodiča sa dá opraviť živicou; ak oprava už nie je bezpečná, robí sa výmena.</p>
+      <h3>Čo ak sa poškodenie objaví až niekoľko dní po náraze kamienka?</h3>
+      <p>Stáva sa to často — z drobnej hviezdičky sa vplyvom vibrácií a teploty stane prasklina. Preto navštívte servis čo najskôr; čím skôr sa poškodenie posúdi, tým väčšia šanca na opravu namiesto výmeny.</p>
+      <h3>Musím po výmene čelného skla kalibrovať kameru?</h3>
+      <p>Ak má vozidlo asistenčné systémy, vo väčšine prípadov áno. Kamera za čelným sklom (núdzové brzdenie, asistent pruhov, tempomat) sa po výmene skla musí nakalibrovať podľa postupu výrobcu.</p>
       <h3>Ovplyvní škoda na skle bonus na PZP?</h3>
       <p>Nie. Poistenie skiel je samostatné pripoistenie — likvidácia škody na skle nemá vplyv na bonus za bezškodový priebeh PZP.</p>
-      <h3>Môžem si poistenie uzatvoriť aj počas roka?</h3>
-      <p>Áno, nie ste odkázaný len na výročie PZP. Súčasťou uzatvorenia je fotoobhliadka vozidla.</p>
-      <h3>Kryje poistenie poškodenie spôsobené vandalom?</h3>
-      <p>Áno. Rozbité bočné alebo zadné sklo pri pokuse o vlámanie patrí medzi typické poistné udalosti.</p>
+      <h3>Dá sa poistenie skiel uzatvoriť aj samostatne?</h3>
+      <p>Áno. Nemusíte uzatvárať celé havarijné poistenie — ak chcete chrániť iba riziko poškodenia skiel, nemusíte platiť za krytia, ktoré nevyužijete.</p>
     </div>
+
+    <h2>Zhrnutie v jednej minúte</h2>
+    <ul class="chk">
+      <li>PZP nekryje škodu na vašom vlastnom vozidle.</li>
+      <li>Moderné čelné sklá môžu stáť tisíce eur, panoráma aj cez 10 000 €.</li>
+      <li>Rozhoduje nielen cena poistenia, ale aj rozsah krytia a limit plnenia.</li>
+      <li>Nie všetky produkty kryjú bočné, zadné a panoramatické sklá.</li>
+      <li>Na pripoisti.sk je kryté <strong>každé sklo vrátane panorámy</strong> a <strong>bez horného limitu</strong>.</li>
+      <li>Pri oprave skla je spoluúčasť <strong>0 %</strong>, pri výmene <strong>10 %</strong>.</li>
+    </ul>
 
     <h2>Súvisiace články</h2>
     <ul>
@@ -248,8 +285,15 @@ hr{border:none;border-top:1px solid var(--bd);margin:36px 0}
     </ul>
 
     <div class="cta">
-      <h3>Chráňte si sklá skôr, než priletí kamienok</h3>
-      <p>Pripoistenie skiel k PZP — bez horného limitu, vrátane panorámy. Cena za minútu.</p>
+      <h3>Už viete odpoveď?</h3>
+      <p>Po prečítaní by ste mali vedieť odpovedať na štyri otázky o svojom aute:</p>
+      <ul>
+        <li>Sú poistené všetky sklá môjho auta?</li>
+        <li>Aký limit poistného plnenia mám?</li>
+        <li>Koľko zaplatím pri poistnej udalosti?</li>
+        <li>Je poistená aj panoramatická strecha?</li>
+      </ul>
+      <p>Ak niektorú odpoveď nepoznáte, pozrite sa na svoje poistenie ešte dnes. Stačí zadať EČV.</p>
       <a href="/app.html">Spočítať cenu →</a>
     </div>
 
