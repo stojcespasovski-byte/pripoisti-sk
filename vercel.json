@@ -1,0 +1,15 @@
+{
+  "redirects": [
+    {
+      "source": "/radca/:slug.html",
+      "destination": "/radca/:slug",
+      "permanent": true
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/radca/:slug",
+      "destination": "/radca/:slug.html"
+    }
+  ]
+}
