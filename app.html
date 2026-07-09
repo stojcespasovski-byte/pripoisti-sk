@@ -319,7 +319,9 @@ textarea:-webkit-autofill, select:-webkit-autofill {
   transition: background-color 9999s ease-in-out 0s;
 }
 select.entry-input { cursor: pointer; }
-select.entry-input option { background: #1a1a1a; color: white; }
+/* Tmavé pozadie roletky pre VŠETKY selecty (aj manuál vozidla vm-*), inak
+   biely text na bielom systémovom <option> pozadí = nečitateľné. */
+select option { background: #1a1a1a; color: #fff; }
 
 /* ─── AUTOCOMPLETE OBEC (číselník obcí → PSČ) ─── */
 .ac-wrap { position: relative; }
