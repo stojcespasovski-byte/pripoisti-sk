@@ -5317,6 +5317,18 @@ function goToStep3(e) {
   const activeFreqCard = document.querySelector('.freq-price-card.active');
   const mult = activeFreqCard ? parseInt(activeFreqCard.dataset.mult) : 12;
 
+  // freqPrices pre step3/platbu MUSÍ rešpektovať zvolenú spoluúčasť + varianty
+  // (monthEqFor), nie „chosen" variant z rate — ten je natvrdo _300, inak by
+  // Krok 3 aj platobná brána počítali vždy so spoluúčasťou 300 €. Návrh (save)
+  // berie tiles[].risks cez variantFor, ten bol správny už predtým.
+  const freqPricesForOrder = {};
+  [12, 4, 2, 1].forEach(pf => {
+    const src = pillowFreqPrices[pf];
+    if (!src) return;
+    freqPricesForOrder[pf] = {};
+    Object.keys(src).forEach(id => { freqPricesForOrder[pf][id] = monthEqFor(id, pf); });
+  });
+
   // Celá objednávka — reálne dáta pre step3/step4 (vrátane save do Pillow + BCRM)
   const order = {
     typ: currentType,
@@ -5330,7 +5342,7 @@ function goToStep3(e) {
       label: activeFreqCard ? activeFreqCard.dataset.label : 'ročne',
       pillowFreq: 12 / mult,                     // mult 1/3/6/12 → Pillow 12/4/2/1
     },
-    freqPrices: pillowFreqPrices,                // {12:{tile:€},4,2,1} — pre zobrazenie
+    freqPrices: freqPricesForOrder,              // {12:{tile:€},4,2,1} — rešpektuje zvolenú spoluúčasť (monthEqFor)
     riskPrices: pillowRiskPrices,                // {12:{HP2:€,SZ2:€,…},…} — per-riziko pre Záznam
     variantPrices: pillowVariantPrices,          // ceny všetkých variantov
     selectedVariants: { ...selectedVariants },   // zvolené varianty dlaždíc
