@@ -929,8 +929,9 @@ footer {
   .freq-price-card { min-width: 0; padding: 7px 4px; }
   .freq-price-card:not(:first-child)::before { left: -2px; height: 26px; }
   .fpc-label { font-size: 10px; letter-spacing: .3px; }
-  .fpc-price { font-size: 15px; }
-  .fpc-extra { display: none; }
+  .fpc-price { font-size: 13.5px; white-space: nowrap; }
+  .fpc-extra { font-size: 8.5px; line-height: 1.15; margin-top: 2px; }
+  .fpc-extra-suf { display: none; }   /* na mobile len suma „+€X/rok", bez „oproti ročnej" */
   .calc-cta { width: 100%; text-align: center; }
   .proof-strip { flex-wrap: wrap; gap: 24px; }
   .why-grid { grid-template-columns: 1fr; }
@@ -5310,7 +5311,7 @@ function updateCalc() {
     } else {
       // ročný preplatok oproti ročnej platbe (rovnaká báza pre všetky karty)
       const yearDiff = installment * (12 / mult) - annualYearly;
-      extraEl.textContent = yearDiff > 0.005 ? `+€${yearDiff.toFixed(2).replace('.', ',')}/rok oproti ročnej` : '';
+      extraEl.innerHTML = yearDiff > 0.005 ? `+€${yearDiff.toFixed(2).replace('.', ',')}/rok<span class="fpc-extra-suf"> oproti ročnej</span>` : '';
     }
   });
 
