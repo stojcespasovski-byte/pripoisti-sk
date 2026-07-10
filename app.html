@@ -644,7 +644,7 @@ select option { background: #1a1a1a; color: #fff; }
 }
 .freq-price-cards {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex: 1;
 }
 .summary-empty { flex: 1; font-size: 16px; font-weight: 700; color: rgba(255,255,255,.9); }
@@ -655,12 +655,17 @@ select option { background: #1a1a1a; color: #fff; }
   position: relative;
   flex: 1;
   text-align: center;
-  padding: 8px 12px;
+  padding: 8px 14px;
   border-radius: 10px;
-  border: 1.5px solid rgba(255,255,255,.08);
-  background: rgba(255,255,255,.03);
+  border: 1.5px solid transparent;
+  background: transparent;
   cursor: pointer;
   transition: all .18s;
+}
+/* tenký zvislý delič medzi frekvenciami (textové stĺpce) */
+.freq-price-card:not(:first-child)::before {
+  content: ''; position: absolute; left: -3px; top: 50%; transform: translateY(-50%);
+  width: 1px; height: 34px; background: rgba(255,255,255,.1);
 }
 .fpc-badge {
   position: absolute; top: -9px; left: 50%; transform: translateX(-50%);
@@ -669,12 +674,15 @@ select option { background: #1a1a1a; color: #fff; }
   padding: 2px 8px; border-radius: 6px; white-space: nowrap;
   box-shadow: 0 2px 8px rgba(0,0,0,.35);
 }
-.freq-price-card:hover { border-color: rgba(232,130,26,.35); background: rgba(232,130,26,.05); }
+.freq-price-card:hover { background: rgba(255,255,255,.04); }
 .freq-price-card.freq-locked { opacity: .35; cursor: not-allowed; pointer-events: none; filter: grayscale(1); }
 .freq-price-card.active {
   border-color: var(--o);
   background: rgba(232,130,26,.12);
 }
+/* delič sa nedotýka zvolenej pilulky (zľava ani sprava) */
+.freq-price-card.active::before,
+.freq-price-card.active + .freq-price-card::before { display: none; }
 .fpc-label {
   font-size: 12px; font-weight: 700;
   color: rgba(255,255,255,.35);
@@ -908,8 +916,12 @@ footer {
   .entry-card { padding: 18px; }
   .tiles-grid { grid-template-columns: 1fr; }
   .sticky-summary-inner { flex-direction: column; align-items: stretch; gap: 12px; padding: 14px 20px; }
-  .freq-price-cards { flex-wrap: wrap; }
-  .freq-price-card { min-width: calc(50% - 4px); }
+  .freq-price-cards { flex-wrap: nowrap; gap: 4px; }
+  .freq-price-card { min-width: 0; padding: 7px 4px; }
+  .freq-price-card:not(:first-child)::before { left: -2px; height: 26px; }
+  .fpc-label { font-size: 10px; letter-spacing: .3px; }
+  .fpc-price { font-size: 15px; }
+  .fpc-extra { display: none; }
   .calc-cta { width: 100%; text-align: center; }
   .proof-strip { flex-wrap: wrap; gap: 24px; }
   .why-grid { grid-template-columns: 1fr; }
