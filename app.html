@@ -541,7 +541,10 @@ select option { background: #1a1a1a; color: #fff; }
 .su-usage:hover { border-color: rgba(232,130,26,.5); }
 .su-usage:focus { outline: none; border-color: var(--o); }
 @media (max-width: 720px) {
-  .su-switch { grid-template-columns: 1fr; gap: 12px 0; }
+  .su-switch { grid-template-columns: 1fr; gap: 14px 0; }
+  /* otázka na 1. riadku, ovládač sa zalomí pod ňu na 2. riadok */
+  .su-group, .su-switch .su-group:nth-child(even) { grid-template-columns: 1fr; gap: 6px; }
+  .su-usage { width: 100%; }
 }
 .su-hintable { position: relative; cursor: help; text-decoration: underline dotted rgba(255,255,255,.3); text-underline-offset: 3px; }
 .su-hintable::after {
@@ -1257,19 +1260,19 @@ footer {
           </div>
         </div>
         <div class="su-group">
-          <span class="su-lbl su-hintable" data-tip="Ak súhlasíte s opravou v zmluvnom servise, môžete získať zľavu z ceny.">Zmluvný servis:</span>
-          <div class="su-ctrl">
-            <span class="su-opt" data-s="ano" onclick="setServis(true)">Áno</span>
-            <span class="su-opt active" data-s="nie" onclick="setServis(false)">Nie</span>
-            <a class="su-serv-link" id="su-serv-link" href="https://www.mypillow.sk/zmluvne-servisy/" target="_blank" rel="noopener">Zoznam zmluvných servisov ↗</a>
-          </div>
-        </div>
-        <div class="su-group">
           <span class="su-lbl su-hintable" data-tip="Vaša časť škody pri poistnej udalosti. Čím vyššia spoluúčasť, tým nižšia cena poistenia.">Spoluúčasť:</span>
           <div class="su-ctrl">
             <span class="su-opt" data-su="150" onclick="setSpoluUcast('150')">150 €</span>
             <span class="su-opt active" data-su="300" onclick="setSpoluUcast('300')">300 €</span>
             <span class="su-opt" data-su="600" onclick="setSpoluUcast('600')">600 €</span>
+          </div>
+        </div>
+        <div class="su-group">
+          <span class="su-lbl su-hintable" data-tip="Ak súhlasíte s opravou v zmluvnom servise, môžete získať zľavu z ceny.">Zmluvný servis:</span>
+          <div class="su-ctrl">
+            <span class="su-opt" data-s="ano" onclick="setServis(true)">Áno</span>
+            <span class="su-opt active" data-s="nie" onclick="setServis(false)">Nie</span>
+            <a class="su-serv-link" id="su-serv-link" href="https://www.mypillow.sk/zmluvne-servisy/" target="_blank" rel="noopener">Zoznam zmluvných servisov ↗</a>
           </div>
         </div>
         <div class="su-group">
