@@ -45,16 +45,16 @@ nav.scrolled { background: rgba(17,17,17,.97); border-bottom: 1px solid rgba(255
 .nav-link { font-size: 15px; font-weight: 500; color: rgba(255,255,255,.55); text-decoration: none; transition: color .15s; }
 .nav-link:hover { color: white; }
 .nav-cta {
-  background: var(--grad);
-  color: white;
+  background: transparent;
+  color: var(--o);
   font-size: 15px; font-weight: 700;
   padding: 10px 22px;
   border-radius: 10px;
+  border: 1px solid var(--o);
   text-decoration: none;
-  transition: opacity .15s, transform .15s;
-  box-shadow: 0 4px 16px rgba(232,130,26,.3);
+  transition: background .15s, transform .15s;
 }
-.nav-cta:hover { opacity: .9; transform: translateY(-1px); }
+.nav-cta:hover { background: rgba(232,130,26,.12); transform: translateY(-1px); }
 
 /* ─── HERO ─── */
 .hero {
@@ -619,9 +619,8 @@ select option { background: #1a1a1a; color: #fff; }
   position: fixed;
   left: 0; right: 0; bottom: 0;
   z-index: 90;
-  background: rgba(17,17,17,.92);
-  backdrop-filter: blur(16px);
-  border-top: 1px solid rgba(232,130,26,.25);
+  background: #1b1b1b;               /* povrch o stupeň svetlejší než pozadie (#111) — rovnaký ako panely */
+  border-top: 1px solid rgba(255,255,255,.1);   /* jemná linka v štýle existujúcich rámikov */
   box-shadow: 0 -8px 32px rgba(0,0,0,.4);
   transform: translateY(100%);
   opacity: 0;
@@ -693,7 +692,7 @@ select option { background: #1a1a1a; color: #fff; }
 .freq-price-card.active .fpc-label { color: rgba(255,255,255,.6); }
 .fpc-price {
   font-size: 18px; font-weight: 900;
-  color: rgba(255,255,255,.5);
+  color: rgba(255,255,255,.42);   /* nevybrané: sekundárny odtieň (ako popisy v dlaždiciach) */
   letter-spacing: -.3px;
   line-height: 1.1;
 }
@@ -706,7 +705,8 @@ select option { background: #1a1a1a; color: #fff; }
 .fpc-extra {
   font-size: 12px;
   font-weight: 600;
-  color: rgba(232,130,26,.65);
+  color: rgba(255,255,255,.42);   /* žiadna nová farba — len jas */
+  opacity: .6;                    /* doplatok ešte o stupeň nižšie */
   margin-top: 3px;
   min-height: 13px;
 }
