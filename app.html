@@ -534,11 +534,12 @@ select option { background: #1a1a1a; color: #fff; }
 .su-ctrl { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .su-lbl { font-size: 14px; font-weight: 700; color: rgba(255,255,255,.65); }
 .su-usage {
-  appearance: none; -webkit-appearance: none; font-family: inherit; font-size: 14px; font-weight: 600; color: #fff;
-  border: 1px solid rgba(255,255,255,.18); border-radius: 8px; padding: 6px 34px 6px 13px; cursor: pointer; box-sizing: border-box; width: 225px; max-width: 100%;
-  background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%23E8821A' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 11px center;
+  appearance: none; -webkit-appearance: none; font-family: inherit; font-size: 14px; font-weight: 700; color: var(--o);
+  /* dropdown vždy ukazuje ZVOLENÚ hodnotu → aktívne ošatenie ako .su-opt.active (oranžový rámik + tint) */
+  border: 1px solid var(--o); border-radius: 8px; padding: 6px 34px 6px 13px; cursor: pointer; box-sizing: border-box; width: 225px; max-width: 100%;
+  background: rgba(232,130,26,.14) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%23E8821A' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 11px center;
 }
-.su-usage:hover { border-color: rgba(232,130,26,.5); }
+.su-usage:hover { border-color: rgba(232,130,26,.75); }
 .su-usage:focus { outline: none; border-color: var(--o); }
 @media (max-width: 720px) {
   .su-switch { grid-template-columns: 1fr; gap: 14px 0; }
