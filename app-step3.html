@@ -653,6 +653,24 @@ function validRc(rc) {
   return true;
 }
 
+/* Telefón → jednotný tvar +421XXXXXXXXX (SK) / +420… (CZ). Prijme voľný vstup
+   (0901…, 901234567, 00421…, medzery/pomlčky) a zjednotí ho. */
+function normalizePhone(raw) {
+  let s = (raw || '').replace(/[\s\-()/.]/g, '');
+  if (!s) return '';
+  if (s.startsWith('00')) s = '+' + s.slice(2);
+  if (s.startsWith('421') || s.startsWith('420')) s = '+' + s;
+  if (!s.startsWith('+')) {
+    if (s.startsWith('0')) s = '+421' + s.slice(1);       // 0901… → +421901…
+    else if (/^\d{9}$/.test(s)) s = '+421' + s;           // 901234567 → +421901234567
+  }
+  return s;
+}
+/* Platný mobil: SK +4219XXXXXXXX alebo CZ +420(6|7)XXXXXXXX */
+function validMobile(p) {
+  return /^\+4219\d{8}$/.test(p) || /^\+420[67]\d{8}$/.test(p);
+}
+
 function validateForm() {
   let firstInvalid = null;
   let valid = true;
@@ -670,6 +688,10 @@ function validateForm() {
       } else if (!filled && input.id === 'szco-rc') {
         const err = input.parentElement.querySelector('.field-error');
         if (err) err.textContent = 'Zadajte rodné číslo';
+      } else if (ok && /-telefon$/.test(input.id) && !validMobile(normalizePhone(input.value))) {
+        ok = false;
+        const err = input.parentElement.querySelector('.field-error');
+        if (err) err.textContent = 'Zadajte platné mobilné číslo, napr. +421 901 234 567';
       }
       input.classList.toggle('error', !ok);
       if (!ok) {
@@ -691,6 +713,10 @@ document.querySelectorAll('input[data-required="true"]').forEach(input => {
   input.addEventListener('input', () => {
     if (input.value.trim().length > 0) input.classList.remove('error');
   });
+});
+/* Telefón: po opustení poľa zjednoť na +421XXXXXXXXX */
+document.querySelectorAll('input[id$="-telefon"]').forEach(input => {
+  input.addEventListener('blur', () => { const n = normalizePhone(input.value); if (n) input.value = n; });
 });
 
 /* Vlastník FO: dátum narodenia sa dopočíta z RČ; prázdne date pole má stlmený placeholder */
@@ -788,20 +814,20 @@ function goToSummary() {
   pk.statnaPrislusnost = 'Slovenská';   // default pre všetkých okrem cudzinca (pre Záznam o sprostredkovaní)
   if (typ === 'po') {
     pk.meno = g('po-meno'); pk.priezvisko = g('po-priezvisko');
-    pk.email = g('po-email'); pk.tel = g('po-telefon'); pk.ulica = g('po-ulica'); pk.cislo = g('po-cislo');
+    pk.email = g('po-email'); pk.tel = normalizePhone(g('po-telefon')); pk.ulica = g('po-ulica'); pk.cislo = g('po-cislo');
   } else if (typ === 'szco') {
     pk.meno = g('szco-meno'); pk.priezvisko = g('szco-priezvisko');
     pk.nazov = g('szco-nazov'); pk.rc = g('szco-rc');            // editovateľné — lookup živnostníka nemusí nájsť
-    pk.email = g('szco-email'); pk.tel = g('szco-telefon'); pk.ulica = g('szco-ulica'); pk.cislo = g('szco-cislo');
+    pk.email = g('szco-email'); pk.tel = normalizePhone(g('szco-telefon')); pk.ulica = g('szco-ulica'); pk.cislo = g('szco-cislo');
     pk.dokladCislo = g('szco-doklad');
   } else if (typ === 'cudzinec') {
     pk.meno = g('cz-meno'); pk.priezvisko = g('cz-priezvisko'); pk.datumNar = g('cz-datum-narodenia');
-    pk.email = g('cz-email'); pk.tel = g('cz-telefon'); pk.ulica = g('cz-ulica'); pk.cislo = g('cz-cislo');
+    pk.email = g('cz-email'); pk.tel = normalizePhone(g('cz-telefon')); pk.ulica = g('cz-ulica'); pk.cislo = g('cz-cislo');
     pk.dokladCislo = g('cz-doklad');
     pk.statnaPrislusnost = g('cz-statna');                       // cudzinec zadáva sám
   } else { // fo
     pk.meno = g('fo-meno'); pk.priezvisko = g('fo-priezvisko');
-    pk.email = g('fo-email'); pk.tel = g('fo-telefon'); pk.ulica = g('fo-ulica'); pk.cislo = g('fo-cislo');
+    pk.email = g('fo-email'); pk.tel = normalizePhone(g('fo-telefon')); pk.ulica = g('fo-ulica'); pk.cislo = g('fo-cislo');
     pk.dokladCislo = g('fo-doklad');
   }
   pk.vlastnik = collectVlastnik();       // vlastník vozidla (task 5)
