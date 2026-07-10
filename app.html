@@ -969,6 +969,10 @@ footer {
 
 /* ===== Kompaktný quote screen ===== */
 .hero { padding: 84px 48px 24px; min-height: 0; }
+/* nav clearance: kompaktný hero (84px top) nesmie na menších šírkach schovať eyebrow badge
+   pod fixný nav — musí byť ZA .hero vyššie, inak ho globálne 84px prebije (kolízia kaskády) */
+@media (max-width: 880px) { .hero { padding-top: 104px; } }
+@media (max-width: 640px) { .hero { padding-top: 118px; } }
 .calc-shell { padding: 18px 22px; }
 .calc-label { margin-bottom: 8px; }
 
