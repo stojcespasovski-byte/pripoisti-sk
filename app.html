@@ -162,7 +162,7 @@ h1 {
   margin-bottom: 14px;
 }
 /* aby fixná navigácia neprekryla nadpis pri scrollnutí na dlaždice */
-#tiles-label { scroll-margin-top: 150px; color: var(--o); text-align: center; }
+#su-switch { scroll-margin-top: 150px; }
 #entry-card { scroll-margin-top: 110px; }
 
 /* ── Karta „vaše vozidlo" (potvrdenie nájdeného auta) ── */
@@ -530,9 +530,23 @@ select option { background: #1a1a1a; color: #fff; }
 .tv-title { padding: 7px 10px 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: rgba(255,255,255,.4); }
 
 /* Jednotná spoluúčasť nad mriežkou */
-.su-switch { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px 16px; margin: 12px 0 16px; }
-.su-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+/* Parametre v mriežke 2×2: vľavo Užívanie + Spoluúčasť, vpravo Servis + Garáž;
+   popisky fixnej šírky → ovládače lícujú na zvislici. Dizajn (pills/rámiky/farby) náš. */
+.su-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 40px; align-items: center; margin: 12px 0 16px; }
+.su-group { display: grid; grid-template-columns: 158px 1fr; align-items: center; gap: 12px; }
+.su-ctrl { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .su-lbl { font-size: 14px; font-weight: 700; color: rgba(255,255,255,.65); }
+.su-usage {
+  appearance: none; -webkit-appearance: none; font-family: inherit; font-size: 14px; font-weight: 600; color: #fff;
+  border: 1px solid rgba(255,255,255,.18); border-radius: 8px; padding: 6px 34px 6px 13px; cursor: pointer; max-width: 100%;
+  background: rgba(255,255,255,.04) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%23E8821A' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 11px center;
+}
+.su-usage:hover { border-color: rgba(232,130,26,.5); }
+.su-usage:focus { outline: none; border-color: var(--o); }
+@media (max-width: 720px) {
+  .su-switch { grid-template-columns: 1fr; gap: 12px 0; }
+  .su-group { grid-template-columns: 132px 1fr; }
+}
 .su-hintable { position: relative; cursor: help; text-decoration: underline dotted rgba(255,255,255,.3); text-underline-offset: 3px; }
 .su-hintable::after {
   content: attr(data-tip); position: absolute; left: 0; top: calc(100% + 8px);
@@ -1213,24 +1227,44 @@ footer {
         <div class="veh-grid" id="veh-grid"></div>
       </div>
 
-      <div class="calc-label wow-hidden" id="tiles-label" style="margin-top:24px;">Vyberte pripoistenia, ktoré chcete:</div>
       <div class="su-switch wow-hidden" id="su-switch">
         <div class="su-group">
-          <span class="su-lbl su-hintable" data-tip="Vaša časť škody pri poistnej udalosti. Čím vyššia spoluúčasť, tým nižšia cena poistenia.">Spoluúčasť:</span>
-          <span class="su-opt" data-su="150" onclick="setSpoluUcast('150')">150 €</span>
-          <span class="su-opt active" data-su="300" onclick="setSpoluUcast('300')">300 €</span>
-          <span class="su-opt" data-su="600" onclick="setSpoluUcast('600')">600 €</span>
-        </div>
-        <div class="su-group">
-          <span class="su-lbl su-hintable" data-tip="Ak vozidlo parkujete v garáži, môžete získať zľavu z ceny.">Garáž:</span>
-          <span class="su-opt" data-g="ano" onclick="setGaraged(true)">Áno</span>
-          <span class="su-opt active" data-g="nie" onclick="setGaraged(false)">Nie</span>
+          <span class="su-lbl su-hintable" data-tip="Účel, na ktorý vozidlo používate — ovplyvňuje cenu poistenia.">Spôsob užívania:</span>
+          <div class="su-ctrl">
+            <select class="su-usage" id="veh-usage" onchange="setVehUse(this.value)" aria-label="Spôsob užívania vozidla">
+              <option value="10" selected>Bežná prevádzka</option>
+              <option value="02">Taxi</option>
+              <option value="03">Na prenájom (autopožičovňa)</option>
+              <option value="11">Autoškola</option>
+              <option value="15">Rozvoz tovaru konečnému spotrebiteľovi</option>
+              <option value="07">Preprava nebezpečných vecí (ADR)</option>
+              <option value="13">Vozidlo s právom prednostnej jazdy</option>
+              <option value="14">Historické vozidlo</option>
+            </select>
+          </div>
         </div>
         <div class="su-group">
           <span class="su-lbl su-hintable" data-tip="Ak súhlasíte s opravou v zmluvnom servise, môžete získať zľavu z ceny.">Zmluvný servis:</span>
-          <span class="su-opt" data-s="ano" onclick="setServis(true)">Áno</span>
-          <span class="su-opt active" data-s="nie" onclick="setServis(false)">Nie</span>
-          <a class="su-serv-link" id="su-serv-link" href="https://www.mypillow.sk/zmluvne-servisy/" target="_blank" rel="noopener">Zoznam zmluvných servisov ↗</a>
+          <div class="su-ctrl">
+            <span class="su-opt" data-s="ano" onclick="setServis(true)">Áno</span>
+            <span class="su-opt active" data-s="nie" onclick="setServis(false)">Nie</span>
+            <a class="su-serv-link" id="su-serv-link" href="https://www.mypillow.sk/zmluvne-servisy/" target="_blank" rel="noopener">Zoznam zmluvných servisov ↗</a>
+          </div>
+        </div>
+        <div class="su-group">
+          <span class="su-lbl su-hintable" data-tip="Vaša časť škody pri poistnej udalosti. Čím vyššia spoluúčasť, tým nižšia cena poistenia.">Spoluúčasť:</span>
+          <div class="su-ctrl">
+            <span class="su-opt" data-su="150" onclick="setSpoluUcast('150')">150 €</span>
+            <span class="su-opt active" data-su="300" onclick="setSpoluUcast('300')">300 €</span>
+            <span class="su-opt" data-su="600" onclick="setSpoluUcast('600')">600 €</span>
+          </div>
+        </div>
+        <div class="su-group">
+          <span class="su-lbl su-hintable" data-tip="Ak vozidlo parkujete v garáži, môžete získať zľavu z ceny.">Garáž:</span>
+          <div class="su-ctrl">
+            <span class="su-opt" data-g="ano" onclick="setGaraged(true)">Áno</span>
+            <span class="su-opt active" data-g="nie" onclick="setGaraged(false)">Nie</span>
+          </div>
         </div>
       </div>
       <div class="tiles-partial" id="tiles-partial">
@@ -1626,9 +1660,10 @@ const SU_RISKS = new Set(['HP2', 'SZ2', 'OV2', 'ZV2', 'VA2']);
 let spoluUcast = '300';
 /* dlaždice, ktoré nesú jednotnú havarijnú spoluúčasť (Sklá má vlastnú fixnú 10 % v HTML) */
 const SU_SHARED_TILES = ['havaria', 'zver', 'kradez', 'priroda', 'vandalizmus'];
-/* cenové parametre vozidla — do rate XML (garaged / contractualService); default false ako doteraz */
+/* cenové parametre vozidla — do rate XML (garaged / contractualService / vehicleUse) */
 let vehGaraged = false;
 let vehContractualService = false;
+let vehUse = '10';                          // Pillow číselník 82: 10 = Bežná prevádzka (default)
 let reRateBusy = false;
 /* variant rizika: SÚ riziká podľa jednotnej spoluúčasti, výberové podľa dlaždice */
 function variantFor(r, tileId) {
@@ -3950,7 +3985,7 @@ function buildRateXML(freq = 12, codes = null, riskList = null) {
   ${xe('paymentFrequency', String(freq))}
   <vehicle><xml-par-ap2-vehicle>
     ${xe('vehicleType', vtCode)}
-    ${xe('vehicleUse', '10')}
+    ${xe('vehicleUse', vehUse)}
     ${xe('brand', brandCode)}
     ${xe('model', modelCode)}
     ${xe('engineVolume', parseInt(v.objem) || 0)}
@@ -4325,7 +4360,7 @@ function showEntryError(msg) {
 
 /* Scroll na dlaždice — #tiles-label má scroll-margin-top, takže sa zastaví pod fixnou navigáciou */
 function scrollToTiles() {
-  document.getElementById('tiles-label')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.getElementById('su-switch')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 /* ── Karta „vaše vozidlo" ── */
@@ -5094,6 +5129,11 @@ function setServis(on) {
   document.querySelectorAll('#su-switch [data-s]').forEach(el => el.classList.toggle('active', (el.dataset.s === 'ano') === on));
   reRateVehParams();
 }
+function setVehUse(v) {
+  if (vehUse === v) return;
+  vehUse = v;
+  reRateVehParams();                         // cena závisí od spôsobu užívania (taxi/požičovňa…)
+}
 async function reRateVehParams() {
   if (!pricesReady || reRateBusy) return;         // len keď už máme kalkuláciu
   reRateBusy = true;
@@ -5349,6 +5389,7 @@ function goToStep3(e) {
     spoluUcast,                                  // jednotná spoluúčasť havarijných krytí
     garaged: vehGaraged,                         // cenové parametre vozidla
     contractualService: vehContractualService,
+    vehicleUse: vehUse,                          // Pillow číselník 82 (spôsob užívania) → save + zmluva
     poistenieOd: (typeof todayISO === 'function') ? todayISO() : new Date().toISOString().slice(0, 10),
     v: DRAFT_VERSION,                            // verzia schémy draftu (staré sa ignorujú)
     savedAt: Date.now(),                         // pre obnovu stavu pri návrate na Krok 1
@@ -5389,6 +5430,8 @@ function restoreFromOrder() {
   vehContractualService = !!order.contractualService;
   document.querySelectorAll('#su-switch [data-g]').forEach(el => el.classList.toggle('active', (el.dataset.g === 'ano') === vehGaraged));
   document.querySelectorAll('#su-switch [data-s]').forEach(el => el.classList.toggle('active', (el.dataset.s === 'ano') === vehContractualService));
+  vehUse = order.vehicleUse || '10';
+  const _usageEl = document.getElementById('veh-usage'); if (_usageEl) _usageEl.value = vehUse;
   _vehCacheKey = order.vehicle.ecv;                     // pre-lookup/re-lookup nevolá BCRM zbytočne
   _vehCacheVal = { found: true, data: { ...order.vehicle } };
 

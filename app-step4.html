@@ -565,7 +565,7 @@ function vehicleXML() {
   const codes = order.vehicleCodes || {};
   return `<vehicle><xml-par-ap2-vehicle>
     ${xe('vehicleType', VT_VALID.has(V.typ) ? V.typ : 'OA')}
-    ${xe('vehicleUse', '10')}
+    ${xe('vehicleUse', order.vehicleUse || '10')}
     ${xe('brand', codes.brandCode || 'NEUVEDENA')}
     ${xe('model', codes.modelCode || '529')}
     ${xe('engineVolume', parseInt(V.objem) || 0)}
