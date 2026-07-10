@@ -359,13 +359,13 @@ select option { background: #1a1a1a; color: white; }
         </div>
 
         <div class="row c2">
-          <div class="field"><label>Telefón</label><input class="mono" id="po-telefon" data-required="true" placeholder="+421 900 000 000"><div class="field-error">Zadajte telefónne číslo</div></div>
+          <div class="field"><label>Telefón</label><input class="mono" id="po-telefon" inputmode="tel" data-required="true" placeholder="+421 900 000 000"><div class="field-error">Zadajte telefónne číslo</div></div>
           <div class="field"><label>E-mail</label><input type="email" id="po-email" data-required="true" placeholder="firma@email.sk"><div class="field-error">Zadajte e-mail</div></div>
         </div>
 
         <div class="row addr">
           <div class="field"><label>Ulica</label><input id="po-ulica" data-required="true" placeholder="Hlavná"><div class="field-error">Zadajte ulicu</div></div>
-          <div class="field"><label>Číslo domu</label><input id="po-cislo" data-required="true" placeholder="1"><div class="field-error">Povinné</div></div>
+          <div class="field"><label>Číslo domu</label><input id="po-cislo" inputmode="numeric" data-required="true" placeholder="1"><div class="field-error">Povinné</div></div>
           <div class="field"><label>Obec</label><input id="po-obec" value="" readonly></div>
           <div class="field"><label>PSČ</label><input class="mono" id="po-psc" value="" readonly></div>
         </div>
@@ -393,15 +393,15 @@ select option { background: #1a1a1a; color: white; }
         </div>
 
         <div class="row c4">
-          <div class="field"><label>Rodné číslo</label><input class="mono" id="szco-rc" data-required="true" placeholder="9001011234"><div class="field-error">Zadajte rodné číslo</div></div>
+          <div class="field"><label>Rodné číslo</label><input class="mono" id="szco-rc" inputmode="numeric" data-required="true" placeholder="9001011234"><div class="field-error">Zadajte rodné číslo</div></div>
           <div class="field"><label>OP, Pas, Pobyt.preukaz</label><input class="mono" id="szco-doklad" data-required="true" placeholder="číslo dokladu"><div class="field-error">Zadajte číslo dokladu</div></div>
-          <div class="field"><label>Telefón</label><input class="mono" id="szco-telefon" data-required="true" placeholder="+421 900 000 000"><div class="field-error">Zadajte telefónne číslo</div></div>
+          <div class="field"><label>Telefón</label><input class="mono" id="szco-telefon" inputmode="tel" data-required="true" placeholder="+421 900 000 000"><div class="field-error">Zadajte telefónne číslo</div></div>
           <div class="field"><label>E-mail</label><input type="email" id="szco-email" data-required="true" placeholder="meno@email.sk"><div class="field-error">Zadajte e-mail</div></div>
         </div>
 
         <div class="row addr">
           <div class="field"><label>Ulica</label><input id="szco-ulica" data-required="true" placeholder="Hlavná"><div class="field-error">Zadajte ulicu</div></div>
-          <div class="field"><label>Číslo domu</label><input id="szco-cislo" data-required="true" placeholder="1"><div class="field-error">Povinné</div></div>
+          <div class="field"><label>Číslo domu</label><input id="szco-cislo" inputmode="numeric" data-required="true" placeholder="1"><div class="field-error">Povinné</div></div>
           <div class="field"><label>Obec</label><input id="szco-obec" value="" readonly></div>
           <div class="field"><label>PSČ</label><input class="mono" id="szco-psc" value="" readonly></div>
         </div>
@@ -426,13 +426,13 @@ select option { background: #1a1a1a; color: white; }
         <div class="row c4">
           <div class="field"><label>Rodné číslo</label><input class="mono" id="fo-rc" value="" readonly></div>
           <div class="field"><label>OP, Pas, Pobyt.preukaz</label><input class="mono" id="fo-doklad" data-required="true" placeholder="číslo dokladu"><div class="field-error">Zadajte číslo dokladu</div></div>
-          <div class="field"><label>Telefón</label><input class="mono" id="fo-telefon" data-required="true" placeholder="+421 900 000 000"><div class="field-error">Zadajte telefónne číslo</div></div>
+          <div class="field"><label>Telefón</label><input class="mono" id="fo-telefon" inputmode="tel" data-required="true" placeholder="+421 900 000 000"><div class="field-error">Zadajte telefónne číslo</div></div>
           <div class="field"><label>E-mail</label><input type="email" id="fo-email" data-required="true" placeholder="meno@email.sk"><div class="field-error">Zadajte e-mail</div></div>
         </div>
 
         <div class="row addr">
           <div class="field"><label>Ulica</label><input id="fo-ulica" data-required="true" placeholder="Hlavná"><div class="field-error">Zadajte ulicu</div></div>
-          <div class="field"><label>Číslo domu</label><input id="fo-cislo" data-required="true" placeholder="1"><div class="field-error">Povinné</div></div>
+          <div class="field"><label>Číslo domu</label><input id="fo-cislo" inputmode="numeric" data-required="true" placeholder="1"><div class="field-error">Povinné</div></div>
           <div class="field"><label>Obec</label><input id="fo-obec" value="" readonly></div>
           <div class="field"><label>PSČ</label><input class="mono" id="fo-psc" value="" readonly></div>
         </div>
@@ -457,7 +457,7 @@ select option { background: #1a1a1a; color: white; }
         <div class="row c4">
           <div class="field"><label>Dátum narodenia</label><input type="date" id="cz-datum-narodenia" data-required="true"><div class="field-error">Zadajte dátum narodenia</div></div>
           <div class="field"><label>OP, Pas, Pobyt.preukaz</label><input class="mono" id="cz-doklad" data-required="true" placeholder="číslo dokladu"><div class="field-error">Zadajte číslo dokladu</div></div>
-          <div class="field"><label>Telefón</label><input class="mono" id="cz-telefon" data-required="true" placeholder="+421 900 000 000"><div class="field-error">Zadajte telefónne číslo</div></div>
+          <div class="field"><label>Telefón</label><input class="mono" id="cz-telefon" inputmode="tel" data-required="true" placeholder="+421 900 000 000"><div class="field-error">Zadajte telefónne číslo</div></div>
           <div class="field"><label>E-mail</label><input type="email" id="cz-email" data-required="true" placeholder="meno@email.com"><div class="field-error">Zadajte e-mail</div></div>
         </div>
 
@@ -467,7 +467,7 @@ select option { background: #1a1a1a; color: white; }
 
         <div class="row addr">
           <div class="field"><label>Ulica</label><input id="cz-ulica" data-required="true" placeholder="Hlavná"><div class="field-error">Zadajte ulicu</div></div>
-          <div class="field"><label>Číslo domu</label><input id="cz-cislo" data-required="true" placeholder="1"><div class="field-error">Povinné</div></div>
+          <div class="field"><label>Číslo domu</label><input id="cz-cislo" inputmode="numeric" data-required="true" placeholder="1"><div class="field-error">Povinné</div></div>
           <div class="field"><label>Obec</label><input id="cz-obec" value="" readonly></div>
           <div class="field"><label>PSČ</label><input class="mono" id="cz-psc" value="" readonly></div>
         </div>
@@ -503,14 +503,14 @@ select option { background: #1a1a1a; color: white; }
             <div class="row c4">
               <div class="field"><label>Meno</label><input id="vl-meno" placeholder="Ján"><div class="field-error">Zadajte meno</div></div>
               <div class="field"><label>Priezvisko</label><input id="vl-priezvisko" placeholder="Novák"><div class="field-error">Zadajte priezvisko</div></div>
-              <div class="field"><label>Rodné číslo</label><input class="mono" id="vl-rc" placeholder="9001011234"><div class="field-error">Zadajte RČ alebo dátum narodenia</div></div>
+              <div class="field"><label>Rodné číslo</label><input class="mono" id="vl-rc" inputmode="numeric" placeholder="9001011234"><div class="field-error">Zadajte RČ alebo dátum narodenia</div></div>
               <div class="field"><label>Dátum narodenia</label><input type="date" id="vl-datum"></div>
             </div>
             <div class="row addr">
               <div class="field"><label>Ulica</label><input id="vl-ulica" placeholder="Hlavná"><div class="field-error">Zadajte ulicu</div></div>
-              <div class="field"><label>Číslo domu</label><input id="vl-cislo" placeholder="1"><div class="field-error">Povinné</div></div>
+              <div class="field"><label>Číslo domu</label><input id="vl-cislo" inputmode="numeric" placeholder="1"><div class="field-error">Povinné</div></div>
               <div class="field"><label>Obec</label><input id="vl-obec" placeholder="Bratislava"><div class="field-error">Zadajte obec</div></div>
-              <div class="field"><label>PSČ</label><input class="mono" id="vl-psc" placeholder="84101"><div class="field-error">Zadajte PSČ</div></div>
+              <div class="field"><label>PSČ</label><input class="mono" id="vl-psc" inputmode="numeric" placeholder="84101"><div class="field-error">Zadajte PSČ</div></div>
             </div>
           </div>
 
