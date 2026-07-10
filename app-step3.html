@@ -590,6 +590,8 @@ setV('v-typ', V.typ || 'OA');
 if (typ === 'po') {
   setV('po-ico', P.ico); setV('po-nazov', P.nazov); setV('po-obec', P.obec); setV('po-psc', P.psc);
   setV('po-ulica', P.ulica); setV('po-cislo', P.cislo);          // z company lookupu (editovateľné)
+  // rozpísané v Kroku 3 → obnov pri návrate zo súhrnu (nech sa nevypisuje znova)
+  setV('po-meno', P.meno); setV('po-priezvisko', P.priezvisko); setV('po-telefon', P.tel); setV('po-email', P.email);
   // Konateľ z ORSR → oprávnená osoba (meno/priezvisko). 1 → rovno; viacerí → výber v modali
   const kon = (P.konatelia || []).filter(Boolean);
   const menoPrazdne = !document.getElementById('po-meno').value.trim() && !document.getElementById('po-priezvisko').value.trim();
@@ -600,10 +602,13 @@ if (typ === 'po') {
 } else if (typ === 'szco') {
   setV('szco-ico', P.ico); setV('szco-nazov', P.nazov); setV('szco-rc', P.rc); setV('szco-obec', P.obec); setV('szco-psc', P.psc);
   setV('szco-ulica', P.ulica); setV('szco-cislo', P.cislo);
+  setV('szco-meno', P.meno); setV('szco-priezvisko', P.priezvisko); setV('szco-telefon', P.tel); setV('szco-email', P.email); setV('szco-doklad', P.dokladCislo);
 } else if (typ === 'fo') {
   setV('fo-rc', P.rc); setV('fo-obec', P.obec); setV('fo-psc', P.psc);
+  setV('fo-meno', P.meno); setV('fo-priezvisko', P.priezvisko); setV('fo-ulica', P.ulica); setV('fo-cislo', P.cislo); setV('fo-telefon', P.tel); setV('fo-email', P.email); setV('fo-doklad', P.dokladCislo);
 } else if (typ === 'cudzinec') {
   setV('cz-obec', P.obec); setV('cz-psc', P.psc);
+  setV('cz-meno', P.meno); setV('cz-priezvisko', P.priezvisko); setV('cz-datum-narodenia', P.datumNar); setV('cz-ulica', P.ulica); setV('cz-cislo', P.cislo); setV('cz-telefon', P.tel); setV('cz-email', P.email); setV('cz-doklad', P.dokladCislo); setV('cz-statna', P.statnaPrislusnost);
 }
 
 /* ── Konateľ z ORSR → oprávnená osoba (PO) ── */
