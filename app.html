@@ -533,7 +533,7 @@ select option { background: #1a1a1a; color: #fff; }
 /* Parametre v mriežke 2×2: vľavo Užívanie + Spoluúčasť, vpravo Servis + Garáž;
    popisky fixnej šírky → ovládače lícujú na zvislici. Dizajn (pills/rámiky/farby) náš. */
 .su-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 40px; align-items: center; margin: 12px 0 16px; }
-.su-group { display: grid; grid-template-columns: 158px 1fr; align-items: center; gap: 12px; }
+.su-group { display: grid; grid-template-columns: max-content 1fr; align-items: center; gap: 10px; }
 .su-ctrl { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .su-lbl { font-size: 14px; font-weight: 700; color: rgba(255,255,255,.65); }
 .su-usage {
@@ -545,7 +545,7 @@ select option { background: #1a1a1a; color: #fff; }
 .su-usage:focus { outline: none; border-color: var(--o); }
 @media (max-width: 720px) {
   .su-switch { grid-template-columns: 1fr; gap: 12px 0; }
-  .su-group { grid-template-columns: 132px 1fr; }
+  .su-group { grid-template-columns: max-content 1fr; }
 }
 .su-hintable { position: relative; cursor: help; text-decoration: underline dotted rgba(255,255,255,.3); text-underline-offset: 3px; }
 .su-hintable::after {
@@ -1260,7 +1260,7 @@ footer {
           </div>
         </div>
         <div class="su-group">
-          <span class="su-lbl su-hintable" data-tip="Ak vozidlo parkujete v garáži, môžete získať zľavu z ceny.">Garáž:</span>
+          <span class="su-lbl su-hintable" data-tip="Ak vozidlo parkujete v garáži, môžete získať zľavu z ceny.">Parkujete v garáži:</span>
           <div class="su-ctrl">
             <span class="su-opt" data-g="ano" onclick="setGaraged(true)">Áno</span>
             <span class="su-opt active" data-g="nie" onclick="setGaraged(false)">Nie</span>
