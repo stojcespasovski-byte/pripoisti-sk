@@ -171,36 +171,32 @@ h1 {
   background: rgba(255,255,255,.03);
   border: 1px solid rgba(255,255,255,.08);
   border-radius: 14px;
-  padding: 13px 18px;
+  padding: 14px 18px;
   scroll-margin-top: 130px;
+  display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
 }
-.veh-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 11px; }
-.veh-card-title { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 9px; font-size: 15px; font-weight: 700; color: #fff; }
-.veh-card-title svg { color: var(--o); flex: none; width: 15px; height: 15px; }
-.veh-actions { display: flex; align-items: center; gap: 8px; }
-.veh-link, .veh-change {
-  font-size: 15px; font-weight: 600; text-decoration: none; white-space: nowrap;
-  padding: 5px 12px; border-radius: 8px; transition: background .15s, border-color .15s, color .15s;
-}
-.veh-link { color: var(--o); border: 1px solid rgba(232,130,26,.4); }
-.veh-link:hover { color: var(--o); border-color: rgba(232,130,26,.6); background: rgba(232,130,26,.12); }
-.veh-change { color: var(--o); border: 1px solid rgba(232,130,26,.4); }
-.veh-change:hover { background: rgba(232,130,26,.12); }
+.info-zone { min-width: 220px; }
+.info-zone.veh-zone { flex: 1; min-width: 320px; }
+.zone-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
+.zone-head svg { color: var(--o); flex: none; width: 15px; height: 15px; }
+.zone-label { font-size: 12px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: rgba(255,255,255,.4); }
+.zone-edit { font-size: 13px; font-weight: 600; color: var(--o); text-decoration: none; white-space: nowrap; transition: color .15s; }
+.zone-edit:hover { text-decoration: underline; }
+.zone-edit--alt { color: rgba(255,255,255,.5); }
+.zone-edit--alt:hover { color: var(--o); }
+.zone-data { font-size: 15px; font-weight: 600; color: rgba(255,255,255,.9); word-break: break-word; }
+.zone-data strong { font-weight: 700; color: #fff; }
+.zone-data .dim { font-weight: 500; color: rgba(255,255,255,.55); }
+.zone-vin { margin-top: 3px; font-size: 12.5px; color: rgba(255,255,255,.4); }
+.zone-vin span { font-family: monospace; letter-spacing: .3px; color: rgba(255,255,255,.6); }
+.info-divider { width: 1px; align-self: stretch; min-height: 40px; background: rgba(255,255,255,.1); }
 .veh-warn {
   display: inline-flex; align-items: center;
-  font-size: 14px; font-weight: 600; color: #fbbf24;
+  font-size: 13px; font-weight: 600; color: #fbbf24;
   background: rgba(251,191,36,.1); border: 1px solid rgba(251,191,36,.28);
   border-radius: 7px; padding: 2px 9px;
 }
-.veh-grid { display: grid; grid-template-columns: repeat(8, auto); justify-content: space-between; gap: 9px 22px; }
-.veh-item label { display: block; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: rgba(255,255,255,.4); margin-bottom: 2px; }
-.veh-item .v { font-size: 15px; font-weight: 600; color: rgba(255,255,255,.9); word-break: break-word; }
-.veh-item .v.mono { font-family: monospace; letter-spacing: .3px; white-space: nowrap; }
-.veh-holder { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.06); font-size: 16px; color: rgba(255,255,255,.5); }
-.veh-holder strong { color: #fff; font-weight: 700; }
-.veh-firma { font-size: 15px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
-@media (max-width: 1100px) { .veh-grid { grid-template-columns: repeat(4, 1fr); } }
-@media (max-width: 560px) { .veh-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 720px) { .info-divider { display: none; } .info-zone, .info-zone.veh-zone { min-width: 100%; } }
 
 /* ── Modal „iné vozidlo" ── */
 .vm-overlay {
@@ -1212,19 +1208,25 @@ footer {
 
       <!-- KARTA VOZIDLA (potvrdenie nájdeného auta) -->
       <div class="veh-card" id="veh-card" style="display:none;">
-        <div class="veh-card-head">
-          <div class="veh-card-title">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="13" width="22" height="7" rx="2"/><path d="M7 13l2-5h6l2 5"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg>
-            <span>Vaše vozidlo</span>
-            <a href="#" class="veh-link" onclick="return openVehModal(event)">Zmeniť vozidlo</a>
+        <div class="info-zone veh-zone">
+          <div class="zone-head">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="13" width="22" height="7" rx="2"/><path d="M7 13l2-5h6l2 5"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg>
+            <span class="zone-label">Vaše vozidlo</span>
+            <a href="#" class="zone-edit" onclick="return scrollToEntry(event)">✎ Zmeniť</a>
+            <a href="#" class="zone-edit zone-edit--alt" onclick="return openVehModal(event)">Iné vozidlo</a>
             <span class="veh-warn" id="veh-warn" style="display:none;">⚠️ EČV mohla byť preregistrovaná — skontrolujte VIN</span>
           </div>
-          <div class="veh-actions">
-            <span class="veh-firma" id="veh-firma" style="display:none;"></span>
-            <a href="#" class="veh-change" onclick="return scrollToEntry(event)">Zmeniť</a>
-          </div>
+          <div class="zone-data" id="veh-zone-data"></div>
+          <div class="zone-vin" id="veh-zone-vin"></div>
         </div>
-        <div class="veh-grid" id="veh-grid"></div>
+        <div class="info-divider"></div>
+        <div class="info-zone poistnik-zone">
+          <div class="zone-head">
+            <span class="zone-label">Poistník</span>
+            <a href="#" class="zone-edit" onclick="return scrollToEntry(event)">✎ Zmeniť</a>
+          </div>
+          <div class="zone-data" id="poistnik-zone-data"></div>
+        </div>
       </div>
 
       <div class="su-switch wow-hidden" id="su-switch">
@@ -4370,28 +4372,32 @@ function vehDatum(iso) { if (!iso) return ''; const [y, m, d] = iso.split('-'); 
 function renderVehCard(ecvWarning) {
   const v = lookup.vehicle || {};
   const p = lookup.poistnik || {};
-  const items = [
-    ['EČV', v.ecv, true],
-    ['VIN', v.vin, true],
-    ['Značka', v.znacka],
-    ['Model', v.model],
-    ['1. registrácia', vehDatum(v.datumReg)],
-    ['Palivo', VEH_PALIVO_LABEL[v.palivo] || v.palivo],
-    ['Objem', v.objem ? v.objem + ' cm³' : ''],
-    ['Výkon', v.vykon ? v.vykon + ' kW' : ''],
-  ];
-  document.getElementById('veh-grid').innerHTML = items.map(([l, val, mono]) =>
-    `<div class="veh-item${l === 'VIN' ? ' veh-item--vin' : ''}"><label>${l}</label><div class="v${mono ? ' mono' : ''}">${val || '–'}</div></div>`
-  ).join('');
 
-  const firma = document.getElementById('veh-firma');
-  if ((p.typ === 'po' || p.typ === 'szco') && p.nazov) {
-    firma.textContent = p.nazov;
-    firma.title = p.nazov;                 // plný názov v tooltipe, ak sa oreže
-    firma.style.display = '';
-  } else {
-    firma.style.display = 'none';
+  // ── Zóna „Vaše vozidlo": EČV · značka model · dim(palivo · objem · výkon · 1. reg) + VIN riadok
+  const znModel = [v.znacka, v.model].filter(Boolean).join(' ');
+  const reg = vehDatum(v.datumReg);
+  const specs = [
+    VEH_PALIVO_LABEL[v.palivo] || v.palivo,
+    v.objem ? v.objem + ' cm³' : '',
+    v.vykon ? v.vykon + ' kW' : '',
+    reg ? '1. reg. ' + reg : '',
+  ].filter(Boolean).join(' · ');
+  document.getElementById('veh-zone-data').innerHTML =
+    `<strong>${v.ecv || '–'}</strong>`
+    + (znModel ? ` · ${znModel}` : '')
+    + (specs ? ` · <span class="dim">${specs}</span>` : '');
+  const vinEl = document.getElementById('veh-zone-vin');
+  vinEl.innerHTML = v.vin ? `VIN: <span>${v.vin}</span>` : '';
+
+  // ── Zóna „Poistník": FO → rodné číslo · firma (PO/SZČO) → názov + IČO
+  let pod = '';
+  if (p.typ === 'po' || p.typ === 'szco') {
+    pod = (p.nazov ? `<strong>${p.nazov}</strong>` : '')
+        + (p.ico ? `${p.nazov ? '<span class="dim"> · IČO ' : 'IČO '}${p.ico}${p.nazov ? '</span>' : ''}` : '');
+  } else if (p.rc) {
+    pod = `Rodné číslo: <strong>${p.rc}</strong>`;
   }
+  document.getElementById('poistnik-zone-data').innerHTML = pod;
 
   document.getElementById('veh-warn').style.display = ecvWarning ? '' : 'none';
   document.getElementById('veh-card').style.display = '';
