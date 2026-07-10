@@ -619,7 +619,8 @@ select option { background: #1a1a1a; color: #fff; }
   position: fixed;
   left: 0; right: 0; bottom: 0;
   z-index: 90;
-  background: #1b1b1b;               /* povrch o stupeň svetlejší než pozadie (#111) — rovnaký ako panely */
+  /* povrch #1b1b1b (o stupeň nad #111, ako panely) + veľmi jemný teplý nádych z našej oranžovej (3 %) — nesmie pôsobiť oranžovo, len teplejšie */
+  background: linear-gradient(rgba(232,130,26,.03), rgba(232,130,26,.03)), #1b1b1b;
   border-top: 1px solid rgba(255,255,255,.1);   /* jemná linka v štýle existujúcich rámikov */
   transform: translateY(100%);
   opacity: 0;
