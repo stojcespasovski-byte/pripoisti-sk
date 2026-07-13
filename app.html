@@ -4686,7 +4686,7 @@ function onVmBrandChange() {
     models.map(([id, name]) => `<option value="${id}">${name}</option>`).join('');
 }
 
-function saveVehModal() {
+async function saveVehModal() {
   const g = id => document.getElementById(id);
   const typ = g('vm-typ').value, datum = g('vm-datum').value, palivo = g('vm-palivo').value;
   const objem = g('vm-objem').value.trim(), vykon = g('vm-vykon').value.trim(), hmotnost = g('vm-hmotnost').value.trim();
@@ -4713,6 +4713,12 @@ function saveVehModal() {
   if (vin.length !== 17) errs.push('VIN (presne 17 znakov)');
   if (errs.length) { const e = g('vm-error'); e.textContent = 'Vyplňte: ' + errs.join(', ') + '.'; e.style.display = ''; return; }
 
+  // Hmotnosť podľa typu — Pillow: osobné do 3500 kg, nákladné od 3501 kg
+  const hmot = parseInt(hmotnost, 10);
+  const vmErr = msg => { const e = g('vm-error'); e.textContent = msg; e.style.display = ''; };
+  if (typ === 'OA'  && hmot > 3500) { vmErr('Osobné vozidlo má hmotnosť do 3500 kg. Pri vyššej zvoľte typ „Nákladné vozidlo".'); return; }
+  if (typ === 'NA'  && hmot > 0 && hmot < 3501) { vmErr('Nákladné vozidlo má hmotnosť od 3501 kg. Do 3500 kg zvoľte typ „Osobné vozidlo".'); return; }
+
   let znacka, model;
   if (!isOA) {                                             // ostatné typy — voľný text (do rate ide NEUVEDENA)
     znacka = g('vm-free-znacka').value.trim();
@@ -4731,30 +4737,41 @@ function saveVehModal() {
   updateEntryKmOptions();                 // zosúladiť roletu v Kroku 1 s typom/km z modalu
   // v.ecv zostáva z pôvodného zadania
 
-  closeVehModal();
-  recalcPrices(false);
+  // Nezatvárať modal pred prepočtom — ak ceny zlyhajú, klient musí vedieť opraviť údaje vozidla
+  const ok = await recalcPrices(false, true);   // 2. param = z modalu
+  if (ok) closeVehModal();
 }
 
-/* Prepočet cien pre už nastavené lookup.vehicle (po modale) */
-async function recalcPrices(ecvWarning) {
+/* Prepočet cien pre už nastavené lookup.vehicle (po modale).
+   fromModal=true → loader/chyba ostanú v modale a modal sa NEzavrie pri zlyhaní
+   (klient vidí a opraví údaje). Vracia true pri úspechu. */
+async function recalcPrices(ecvWarning, fromModal = false) {
   hideVehCard();
   showEntryError('');
-  showEntryLoader();
+  if (fromModal) setVehModalLoading(true); else showEntryLoader();
+  const vmErr = msg => { const e = document.getElementById('vm-error'); if (e) { e.textContent = msg; e.style.display = ''; } };
   try {
     const prices = await fetchPillowPrices();
     const applied = applyTilePrices(prices);
     renderTilePrices();
     updateCalc();
-    hideEntryLoader();
-    if (!applied) { showEntryError('Ceny sa nepodarilo načítať. Skontrolujte údaje vozidla.'); return; }
+    if (fromModal) setVehModalLoading(false); else hideEntryLoader();
+    if (!applied) {
+      const msg = 'Ceny sa nepodarilo načítať. Skontrolujte údaje vozidla (hmotnosť, objem, výkon).';
+      if (fromModal) vmErr(msg); else showEntryError(msg);
+      return false;
+    }
     pricesReady = true; updateCalc();
     renderVehCard(ecvWarning);
     revealQuote();
     document.getElementById('veh-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return true;
   } catch (e) {
     console.error(e);
-    hideEntryLoader();
-    showEntryError('Nepodarilo sa získať ceny: ' + (e.message || e));
+    if (fromModal) setVehModalLoading(false); else hideEntryLoader();
+    const msg = 'Nepodarilo sa získať ceny: ' + (e.message || e);
+    if (fromModal) vmErr(msg); else showEntryError(msg);
+    return false;
   } finally {
     lookupBusy = false;
   }
