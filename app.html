@@ -4490,8 +4490,14 @@ function vehIsNew(datumReg) {
 function needsCenaFor(v) { return !!v && !!v.typ && (v.typ !== 'OA' || vehIsNew(v.datumReg)); }
 
 /* Číselníky nájazdu — motorka jazdí menej, má vlastné pásma */
-const KM_MOTO = [[2000,'2 000 km a menej'],[3000,'3 000 km'],[5000,'5 000 km'],[7000,'7 000 km'],[10000,'10 000 km'],[15000,'15 000 km a viac']];
+const _kmLbl = k => String(k).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' km';
+// MO — Pillow číselník moto: 1 000 a menej … 10 000 a viac (1 000-krok)
+const KM_MOTO = [[1000,'1 000 km a menej'],[2000,'2 000 km'],[3000,'3 000 km'],[4000,'4 000 km'],[5000,'5 000 km'],[6000,'6 000 km'],[7000,'7 000 km'],[8000,'8 000 km'],[9000,'9 000 km'],[10000,'10 000 km a viac']];
 const KM_CAR  = [[5000,'5 000 km a menej'],[7000,'7 000 km'],[10000,'10 000 km'],[13000,'13 000 km'],[15000,'15 000 km'],[18000,'18 000 km'],[20000,'20 000 km'],[25000,'25 000 km a viac']];
+// NA/OBY/ťahač/autobus a ďalšie — Pillow číselník 5252: 10 000 a menej … 100 000 a viac (5 000-krok)
+const KM_HEAVY = [[10000,'10 000 km a menej'],
+  ...[15000,20000,25000,30000,35000,40000,45000,50000,55000,60000,65000,70000,75000,80000,85000,90000,95000].map(k => [k, _kmLbl(k)]),
+  [100000,'100 000 km a viac']];
 
 /* interné palivo (z BCRM) → hodnota v <select> modalu */
 const PALIVO_TO_SELECT = { benzin:'benzin', diesel:'diesel', nafta:'diesel', elektro:'elektrina', elektrina:'elektrina', hybrid:'hybrid', lpg:'plyn', cng:'plyn', plyn:'plyn' };
@@ -4651,7 +4657,7 @@ function onVmTypChange() {
   show('vm-km-wrap', showKm);
   if (showKm) {
     const sel = g('vm-km');
-    const brackets = typ === 'MO' ? KM_MOTO : KM_CAR;
+    const brackets = typ === 'MO' ? KM_MOTO : KM_HEAVY;   // modal = len non-OA; MO moto, ostatné (NA/OBY/ťahač/autobus) číselník 5252
     const cur = sel.value || (lookup.vehicle && lookup.vehicle.najazd) || '';
     sel.innerHTML = brackets.map(([v, lbl]) => `<option value="${v}">${lbl}</option>`).join('');
     // predvybrať najbližšie pásmo k doterajšej hodnote
