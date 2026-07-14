@@ -844,14 +844,19 @@ select option { background: #1a1a1a; color: #fff; }
   gap: 14px;
 }
 .cover-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
   border: 1px solid rgba(255,255,255,.08);
   border-radius: 14px;
   padding: 22px 20px;
   background: rgba(255,255,255,.03);
   transition: all .2s;
-  cursor: default;
+  cursor: pointer;
 }
-.cover-card:hover { border-color: rgba(232,130,26,.4); background: rgba(232,130,26,.06); }
+.cover-card:hover { border-color: rgba(232,130,26,.4); background: rgba(232,130,26,.06); transform: translateY(-2px); }
+.cover-card::after { content: "Zistiť viac →"; display: block; margin-top: 14px; font-size: 13px; font-weight: 700; color: rgba(255,255,255,.32); transition: color .2s; }
+.cover-card:hover::after { color: var(--o); }
 .cover-card-icon { margin-bottom: 12px; }
 .cover-card-icon svg { width: 28px; height: 28px; }
 .cover-card-name { font-size: 16px; font-weight: 700; color: white; margin-bottom: 6px; }
@@ -1484,60 +1489,60 @@ footer {
 
     <div class="covers-grid">
       <!-- 9 cards -->
-      <div class="cover-card reveal">
+      <a class="cover-card reveal" href="/poradna/havarijne-poistenie-auta" target="_blank" rel="noopener">
         <div class="cover-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><rect x="1" y="13" width="22" height="7" rx="2"/><path d="M4 20v2m16-2v2M7 13l2-5h6l2 5"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
         <div class="cover-card-name">Havária a stret so zverou</div>
         <div class="cover-card-desc">Škody z dopravnej nehody aj stretu so zverou. Bez ohľadu na vinníka.</div>
         <div class="cover-card-price">od €12,50 / mes.</div>
-      </div>
-      <div class="cover-card reveal">
+      </a>
+      <a class="cover-card reveal" href="/poradna/poistenie-proti-zrazke-so-zverou" target="_blank" rel="noopener">
         <div class="cover-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M3 12c0-4.4 3.6-8 8-8s8 3.6 8 8"/><path d="M7 16l2-2 2 2 2-2 2 2"/></svg></div>
         <div class="cover-card-name">Stret so zverou</div>
         <div class="cover-card-desc">Cielená ochrana pre tých, čo nepotrebujú plnú havárku.</div>
         <div class="cover-card-price">od €3,90 / mes.</div>
-      </div>
-      <div class="cover-card reveal">
+      </a>
+      <a class="cover-card reveal" href="/poradna/poistenie-auta-proti-kradezi" target="_blank" rel="noopener">
         <div class="cover-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2.5 2.5"/></svg></div>
         <div class="cover-card-name">Krádež vozidla</div>
         <div class="cover-card-desc">Odcudzenie vozidla, jeho časti, alebo škody pri pokuse o krádež.</div>
         <div class="cover-card-price">od €8,20 / mes.</div>
-      </div>
-      <div class="cover-card reveal">
+      </a>
+      <a class="cover-card reveal" href="/poradna/poistenie-auta-proti-zivlom" target="_blank" rel="noopener">
         <div class="cover-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25"/><polyline points="16 13 12 17 8 13"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
         <div class="cover-card-name">Prírodná udalosť</div>
         <div class="cover-card-desc">Búrka, krupobitie, povodeň, víchrica, pád stromu.</div>
         <div class="cover-card-price">od €4,50 / mes.</div>
-      </div>
-      <div class="cover-card reveal">
+      </a>
+      <a class="cover-card reveal" href="/poradna/poistenie-skiel-na-aute" target="_blank" rel="noopener">
         <div class="cover-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="6" x2="12" y2="18"/></svg></div>
         <div class="cover-card-name">Sklá</div>
         <div class="cover-card-desc">Čelné, zadné aj bočné sklá. Oprava alebo výmena. Spoluúčasť 10%.</div>
         <div class="cover-card-price">od €2,90 / mes.</div>
-      </div>
-      <div class="cover-card reveal">
+      </a>
+      <a class="cover-card reveal" href="/poradna/poistenie-auta-proti-vandalizmu" target="_blank" rel="noopener">
         <div class="cover-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg></div>
         <div class="cover-card-name">Vandalizmus</div>
         <div class="cover-card-desc">Poškriabanie, poškodenie zrkadiel, karosérie cudzou osobou.</div>
         <div class="cover-card-price">od €3,10 / mes.</div>
-      </div>
-      <div class="cover-card reveal">
+      </a>
+      <a class="cover-card reveal" href="/poradna/asistencne-sluzby-k-vozidlu" target="_blank" rel="noopener">
         <div class="cover-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M22 16.92V22h-5.09a10 10 0 1 1 5.09-5.08z"/><path d="M12 8v4l2 2"/></svg></div>
         <div class="cover-card-name">Asistencia</div>
         <div class="cover-card-desc">24/7 pomoc kdekoľvek v Európe — odťah, defekt, náhradné vozidlo.</div>
         <div class="cover-card-price">od €5,50 / mes.</div>
-      </div>
-      <div class="cover-card reveal">
+      </a>
+      <a class="cover-card reveal" href="/poradna/urazove-poistenie-vodica" target="_blank" rel="noopener">
         <div class="cover-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></div>
         <div class="cover-card-name">Úraz</div>
         <div class="cover-card-desc">Krytie vodiča a spolucestujúcich pri dopravnej nehode.</div>
         <div class="cover-card-price">od €6,80 / mes.</div>
-      </div>
-      <div class="cover-card reveal">
+      </a>
+      <a class="cover-card reveal" href="/poradna/poistenie-batoziny-v-aute" target="_blank" rel="noopener">
         <div class="cover-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg></div>
         <div class="cover-card-name">Batožina</div>
         <div class="cover-card-desc">Elektronika, oblečenie a veci vo vozidle pri nehode alebo krádeži.</div>
         <div class="cover-card-price">od €2,20 / mes.</div>
-      </div>
+      </a>
     </div>
   </div>
 </section>
