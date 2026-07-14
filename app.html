@@ -4107,7 +4107,11 @@ async function fetchPillowPrices() {
   try {
     uid = await pillowAuth();
     const codes = resolveVehicleCodes();
-    let risks = codes.fallback ? FALLBACK_RISKS.slice() : ALL_VARIANTS.map(r => r.risk);
+    // NEUVEDENA (fallback): ak je zadaná cena vozidla, Pillow ocení aj value-dependent riziká
+    // (PZP + casco) — overené naostro pre nákladné. Pýtame všetky; retry nižšie odhodí neocenené
+    // (napr. sklo pre nákladné/moto). Bez ceny ostávame len na value-independent FALLBACK_RISKS.
+    const hasCena = parseFloat(lookup.vehicle && lookup.vehicle.cenaVozidla) > 0;
+    let risks = (codes.fallback && !hasCena) ? FALLBACK_RISKS.slice() : ALL_VARIANTS.map(r => r.risk);
 
     // 1) mesačne (freq=12) s retry na zahodenie odmietnutých rizík
     let byRiskMonthly = {}, workingRisks = [];
@@ -5540,6 +5544,8 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
           <option value="OA">Osobné vozidlo</option>
           <option value="MO">Motocykel</option>
           <option value="NA">Nákladné vozidlo</option>
+          <option value="TAH">Ťahač</option>
+          <option value="AB">Autobus</option>
           <option value="OBY">Obytné vozidlo</option>
         </select>
       </div>
