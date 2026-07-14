@@ -604,6 +604,8 @@ select option { background: #1a1a1a; color: #fff; }
 .im-cover-note { font-size: 13.5px; color: rgba(255,255,255,.5); line-height: 1.5; margin: -3px 0 10px; }
 .im-pdf { display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; padding: 10px 16px; border-radius: 10px; background: rgba(232,130,26,.12); border: 1px solid rgba(232,130,26,.4); color: var(--o); font-size: 14px; font-weight: 700; text-decoration: none; transition: background .15s; }
 .im-pdf:hover { background: rgba(232,130,26,.2); }
+.im-article { display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; font-size: 14px; font-weight: 700; color: var(--o); text-decoration: none; border-bottom: 1px solid rgba(232,130,26,.4); padding-bottom: 1px; transition: border-color .15s; }
+.im-article:hover { border-bottom-color: var(--o); }
 .im-close { margin-top: 22px; width: 100%; padding: 12px; border-radius: 10px; background: rgba(255,255,255,.08); color: #fff; border: none; font-size: 16px; font-weight: 700; cursor: pointer; transition: background .15s; }
 .im-close:hover { background: rgba(255,255,255,.14); }
 
@@ -896,7 +898,19 @@ select option { background: #1a1a1a; color: #fff; }
 footer {
   background: #0A0A0A;
   color: rgba(255,255,255,.3);
-  padding: 40px 48px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  border-top: 1px solid rgba(255,255,255,.06);
+}
+.footer-poradna { padding: 44px 48px 32px; display: grid; grid-template-columns: repeat(2, minmax(0, 260px)); gap: 40px; }
+.footer-col-h { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: rgba(255,255,255,.42); margin: 0 0 15px; font-weight: 700; }
+.footer-col ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.footer-col a { font-size: 14px; color: rgba(255,255,255,.45); text-decoration: none; transition: color .15s; line-height: 1.35; }
+.footer-col a:hover { color: var(--o); }
+.footer-bottom {
+  padding: 26px 48px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -937,7 +951,11 @@ footer {
   .covers-grid { grid-template-columns: repeat(2, 1fr); }
   .covers-head-wrap { flex-direction: column; align-items: flex-start; }
   .why, .covers-sec, .how { padding: 64px 24px; }
-  footer { flex-direction: column; gap: 16px; text-align: center; }
+  .footer-poradna { grid-template-columns: 1fr 1fr; gap: 24px; padding: 36px 24px 26px; }
+  .footer-bottom { flex-direction: column; gap: 16px; text-align: center; padding: 22px 24px; }
+}
+@media (max-width: 460px) {
+  .footer-poradna { grid-template-columns: 1fr; }
 }
 
 /* ── mobil ── */
@@ -1059,6 +1077,7 @@ footer {
   <div class="nav-right">
     <a href="#ako" class="nav-link">Ako to funguje</a>
     <a href="#pripoistenia" class="nav-link">Pripoistenia</a>
+    <a href="/poradna" class="nav-link">Poradňa</a>
     <a href="#entry-card" class="nav-cta" onclick="return scrollToEntry(event)">Začať teraz</a>
   </div>
 </nav>
@@ -1581,6 +1600,37 @@ footer {
 
 <!-- FOOTER -->
 <footer>
+  <div class="footer-poradna">
+    <div class="footer-col">
+      <div class="footer-col-h">Poradňa — auto</div>
+      <ul>
+        <li><a href="/poradna/havarijne-poistenie-auta">Havarijné poistenie auta</a></li>
+        <li><a href="/poradna/poistenie-skiel-na-aute">Poistenie skiel na aute</a></li>
+        <li><a href="/poradna/poistenie-auta-proti-kradezi">Poistenie auta proti krádeži</a></li>
+        <li><a href="/poradna/poistenie-auta-proti-vandalizmu">Poistenie auta proti vandalizmu</a></li>
+        <li><a href="/poradna/poistenie-auta-proti-zivlom">Poistenie auta proti živlom</a></li>
+        <li><a href="/poradna/poistenie-proti-zrazke-so-zverou">Poistenie proti stretu so zverou</a></li>
+        <li><a href="/poradna/urazove-poistenie-vodica">Úrazové poistenie vodiča</a></li>
+        <li><a href="/poradna/asistencne-sluzby-k-vozidlu">Asistenčné služby k autu</a></li>
+        <li><a href="/poradna/poistenie-batoziny-v-aute">Poistenie batožiny v aute</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-h">Poradňa — motorka</div>
+      <ul>
+        <li><a href="/poradna/havarijne-poistenie-motorky">Havarijné poistenie motorky</a></li>
+        <li><a href="/poradna/poistenie-motocykla-proti-kradezi">Poistenie motocykla proti krádeži</a></li>
+        <li><a href="/poradna/poistenie-motorky-proti-vandalizmu">Poistenie motorky proti vandalizmu</a></li>
+        <li><a href="/poradna/poistenie-motorky-proti-zivlom">Poistenie motorky proti živlom</a></li>
+        <li><a href="/poradna/stret-so-zverou-na-motorke">Stret so zverou na motorke</a></li>
+        <li><a href="/poradna/urazove-poistenie-motorkara">Úrazové poistenie motorkára</a></li>
+        <li><a href="/poradna/asistencne-sluzby-pre-motorku">Asistenčné služby pre motorku</a></li>
+        <li><a href="/poradna/poistenie-batoziny-na-motorke">Poistenie batožiny na motorke</a></li>
+        <li><a href="/poradna" style="color:var(--o);font-weight:700;">Všetky témy →</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
   <div class="footer-logo">
     <svg viewBox="0 0 488 143" height="38" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="pripoisti.sk">
 <defs><linearGradient id="ppg" gradientUnits="userSpaceOnUse" x1="8.0" y1="0" x2="480.2" y2="0">
@@ -1617,6 +1667,7 @@ footer {
     <a href="https://api.pripoisti.sk/docs/obchodne_podmienky.pdf" target="_blank" rel="noopener">Podmienky</a>
     <a href="https://api.pripoisti.sk/docs/podmienky_spracuvania_ou.pdf" target="_blank" rel="noopener">Ochrana údajov</a>
     <a href="kontakt.html">Kontakt</a>
+  </div>
   </div>
 </footer>
 
@@ -5112,6 +5163,19 @@ const INFO_CONTENT = {
   },
 };
 
+/* dlaždica → článok v Poradni (/poradna) */
+const ARTICLE_MAP = {
+  havaria: 'havarijne-poistenie-auta',
+  zver: 'poistenie-proti-zrazke-so-zverou',
+  kradez: 'poistenie-auta-proti-kradezi',
+  priroda: 'poistenie-auta-proti-zivlom',
+  skla: 'poistenie-skiel-na-aute',
+  vandalizmus: 'poistenie-auta-proti-vandalizmu',
+  asistencia: 'asistencne-sluzby-k-vozidlu',
+  uraz: 'urazove-poistenie-vodica',
+  batozina: 'poistenie-batoziny-v-aute',
+};
+
 function openInfoModal(e, id) {
   if (e) e.stopPropagation();                 // klik na „info" nezaškrtne dlaždicu
   const c = INFO_CONTENT[id];
@@ -5131,6 +5195,7 @@ function openInfoModal(e, id) {
       : `<div class="im-param im-param-solo"><span>${p[0]}</span></div>`).join('') + '</div>';
   if (c.pdfUrl) html += `<a class="im-pdf" href="${c.pdfUrl}" target="_blank" rel="noopener"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> ${c.pdfLabel || 'Zobraziť podmienky (PDF)'}</a>`;
   if (c.note) html += `<div class="im-note">${c.note}</div>`;
+  if (ARTICLE_MAP[id]) html += `<div><a class="im-article" href="/poradna/${ARTICLE_MAP[id]}" target="_blank" rel="noopener">Prečítať celý článok v Poradni →</a></div>`;
   html += '<div class="im-note">Presné sumy, limity a spoluúčasť sa riadia poistnou zmluvou a poistnými podmienkami Pillow.</div>';
   document.getElementById('im-body').innerHTML = html;
   document.getElementById('im-overlay').style.display = 'flex';
