@@ -5042,7 +5042,7 @@ async function triggerLookup() {
         banner.style.display = 'block';
       }
       document.getElementById('veh-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      openVehModal(null, true);
+      openCenaModal();                 // nájdené vozidlo, chýba iba cena → malý modal
       lookupBusy = false;
       return;
     }
