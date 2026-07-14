@@ -4660,9 +4660,7 @@ function openCenaModal(e) {
   const name = [v.znacka, v.model].filter(Boolean).join(' ');
   const isNew = v.typ === 'OA' && vehIsNew(v.datumReg);
   g('cena-veh-name').textContent = name || 'Nájdené vozidlo';
-  g('cena-label').textContent = isNew
-    ? 'Nová cena s DPH, bez zliav (max. 120 000 €)'
-    : 'Približná aktuálna trhová hodnota vozidla (max. 120 000 €)';
+  g('cena-label').textContent = 'Zadajte približnú aktuálnu hodnotu vozidla';
   g('cena-input').placeholder = isNew ? 'Obstarávacia cena nového vozidla (€)' : 'Obvyklá cena vozidla (€)';
   g('cena-input').value = v.cenaVozidla || '';
   g('cena-error').style.display = 'none';
@@ -5822,7 +5820,7 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
     <div class="vm-title">Hodnota vozidla</div>
     <div class="vm-sub" id="cena-veh-name">Doplňte približnú aktuálnu trhovú hodnotu vozidla.</div>
     <div class="vm-field full">
-      <label id="cena-label" style="color:var(--o);">Približná aktuálna trhová hodnota vozidla (max. 120 000 €)</label>
+      <label id="cena-label" style="color:var(--o);">Zadajte približnú aktuálnu hodnotu vozidla</label>
       <input type="number" id="cena-input" placeholder="Obvyklá cena vozidla (€)" min="0" step="1" inputmode="numeric" style="border-color:var(--o);" onkeydown="if(event.key==='Enter')saveCenaModal()">
     </div>
     <div class="vm-error" id="cena-error" style="display:none;margin-top:10px;"></div>
