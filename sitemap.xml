@@ -2,26 +2,27 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://pripoisti.sk/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
   <url><loc>https://pripoisti.sk/app.html</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://pripoisti.sk/radca</loc><lastmod>2026-07-08</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://pripoisti.sk/poradna</loc><lastmod>2026-07-08</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
   <url><loc>https://pripoisti.sk/kontakt.html</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
 
-  <!-- Rádca — Auto -->
-  <url><loc>https://pripoisti.sk/radca/poistenie-skiel-na-aute</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://pripoisti.sk/radca/poistenie-auta-proti-kradezi</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://pripoisti.sk/radca/poistenie-auta-proti-vandalizmu</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://pripoisti.sk/radca/poistenie-auta-proti-zivlom</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://pripoisti.sk/radca/poistenie-proti-zrazke-so-zverou</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://pripoisti.sk/radca/urazove-poistenie-vodica</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://pripoisti.sk/radca/asistencne-sluzby-k-vozidlu</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://pripoisti.sk/radca/poistenie-batoziny-v-aute</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <!-- Poradňa — Auto -->
+  <url><loc>https://pripoisti.sk/poradna/poistenie-skiel-na-aute</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://pripoisti.sk/poradna/havarijne-poistenie-auta</loc><lastmod>2026-07-14</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://pripoisti.sk/poradna/poistenie-auta-proti-kradezi</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://pripoisti.sk/poradna/poistenie-auta-proti-vandalizmu</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://pripoisti.sk/poradna/poistenie-auta-proti-zivlom</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://pripoisti.sk/poradna/poistenie-proti-zrazke-so-zverou</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://pripoisti.sk/poradna/urazove-poistenie-vodica</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://pripoisti.sk/poradna/asistencne-sluzby-k-vozidlu</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://pripoisti.sk/poradna/poistenie-batoziny-v-aute</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
 
-  <!-- Rádca — Motorka -->
-  <url><loc>https://pripoisti.sk/radca/havarijne-poistenie-motorky</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://pripoisti.sk/radca/poistenie-motocykla-proti-kradezi</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://pripoisti.sk/radca/poistenie-motorky-proti-vandalizmu</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://pripoisti.sk/radca/poistenie-motorky-proti-zivlom</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://pripoisti.sk/radca/stret-so-zverou-na-motorke</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://pripoisti.sk/radca/urazove-poistenie-motorkara</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://pripoisti.sk/radca/asistencne-sluzby-pre-motorku</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://pripoisti.sk/radca/poistenie-batoziny-na-motorke</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <!-- Poradňa — Motorka -->
+  <url><loc>https://pripoisti.sk/poradna/havarijne-poistenie-motorky</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://pripoisti.sk/poradna/poistenie-motocykla-proti-kradezi</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://pripoisti.sk/poradna/poistenie-motorky-proti-vandalizmu</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://pripoisti.sk/poradna/poistenie-motorky-proti-zivlom</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://pripoisti.sk/poradna/stret-so-zverou-na-motorke</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://pripoisti.sk/poradna/urazove-poistenie-motorkara</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://pripoisti.sk/poradna/asistencne-sluzby-pre-motorku</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://pripoisti.sk/poradna/poistenie-batoziny-na-motorke</loc><lastmod>2026-07-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
 </urlset>

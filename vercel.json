@@ -1,15 +1,11 @@
 {
   "redirects": [
-    {
-      "source": "/radca/:slug.html",
-      "destination": "/radca/:slug",
-      "permanent": true
-    }
+    { "source": "/radca/:slug.html", "destination": "/poradna/:slug", "permanent": true },
+    { "source": "/radca/:slug", "destination": "/poradna/:slug", "permanent": true },
+    { "source": "/radca", "destination": "/poradna", "permanent": true },
+    { "source": "/poradna/:slug.html", "destination": "/poradna/:slug", "permanent": true }
   ],
   "rewrites": [
-    {
-      "source": "/radca/:slug",
-      "destination": "/radca/:slug.html"
-    }
+    { "source": "/poradna/:slug", "destination": "/poradna/:slug.html" }
   ]
 }
