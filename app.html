@@ -4965,6 +4965,8 @@ async function triggerLookup() {
   lookupBusy = true;
   showEntryError('');
   hideVehCard();
+  const _tp = document.getElementById('tiles-partial');   // reset banner „doplniť cenu" z predošlého vozidla
+  if (_tp) _tp.style.display = 'none';
   showEntryLoader();
   try {
     const t = currentType;
