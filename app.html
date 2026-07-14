@@ -1309,15 +1309,15 @@ footer {
         <div class="tile" data-id="zver" data-price="3.9" onclick="toggleTile(this)">
           <div class="tile-chk"></div>
           <div class="tile-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M3 12c0-4.4 3.6-8 8-8s8 3.6 8 8"/><path d="M7 16l2-2 2 2 2-2 2 2"/></svg></div>
-          <div class="tile-name">Zrážka so zverou</div>
+          <div class="tile-name">Stret so zverou</div>
           <div class="tile-desc">Cielená ochrana pre tých, čo nepotrebujú plnú havárku.</div>
           <div class="tile-price">€3,9 <span>/mes</span></div>          <div class="tile-note">Už zahrnuté v „Havárii"</div>
         </div>
         <div class="tile" data-id="havaria" data-price="12.5" onclick="toggleTile(this)">
           <div class="tile-chk"></div>
           <div class="tile-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><rect x="1" y="13" width="22" height="7" rx="2"/><path d="M7 13l2-5h6l2 5"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
-          <div class="tile-name">Havária a zrážka so zverou</div>
-          <div class="tile-desc">Škody z dopravnej nehody aj zrážky so zverou. Bez ohľadu na vinníka.</div>
+          <div class="tile-name">Havária a stret so zverou</div>
+          <div class="tile-desc">Škody z dopravnej nehody aj stretu so zverou. Bez ohľadu na vinníka.</div>
           <div class="tile-price">€12,5 <span>/mes</span></div>        </div>
         <div class="tile" data-id="kradez" data-price="8.2" onclick="toggleTile(this)">
           <div class="tile-chk"></div>
@@ -1469,13 +1469,13 @@ footer {
       <!-- 9 cards -->
       <div class="cover-card reveal">
         <div class="cover-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><rect x="1" y="13" width="22" height="7" rx="2"/><path d="M4 20v2m16-2v2M7 13l2-5h6l2 5"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
-        <div class="cover-card-name">Havária a zrážka so zverou</div>
-        <div class="cover-card-desc">Škody z dopravnej nehody aj zrážky so zverou. Bez ohľadu na vinníka.</div>
+        <div class="cover-card-name">Havária a stret so zverou</div>
+        <div class="cover-card-desc">Škody z dopravnej nehody aj stretu so zverou. Bez ohľadu na vinníka.</div>
         <div class="cover-card-price">od €12,50 / mes.</div>
       </div>
       <div class="cover-card reveal">
         <div class="cover-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M3 12c0-4.4 3.6-8 8-8s8 3.6 8 8"/><path d="M7 16l2-2 2 2 2-2 2 2"/></svg></div>
-        <div class="cover-card-name">Zrážka so zverou</div>
+        <div class="cover-card-name">Stret so zverou</div>
         <div class="cover-card-desc">Cielená ochrana pre tých, čo nepotrebujú plnú havárku.</div>
         <div class="cover-card-price">od €3,90 / mes.</div>
       </div>
@@ -1643,7 +1643,7 @@ const PILLOW_CONFIG = {
 
 /* tile data-id → jedno alebo VIAC Pillow rizík.
    Havária (HP2) vyžaduje v Pillow zároveň stret so zverou (SZ2) — preto dlaždica
-   „Havária a zrážka so zverou" nesie HP2 aj SZ2 (cena = súčet). Samostatná dlaždica
+   „Havária a stret so zverou" nesie HP2 aj SZ2 (cena = súčet). Samostatná dlaždica
    „zver" (len SZ2) ostáva pre tých, čo nechcú plnú havárku. */
 const TILE_RISKS = {
   havaria:     [{ risk: 'HP2', variant: 'HP2_300' }, { risk: 'SZ2', variant: 'SZ2_300' }],
@@ -4981,11 +4981,11 @@ function setFreq(mult, label, el) {
    posielame. Presné znenie sa riadi poistnou zmluvou a podmienkami. */
 const INFO_CONTENT = {
   havaria: {
-    title: 'Havária a zrážka so zverou',
+    title: 'Havária a stret so zverou',
     cover: [
       'Škody na vozidle pri strete, náraze, páde či vjazde do vody — aj keď nehodu zaviníte sami.',
       'Chemické poškodenie laku a pád predmetu na vozidlo (konár, kvetináč…).',
-      'Súčasťou je aj Zrážka so zverou — stret so zvieraťom aj poškodenie zaparkovaného vozidla zvieraťom.',
+      'Súčasťou je aj Stret so zverou — stret so zvieraťom aj poškodenie zaparkovaného vozidla zvieraťom.',
     ],
     excl: [
       'Škody výhradne na sklách či pneumatikách/diskoch — na sklá je pripoistenie Sklá.',
@@ -4996,7 +4996,7 @@ const INFO_CONTENT = {
     note: 'Nehodu, ktorú podľa zákona treba hlásiť, oznámte polícii — inak môže poisťovňa plnenie primerane znížiť.',
   },
   zver: {
-    title: 'Zrážka so zverou',
+    title: 'Stret so zverou',
     cover: [
       'Stret idúceho vozidla so zvieraťom.',
       'Poškodenie zaparkovaného vozidla zvieraťom (napr. kuna prehryzie káble v motore).',
@@ -5294,7 +5294,7 @@ function toggleTile(el) {
   updateCalc();
 }
 
-/* Vzájomne sa vylučujúce dlaždice: Havária (HP2+SZ2) vs. samostatná Zrážka so zverou (SZ2).
+/* Vzájomne sa vylučujúce dlaždice: Havária (HP2+SZ2) vs. samostatná Stret so zverou (SZ2).
    Keď je zvolená Havária, „zver" sa odznačí a zošedne (SZ2 je už v Havárii). */
 function syncTileConstraints() {
   const havaria = document.querySelector('.tile[data-id="havaria"]');
