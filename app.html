@@ -4652,8 +4652,11 @@ function onVmTypChange() {
   show('vm-free-znacka-wrap', !!typ && !isOA);
   show('vm-free-model-wrap', !!typ && !isOA);
 
-  // nájazd km/rok — pre non-OA (OA berie km z Kroku 1); motorka má vlastný číselník
-  const showKm = !!typ && !isOA;
+  // nájazd km/rok — pre non-OA (OA berie km z Kroku 1); motorka má vlastný číselník.
+  // Typy bez nájazdu (náves, príves, traktor, pracovný stroj, VZV, e-bicykel, kolobežka,
+  // elektrovozidlo bez reg.) roletku nájazdu nemajú.
+  const NO_NAJAZD = new Set(['PN', 'PV', 'TRA', 'SPS', 'VZV', 'EB', 'EK', 'EV']);
+  const showKm = !!typ && !isOA && !NO_NAJAZD.has(typ);
   show('vm-km-wrap', showKm);
   if (showKm) {
     const sel = g('vm-km');
@@ -4726,8 +4729,8 @@ async function saveVehModal() {
   // Hmotnosť podľa typu — Pillow: osobné do 3500 kg, nákladné od 3501 kg
   const hmot = parseInt(hmotnost, 10);
   const vmErr = msg => { const e = g('vm-error'); e.textContent = msg; e.style.display = ''; };
-  if (typ === 'OA'  && hmot > 3500) { vmErr('Osobné vozidlo má hmotnosť do 3500 kg. Pri vyššej zvoľte typ „Nákladné vozidlo".'); return; }
-  if (typ === 'NA'  && hmot > 0 && hmot < 3501) { vmErr('Nákladné vozidlo má hmotnosť od 3501 kg. Do 3500 kg zvoľte typ „Osobné vozidlo".'); return; }
+  if (typ === 'OA'  && hmot > 3500) { vmErr('„Osobné / nákladné do 3,5t" má hmotnosť do 3500 kg. Pri vyššej zvoľte „Nákladné nad 3,5t".'); return; }
+  if (typ === 'NA'  && hmot > 0 && hmot < 3501) { vmErr('„Nákladné nad 3,5t" má hmotnosť od 3501 kg. Do 3500 kg zvoľte „Osobné / nákladné do 3,5t".'); return; }
 
   let znacka, model;
   if (!isOA) {                                             // ostatné typy — voľný text (do rate ide NEUVEDENA)
@@ -5547,12 +5550,24 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
         <label>Typ vozidla</label>
         <select id="vm-typ" onchange="onVmTypChange()">
           <option value="">Vyberte…</option>
-          <option value="OA">Osobné vozidlo</option>
+          <option value="OA">Osobné / nákladné do 3,5t</option>
           <option value="MO">Motocykel</option>
-          <option value="NA">Nákladné vozidlo</option>
+          <option value="4K">Trojkolka / štvorkolka</option>
+          <option value="NA">Nákladné nad 3,5t</option>
           <option value="TAH">Ťahač</option>
+          <option value="PN">Náves</option>
+          <option value="PV">Príves / vozík</option>
+          <option value="OBY">Obytný automobil</option>
+          <option value="SAN">Sanitný automobil</option>
           <option value="AB">Autobus</option>
-          <option value="OBY">Obytné vozidlo</option>
+          <option value="ABM">Autobus pre MHD</option>
+          <option value="TBM">Trolejbus pre MHD</option>
+          <option value="TRA">Traktor</option>
+          <option value="SPS">Samojazdný pracovný stroj</option>
+          <option value="VZV">Vysokozdvižný vozík</option>
+          <option value="EB">Elektrobicykel</option>
+          <option value="EK">Kolobežka / jednokolka</option>
+          <option value="EV">Elektrovozidlo bez registrácie</option>
         </select>
       </div>
 
