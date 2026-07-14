@@ -4658,6 +4658,13 @@ function onVmTypChange() {
   const NO_NAJAZD = new Set(['PN', 'PV', 'TRA', 'SPS', 'VZV', 'EB', 'EK', 'EV']);
   const showKm = !!typ && !isOA && !NO_NAJAZD.has(typ);
   show('vm-km-wrap', showKm);
+
+  // motorové polia (palivo/objem/výkon) — návesy a prívesy nemajú motor
+  const ENGINELESS = new Set(['PN', 'PV']);
+  const hasEngine = !ENGINELESS.has(typ);
+  show('vm-palivo-wrap', hasEngine);
+  show('vm-objem-wrap', hasEngine);
+  show('vm-vykon-wrap', hasEngine);
   if (showKm) {
     const sel = g('vm-km');
     const brackets = typ === 'MO' ? KM_MOTO : KM_HEAVY;   // modal = len non-OA; MO moto, ostatné (NA/OBY/ťahač/autobus) číselník 5252
@@ -4719,8 +4726,11 @@ async function saveVehModal() {
     if (!g('vm-free-model').value.trim()) errs.push('model');
   }
   if (!datum) errs.push('dátum registrácie');
-  if (!palivo) errs.push('palivo');
-  if (!objem) errs.push('objem'); if (!vykon) errs.push('výkon'); if (!hmotnost) errs.push('hmotnosť');
+  const engineless = ['PN', 'PV'].includes(typ);        // náves/príves — bez motora
+  if (!palivo && !engineless) errs.push('palivo');
+  if (!objem && !engineless) errs.push('objem');
+  if (!vykon && !engineless) errs.push('výkon');
+  if (!hmotnost) errs.push('hmotnosť');
   if (needsCena && !(parseFloat(cena) > 0)) errs.push('cenu vozidla');
   const vin = g('vm-vin').value.trim().toUpperCase();
   if (vin.length !== 17) errs.push('VIN (presne 17 znakov)');
@@ -5600,7 +5610,7 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
         <label>Dátum 1. registrácie</label>
         <input type="date" id="vm-datum" onchange="onVmTypChange()">
       </div>
-      <div class="vm-field">
+      <div class="vm-field" id="vm-palivo-wrap">
         <label>Palivo</label>
         <select id="vm-palivo">
           <option value="">Vyberte…</option>
@@ -5611,11 +5621,11 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
           <option value="plyn">LPG/CNG</option>
         </select>
       </div>
-      <div class="vm-field">
+      <div class="vm-field" id="vm-objem-wrap">
         <label>Objem motora (cm³)</label>
         <input type="number" id="vm-objem" placeholder="1968" min="0">
       </div>
-      <div class="vm-field">
+      <div class="vm-field" id="vm-vykon-wrap">
         <label>Výkon motora (kW)</label>
         <input type="number" id="vm-vykon" placeholder="110" min="0">
       </div>
