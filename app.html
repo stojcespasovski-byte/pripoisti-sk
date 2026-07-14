@@ -4649,6 +4649,43 @@ function updateEntryKmOptions() {
   if (lookup.vehicle && sel.value) lookup.vehicle.najazd = sel.value;
 }
 
+/* ── Malý modal: doplniť LEN cenu vozidla ──
+   Použije sa, keď je vozidlo nájdené a chýba iba trhová hodnota. Nájazd a ostatné
+   údaje ostávajú z hlavnej stránky (lookup.vehicle) — netreba ich pýtať znova.
+   Veľký modal (openVehModal) je len na „nenájdené vozidlo" / ručnú úpravu. */
+function openCenaModal(e) {
+  if (e) e.preventDefault();
+  const g = id => document.getElementById(id);
+  const v = lookup.vehicle || {};
+  const name = [v.znacka, v.model].filter(Boolean).join(' ');
+  const isNew = v.typ === 'OA' && vehIsNew(v.datumReg);
+  g('cena-veh-name').textContent = name
+    ? `${name} — doplňte približnú aktuálnu hodnotu.`
+    : 'Doplňte približnú aktuálnu trhovú hodnotu vozidla.';
+  g('cena-label').textContent = isNew
+    ? 'Zadajte novú cenu s DPH, bez zliav (max. 120 000 €)'
+    : 'Zadajte približnú aktuálnu trhovú hodnotu vozidla (max. 120 000 €)';
+  g('cena-input').placeholder = isNew ? 'Obstarávacia cena nového vozidla (€)' : 'Obvyklá cena vozidla (€)';
+  g('cena-input').value = v.cenaVozidla || '';
+  g('cena-error').style.display = 'none';
+  g('cena-overlay').style.display = 'flex';
+  setTimeout(() => g('cena-input').focus(), 60);
+}
+function closeCenaModal() { document.getElementById('cena-overlay').style.display = 'none'; }
+async function saveCenaModal() {
+  const g = id => document.getElementById(id);
+  const cerr = m => { const el = g('cena-error'); el.textContent = m; el.style.display = ''; };
+  const cena = parseFloat((g('cena-input').value || '').replace(',', '.'));
+  if (!(cena > 0))       return cerr('Zadajte cenu vozidla (kladné číslo).');
+  if (cena > 120000)     return cerr('Maximálna hodnota je 120 000 €.');
+  (lookup.vehicle || (lookup.vehicle = {})).cenaVozidla = String(Math.round(cena));
+  closeCenaModal();
+  const banner = document.getElementById('tiles-partial');
+  if (banner) banner.style.display = 'none';
+  const ok = await recalcPrices(false, false);     // nájazd/typ ostávajú z hlavnej stránky
+  if (!ok) { openCenaModal(); cerr('Ceny sa nepodarilo načítať — skúste inú hodnotu alebo upravte údaje cez „Zmeniť".'); }
+}
+
 function openVehModal(e, prefill) {
   if (e) e.preventDefault();
   const g = id => document.getElementById(id);
@@ -5004,8 +5041,8 @@ async function triggerLookup() {
       if (banner) {
         const jeMoto = lookup.vehicle.typ === 'MO';
         banner.innerHTML = `Pre ${jeMoto ? 'motorku' : 'toto vozidlo'} potrebujeme <b>cenu vozidla</b> — ` +
-          'doplňte ju v okne a ceny prepočítame. ' +
-          '<button type="button" onclick="openVehModal(event, true)" style="margin-top:8px;background:var(--grad);color:#fff;border:none;border-radius:9px;padding:8px 16px;font-size:15px;font-weight:700;font-family:\'Inter\',sans-serif;cursor:pointer;">Doplniť cenu vozidla</button>';
+          'doplňte ju a ceny prepočítame. ' +
+          '<button type="button" onclick="openCenaModal(event)" style="margin-top:8px;background:var(--grad);color:#fff;border:none;border-radius:9px;padding:8px 16px;font-size:15px;font-weight:700;font-family:\'Inter\',sans-serif;cursor:pointer;">Doplniť cenu vozidla</button>';
         banner.style.display = 'block';
       }
       document.getElementById('veh-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -5777,6 +5814,23 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
     <div class="vm-btns">
       <button class="vm-btn-cancel" onclick="closeVehModal()">Zrušiť</button>
       <button class="vm-btn-save" id="vm-save" onclick="saveVehModal()">Prepočítať</button>
+    </div>
+  </div>
+</div>
+
+<!-- MALÝ MODAL: doplniť LEN cenu vozidla (vozidlo nájdené, chýba iba trhová hodnota) -->
+<div class="vm-overlay" id="cena-overlay" style="display:none;" onclick="if(event.target===this)closeCenaModal()">
+  <div class="vm-modal" style="max-width:460px;">
+    <div class="vm-title">Hodnota vozidla</div>
+    <div class="vm-sub" id="cena-veh-name">Doplňte približnú aktuálnu trhovú hodnotu vozidla.</div>
+    <div class="vm-field full">
+      <label id="cena-label" style="color:var(--o);">Zadajte približnú aktuálnu trhovú hodnotu vozidla (max. 120 000 €)</label>
+      <input type="number" id="cena-input" placeholder="Obvyklá cena vozidla (€)" min="0" step="1" inputmode="numeric" style="border-color:var(--o);" onkeydown="if(event.key==='Enter')saveCenaModal()">
+    </div>
+    <div class="vm-error" id="cena-error" style="display:none;margin-top:10px;"></div>
+    <div class="vm-btns">
+      <button class="vm-btn-cancel" onclick="closeCenaModal()">Zrušiť</button>
+      <button class="vm-btn-save" onclick="saveCenaModal()">Prepočítať</button>
     </div>
   </div>
 </div>
