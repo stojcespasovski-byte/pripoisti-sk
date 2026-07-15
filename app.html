@@ -4959,6 +4959,17 @@ function validRc(rc) {
   return true;
 }
 
+/* Validácia IČO (SK/CZ): presne 8 číslic + kontrolná číslica (mod-11, váhy 8..2).
+   Rovnaké pre firmy aj živnostníkov. Neoveruje existenciu — len formát. */
+function validIco(ico) {
+  const d = (ico || '').replace(/\D/g, '');
+  if (d.length !== 8) return false;
+  let sum = 0;
+  for (let i = 0; i < 7; i++) sum += parseInt(d[i], 10) * (8 - i);
+  const check = (11 - (sum % 11)) % 10;
+  return check === parseInt(d[7], 10);
+}
+
 let lookupBusy = false;   // ochrana pred dvojitým spustením (change + km onchange)
 async function triggerLookup() {
   if (lookupBusy) return;
@@ -4980,6 +4991,14 @@ async function triggerLookup() {
     if (t === 'fo' && !validRc(fieldVal('f-rc'))) {
       hideEntryLoader();
       showEntryError('Rodné číslo nemá správny formát — zadajte ho bez lomky, napr. 9001011234.');
+      return;
+    }
+
+    // PO/SZČO: IČO skontrolovať u nás (8 číslic + kontrolná číslica) — inak Pillow
+    // vráti len generické „ceny sa nepodarilo", tu dáme jasný dôvod hneď
+    if ((t === 'po' || t === 'szco') && !validIco(fieldVal(t === 'po' ? 'f-ico' : 'f-ico-szco'))) {
+      hideEntryLoader();
+      showEntryError('IČO nemá správny formát — zadajte 8 číslic bez medzier (napr. 46064346).');
       return;
     }
 
