@@ -78,6 +78,7 @@ nav {
 
 .row { display: grid; gap: 14px; margin-bottom: 14px; }
 .row.c4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+.row.c2 { grid-template-columns: 1fr 1fr; }
 .row:last-child { margin-bottom: 0; }
 
 .fv label {
@@ -259,23 +260,31 @@ nav {
             <div class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--o)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="9" width="22" height="9" rx="2"/><path d="M5 9V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg></div>
             <div class="block-title">Vozidlo</div>
           </div>
-          <div class="row c4">
-            <div class="fv"><label>VIN</label><div class="val mono" id="s-vin" style="font-size:14px;">—</div></div>
-            <div class="fv"><label>EČV</label><div class="val mono" id="s-ecv">—</div></div>
-            <div class="fv"><label>Číslo TP</label><div class="val mono" id="s-tp">—</div></div>
-            <div class="fv"><label>Farba</label><div class="val" id="s-farba">—</div></div>
-          </div>
-          <div class="row c4">
+          <div class="row c2">
             <div class="fv"><label>Typ vozidla</label><div class="val" id="s-typ">—</div></div>
-            <div class="fv"><label>Značka</label><div class="val" id="s-znacka">—</div></div>
-            <div class="fv"><label>Model</label><div class="val" id="s-model">—</div></div>
             <div class="fv"><label>Dátum registrácie</label><div class="val" id="s-datum">—</div></div>
           </div>
-          <div class="row c4">
-            <div class="fv"><label>Palivo</label><div class="val" id="s-palivo">—</div></div>
+          <div class="row">
+            <div class="fv"><label>VIN</label><div class="val mono" id="s-vin">—</div></div>
+          </div>
+          <div class="row c2">
+            <div class="fv"><label>EČV</label><div class="val mono" id="s-ecv">—</div></div>
+            <div class="fv"><label>Číslo TP</label><div class="val mono" id="s-tp">—</div></div>
+          </div>
+          <div class="row c2">
+            <div class="fv"><label>Značka</label><div class="val" id="s-znacka">—</div></div>
+            <div class="fv"><label>Model</label><div class="val" id="s-model">—</div></div>
+          </div>
+          <div class="row c2">
             <div class="fv"><label>Objem motora</label><div class="val mono" id="s-objem">—</div></div>
             <div class="fv"><label>Výkon motora</label><div class="val mono" id="s-vykon">—</div></div>
+          </div>
+          <div class="row c2">
             <div class="fv"><label>Max. hmotnosť</label><div class="val mono" id="s-hmotnost">—</div></div>
+            <div class="fv"><label>Palivo</label><div class="val" id="s-palivo">—</div></div>
+          </div>
+          <div class="row">
+            <div class="fv"><label>Farba</label><div class="val" id="s-farba">—</div></div>
           </div>
         </div>
       </div>
