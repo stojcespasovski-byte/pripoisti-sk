@@ -654,7 +654,7 @@ select option { background: #1a1a1a; color: #fff; }
 .im-list.im-excl li { color: rgba(255,255,255,.6); }
 .im-params { display: flex; flex-direction: column; }
 .im-param { display: flex; justify-content: space-between; gap: 14px; font-size: 15px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
-.im-param span:first-child { color: rgba(255,255,255,.5); }
+.im-param span:first-child { color: rgba(255,255,255,.5); white-space: nowrap; flex-shrink: 0; }
 .im-param-solo { justify-content: flex-start; }
 .im-param-solo span { white-space: nowrap; }
 .im-param span:last-child { color: #fff; font-weight: 600; text-align: right; }
@@ -1779,10 +1779,10 @@ const OUR_RISKS = new Set(ALL_VARIANTS.map(r => r.risk));
 /* Dlaždice s výberom variantu (Pillow vracia ceny všetkých variantov v jednej rate odpovedi) */
 const VARIANT_CHOICES = {
   asistencia: { risk: 'AS2', title: 'Rozsah asistencie', options: [
-    ['AS2_S',  '50 km pri nehode',  '', '50 km'],
-    ['AS2_M',  '50 km v SR',        '', '50 km SR'],
-    ['AS2_L',  'SR a EÚ',           '', 'SR a EÚ'],
-    ['AS2_XL', 'Neobmedzene SR+EÚ', '', 'Neobmedzene'],
+    ['AS2_S',  '50 km v SR pri nehode',  '', '50 km'],
+    ['AS2_M',  '50 km v SR',             '', '50 km SR'],
+    ['AS2_L',  'Optimálne v SR a EÚ',    '', 'SR a EÚ'],
+    ['AS2_XL', 'Neobmedzene v SR a EÚ',  '', 'Neobmedzene'],
   ]},
   uraz: { risk: 'UR2', title: 'Rozsah krytia', options: [
     ['UR2_2', 'Úraz vodiča', '', 'Úraz'],
@@ -5244,7 +5244,7 @@ const INFO_CONTENT = {
       'Služby organizované mimo asistenčnej centrály poisťovne sa nepreplácajú.',
       'Materiál a náhradné diely pri oprave na mieste si hradí klient.',
     ],
-    params: [['Varianty na výber', '']],
+    params: [['Varianty na výber', '']].concat(VARIANT_CHOICES.asistencia.options.map(o => ['· ' + o[1], ''])),
     pdfUrl: 'pdf/asistencia_podmienky.pdf',
     pdfLabel: 'Podmienky asistencie — rozsah balíkov (PDF)',
     note: 'Pri udalosti vždy volajte asistenčnú linku poisťovne — nikdy „lovcov nehôd".',
