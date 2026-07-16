@@ -129,7 +129,9 @@ textarea:-webkit-autofill, select:-webkit-autofill {
 
 .field-input-inline {
   width: 100%;
-  min-width: 0; max-width: 100%;   /* iOS: natívny date input sa nesmie roztiahnuť von z karty */
+  min-width: 0; max-width: 100%;
+  /* iOS: bez appearance:none natívny date control ignoruje width/max-width a preteká von z karty */
+  -webkit-appearance: none; -moz-appearance: none; appearance: none;
   height: 42px;
   border: 1.5px solid rgba(255,255,255,.1);
   border-radius: 9px;
@@ -137,13 +139,15 @@ textarea:-webkit-autofill, select:-webkit-autofill {
   font-size: 16px; font-weight: 600;
   font-family: 'Inter', sans-serif;
   color: white;
+  text-align: center;                              /* zachová pôvodný vzhľad (dátum na stred) */
   background: rgba(255,255,255,.05);
   outline: none;
   transition: border-color .2s;
 }
+.field-input-inline::-webkit-date-and-time-value { text-align: center; }
 .field-input-inline:focus { border-color: var(--o); }
-.start-date-box { min-width: 0; }                 /* flex položka sa smie zmenšiť pod min-šírku date inputu */
-input[type="date"] { cursor: pointer; }           /* afordancia — klik kdekoľvek otvorí kalendár */
+.start-date-box { min-width: 0; overflow: hidden; } /* poistka: input nikdy nepretečie von z boxu (a teda z karty) */
+input[type="date"] { cursor: pointer; }            /* afordancia — klik kdekoľvek otvorí kalendár */
 
 /* READONLY (predvyplnené z kroku 1) */
 .field input[readonly] {
