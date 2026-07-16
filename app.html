@@ -660,6 +660,8 @@ select option { background: #1a1a1a; color: #fff; }
 .im-param span:last-child { color: #fff; font-weight: 600; text-align: right; }
 .im-note { font-size: 14px; color: rgba(255,255,255,.42); margin-top: 14px; line-height: 1.5; }
 .im-cover-note { font-size: 13.5px; color: rgba(255,255,255,.5); line-height: 1.5; margin: -3px 0 10px; }
+.im-cover-group { font-size: 13.5px; font-weight: 800; color: rgba(255,255,255,.9); margin: 16px 0 7px; padding-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,.09); }
+.im-cover-group:first-of-type { margin-top: 4px; }
 .im-pdf { display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; padding: 10px 16px; border-radius: 10px; background: rgba(232,130,26,.12); border: 1px solid rgba(232,130,26,.4); color: var(--o); font-size: 14px; font-weight: 700; text-decoration: none; transition: background .15s; }
 .im-pdf:hover { background: rgba(232,130,26,.2); }
 .im-article { display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; font-size: 14px; font-weight: 700; color: var(--o); text-decoration: none; border-bottom: 1px solid rgba(232,130,26,.4); padding-bottom: 1px; transition: border-color .15s; }
@@ -5252,11 +5254,16 @@ const INFO_CONTENT = {
   uraz: {
     title: 'Úraz',
     coverLabel: 'Čo kryje (podľa zvoleného variantu)',
-    cover: [
-      'Smrť vodiča následkom úrazu pri nehode — jednorazovo 20 000 €.',
-      'Invalidita vodiča (pokles schopnosti zárobku aspoň o 40 %) — 20 000 €.',
-      'Hospitalizácia vodiča — 20 € za každú noc (max. 1 rok).',
-      'Smrť oboch rodičov — 400 € mesačne každému dieťaťu až do 25 rokov.',
+    coverGroups: [
+      { label: 'Variant: Smrť oboch rodičov', items: [
+        '400 € mesačne každému dieťaťu až do 25 rokov.',
+      ]},
+      { label: 'Variant: Úraz vodiča', items: [
+        '400 € mesačne každému dieťaťu až do 25 rokov.',
+        'Smrť vodiča následkom úrazu pri nehode — jednorazovo 20 000 €.',
+        'Invalidita vodiča (pokles schopnosti zárobku aspoň o 40 %) — 20 000 €.',
+        'Hospitalizácia vodiča — 20 € za každú noc (max. 1 rok).',
+      ]},
     ],
     excl: [
       'Jazda pod vplyvom alkoholu/drog, súťaže, použitie vozidla na trestnú činnosť.',
@@ -5302,7 +5309,11 @@ function openInfoModal(e, id) {
   if (!c) return;
   document.getElementById('im-title').textContent = c.title;
   let html = '';
-  if (c.cover && c.cover.length) {
+  if (c.coverGroups && c.coverGroups.length) {
+    html += `<div class="im-section-label">${c.coverLabel || 'Čo kryje'}</div>`;
+    if (c.coverNote) html += `<div class="im-cover-note">${c.coverNote}</div>`;
+    html += c.coverGroups.map(g => `<div class="im-cover-group">${g.label}</div><ul class="im-list">` + g.items.map(x => `<li>${x}</li>`).join('') + '</ul>').join('');
+  } else if (c.cover && c.cover.length) {
     html += `<div class="im-section-label">${c.coverLabel || 'Čo kryje'}</div>`;
     if (c.coverNote) html += `<div class="im-cover-note">${c.coverNote}</div>`;
     html += '<ul class="im-list">' + c.cover.map(x => `<li>${x}</li>`).join('') + '</ul>';
