@@ -128,6 +128,7 @@ textarea:-webkit-autofill, select:-webkit-autofill {
 
 .field-input-inline {
   width: 100%;
+  min-width: 0; max-width: 100%;   /* iOS: natívny date input sa nesmie roztiahnuť von z karty */
   height: 42px;
   border: 1.5px solid rgba(255,255,255,.1);
   border-radius: 9px;
@@ -140,6 +141,8 @@ textarea:-webkit-autofill, select:-webkit-autofill {
   transition: border-color .2s;
 }
 .field-input-inline:focus { border-color: var(--o); }
+.start-date-box { min-width: 0; }                 /* flex položka sa smie zmenšiť pod min-šírku date inputu */
+input[type="date"] { cursor: pointer; }           /* afordancia — klik kdekoľvek otvorí kalendár */
 
 /* READONLY (predvyplnené z kroku 1) */
 .field input[readonly] {
@@ -581,6 +584,14 @@ const _maxOd = (() => { const d = new Date(); d.setMonth(d.getMonth() + 3); retu
     if (el.value && el.value > el.max) el.value = el.max;
   });
 })();
+
+// Klik kdekoľvek do dátumového poľa otvorí natívny kalendár (natívna ikona je na tmavom nevidno)
+document.addEventListener('click', (e) => {
+  const t = e.target;
+  if (t && t.matches && t.matches('input[type="date"]') && typeof t.showPicker === 'function') {
+    try { t.showPicker(); } catch (_) {}
+  }
+});
 
 document.getElementById('block-' + typ).style.display = 'block';
 
