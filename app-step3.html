@@ -150,6 +150,7 @@ textarea:-webkit-autofill, select:-webkit-autofill {
 .field-input-inline:focus { border-color: var(--o); }
 .start-date-box { min-width: 0; overflow: hidden; } /* poistka: input nikdy nepretečie von z boxu (a teda z karty) */
 input[type="date"] { cursor: pointer; }            /* afordancia — klik kdekoľvek otvorí kalendár */
+#v-vin { font-size: 14px; }                        /* desktop: VIN v úzkom 4-stĺpci → menšie, nech sa 17 znakov zmestí */
 
 /* READONLY (predvyplnené z kroku 1) */
 .field input[readonly] {
@@ -236,6 +237,7 @@ select option { background: #1a1a1a; color: white; }
   .row.ico-firma { grid-template-columns: 1fr; }   /* IČO + Názov firmy pod seba → celý názov sa zmestí, IČO zjednotené */
   .row.c2:has(input[type="email"]) { grid-template-columns: 1fr; }  /* Telefón + E-mail pod seba → celý e-mail sa zmestí */
   .field-full { grid-column: 1 / -1; }              /* pole na celý riadok (VIN, Farba) — dlhá hodnota sa nezmestí do polstĺpca */
+  #v-vin { font-size: 16px; }                       /* mobil: VIN je celý riadok → rovnaké písmo ako ostatné polia */
   .row > *, .field { min-width: 0; }
   .step-label { display: none; }
   .card-foot { padding: 18px 22px; flex-direction: column-reverse; gap: 12px; }
@@ -324,7 +326,7 @@ select option { background: #1a1a1a; color: white; }
         </div>
 
         <div class="row c4">
-          <div class="field field-full"><label>VIN</label><input class="mono" id="v-vin" value="" readonly style="font-size:14px;"></div>
+          <div class="field field-full"><label>VIN</label><input class="mono" id="v-vin" value="" readonly></div>
           <div class="field"><label>EČV</label><input class="mono" id="v-ecv" value="" readonly></div>
           <div class="field"><label>Číslo TP</label><input class="mono" id="v-tp" value="" placeholder="Doplňte, ak chýba"></div>
           <div class="field field-full"><label>Farba vozidla</label><input id="v-farba" value="" readonly></div>
