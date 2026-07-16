@@ -5260,7 +5260,7 @@ const INFO_CONTENT = {
     excl: [
       'Jazda pod vplyvom alkoholu/drog, súťaže, použitie vozidla na trestnú činnosť.',
     ],
-    params: [['Varianty na výber', 'Úraz vodiča · Smrť oboch rodičov']],
+    params: [['Varianty na výber', '']].concat(VARIANT_CHOICES.uraz.options.map(o => ['· ' + o[1], ''])),
     note: 'Spolujazdcov pri nehode kryje PZP vinníka — tento vankúš chráni najmä vodiča.',
   },
   batozina: {
@@ -5275,7 +5275,7 @@ const INFO_CONTENT = {
       'Doklady, peniaze, šperky, umelecké predmety, zvieratá.',
       'Elektronika ponechaná v aute cez noc mimo stráženého parkoviska.',
     ],
-    params: [['Limit plnenia (na výber)', '750 € alebo 1 500 €']],
+    params: [['Limit plnenia (na výber)', '']].concat(VARIANT_CHOICES.batozina.options.map(o => ['· ' + o[1], ''])),
     note: 'Plnenie sa vypláca v časovej cene (zohľadňuje vek a opotrebenie vecí).',
   },
 };
