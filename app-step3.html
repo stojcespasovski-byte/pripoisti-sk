@@ -150,7 +150,6 @@ textarea:-webkit-autofill, select:-webkit-autofill {
 .field-input-inline:focus { border-color: var(--o); }
 .start-date-box { min-width: 0; overflow: hidden; } /* poistka: input nikdy nepretečie von z boxu (a teda z karty) */
 input[type="date"] { cursor: pointer; }            /* afordancia — klik kdekoľvek otvorí kalendár */
-#v-vin { font-size: 14px; }                        /* desktop: VIN v úzkom 4-stĺpci → menšie, nech sa 17 znakov zmestí */
 
 /* READONLY (predvyplnené z kroku 1) */
 .field input[readonly] {
@@ -236,8 +235,7 @@ select option { background: #1a1a1a; color: white; }
   .row.c2, .row.c3, .row.c4, .row.addr { grid-template-columns: 1fr 1fr; }
   .row.ico-firma { grid-template-columns: 1fr; }   /* IČO + Názov firmy pod seba → celý názov sa zmestí, IČO zjednotené */
   .row.c2:has(input[type="email"]) { grid-template-columns: 1fr; }  /* Telefón + E-mail pod seba → celý e-mail sa zmestí */
-  .field-full { grid-column: 1 / -1; }              /* pole na celý riadok (VIN, Farba) — dlhá hodnota sa nezmestí do polstĺpca */
-  #v-vin { font-size: 16px; }                       /* mobil: VIN je celý riadok → rovnaké písmo ako ostatné polia */
+  .field-full { grid-column: 1 / -1; }              /* pole na celý riadok — dlhá hodnota sa nezmestí do polstĺpca */
   .row > *, .field { min-width: 0; }
   .step-label { display: none; }
   .card-foot { padding: 18px 22px; flex-direction: column-reverse; gap: 12px; }
@@ -325,25 +323,37 @@ select option { background: #1a1a1a; color: white; }
           <div class="block-title">Vozidlo</div>
         </div>
 
-        <div class="row c4">
-          <div class="field field-full"><label>VIN</label><input class="mono" id="v-vin" value="" readonly></div>
-          <div class="field"><label>EČV</label><input class="mono" id="v-ecv" value="" readonly></div>
-          <div class="field"><label>Číslo TP</label><input class="mono" id="v-tp" value="" placeholder="Doplňte, ak chýba"></div>
-          <div class="field field-full"><label>Farba vozidla</label><input id="v-farba" value="" readonly></div>
-        </div>
-
-        <div class="row c4">
+        <div class="row c2">
           <div class="field"><label>Typ vozidla</label><input id="v-typ" value="OA" readonly></div>
-          <div class="field"><label>Značka</label><input id="v-znacka" value="" readonly></div>
-          <div class="field"><label>Model</label><input id="v-model" value="" readonly></div>
           <div class="field"><label>Dátum 1. registrácie</label><input id="v-datum" value="" readonly></div>
         </div>
 
-        <div class="row c4">
-          <div class="field"><label>Palivo</label><input id="v-palivo" value="" readonly></div>
+        <div class="row">
+          <div class="field"><label>VIN</label><input class="mono" id="v-vin" value="" readonly></div>
+        </div>
+
+        <div class="row c2">
+          <div class="field"><label>EČV</label><input class="mono" id="v-ecv" value="" readonly></div>
+          <div class="field"><label>Číslo TP</label><input class="mono" id="v-tp" value="" placeholder="Doplňte, ak chýba"></div>
+        </div>
+
+        <div class="row c2">
+          <div class="field"><label>Značka</label><input id="v-znacka" value="" readonly></div>
+          <div class="field"><label>Model</label><input id="v-model" value="" readonly></div>
+        </div>
+
+        <div class="row c2">
           <div class="field"><label>Objem motora</label><input class="mono" id="v-objem" value="" readonly></div>
           <div class="field"><label>Výkon motora</label><input class="mono" id="v-vykon" value="" readonly></div>
+        </div>
+
+        <div class="row c2">
           <div class="field"><label>Max. hmotnosť</label><input class="mono" id="v-hmotnost" value="" readonly></div>
+          <div class="field"><label>Palivo</label><input id="v-palivo" value="" readonly></div>
+        </div>
+
+        <div class="row">
+          <div class="field"><label>Farba vozidla</label><input id="v-farba" value="" readonly></div>
         </div>
         <div class="field-note">Údaje načítané automaticky podľa EČV z kroku 1.</div>
       </div>
