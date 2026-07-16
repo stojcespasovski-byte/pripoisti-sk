@@ -89,6 +89,7 @@ nav {
 .row.c3 { grid-template-columns: 1fr 1fr 1fr; }
 .row.c4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
 .row.addr { grid-template-columns: 1fr 90px 1fr 100px; }
+.row.ico-firma { grid-template-columns: 160px 1fr; }
 .row:last-child { margin-bottom: 0; }
 
 /* FIELD */
@@ -226,6 +227,8 @@ select option { background: #1a1a1a; color: white; }
   .steps-wrap, .page-wrap { padding-left: 20px; padding-right: 20px; }
   .card-body { padding: 22px; }
   .row.c2, .row.c3, .row.c4, .row.addr { grid-template-columns: 1fr 1fr; }
+  .row.ico-firma { grid-template-columns: 1fr; }   /* IČO + Názov firmy pod seba → celý názov sa zmestí, IČO zjednotené */
+  .vin-full { grid-column: 1 / -1; }                /* 17-znakový VIN nezmestíme do polstĺpca → celý riadok */
   .row > *, .field { min-width: 0; }
   .step-label { display: none; }
   .card-foot { padding: 18px 22px; flex-direction: column-reverse; gap: 12px; }
@@ -314,7 +317,7 @@ select option { background: #1a1a1a; color: white; }
         </div>
 
         <div class="row c4">
-          <div class="field"><label>VIN</label><input class="mono" id="v-vin" value="" readonly style="font-size:14px;"></div>
+          <div class="field vin-full"><label>VIN</label><input class="mono" id="v-vin" value="" readonly style="font-size:14px;"></div>
           <div class="field"><label>EČV</label><input class="mono" id="v-ecv" value="" readonly></div>
           <div class="field"><label>Číslo TP</label><input class="mono" id="v-tp" value="" placeholder="Doplňte, ak chýba"></div>
           <div class="field"><label>Farba vozidla</label><input id="v-farba" value="" readonly></div>
@@ -351,7 +354,7 @@ select option { background: #1a1a1a; color: white; }
           <div class="block-title">Klient — Firma</div>
         </div>
 
-        <div class="row" style="grid-template-columns:160px 1fr;">
+        <div class="row ico-firma">
           <div class="field"><label>IČO</label><input class="mono" id="po-ico" value="" readonly></div>
           <div class="field"><label>Názov firmy</label><input id="po-nazov" value="" readonly></div>
         </div>
@@ -383,7 +386,7 @@ select option { background: #1a1a1a; color: white; }
           <div class="block-title">Klient — SZČO</div>
         </div>
 
-        <div class="row" style="grid-template-columns:160px 1fr;">
+        <div class="row ico-firma">
           <div class="field"><label>IČO</label><input class="mono" id="szco-ico" value="" readonly></div>
           <div class="field"><label>Názov živnosti</label><input id="szco-nazov" data-required="true" placeholder="Obchodné meno živnosti"><div class="field-error">Zadajte názov živnosti</div></div>
         </div>
@@ -519,7 +522,7 @@ select option { background: #1a1a1a; color: white; }
 
           <!-- PO vlastník -->
           <div id="vl-po" style="display:none;">
-            <div class="row" style="grid-template-columns:160px 1fr;">
+            <div class="row ico-firma">
               <div class="field"><label>IČO</label><input class="mono" id="vl-ico" placeholder="12345678"><div class="field-error">Zadajte IČO</div></div>
               <div class="field"><label>Názov firmy</label><input id="vl-nazov" placeholder="Firma s.r.o."><div class="field-error">Zadajte názov</div></div>
             </div>
