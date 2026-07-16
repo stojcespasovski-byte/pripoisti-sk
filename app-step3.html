@@ -116,12 +116,14 @@ nav {
 }
 .field input:focus, .field select:focus { border-color: var(--o); }
 .field input::placeholder { color: rgba(255,255,255,.2); font-weight: 400; }
-/* Chrome autofill/paste — tmavé pozadie + biely text (nie biele s čiernym) */
+/* Autofill (Chrome + iOS Safari) — tmavé pozadie + biely text (nie biele s čiernym).
+   !important, lebo iOS Safari default autofill štýl inak prebije naše pravidlo. */
 input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, input:-webkit-autofill:active,
 textarea:-webkit-autofill, select:-webkit-autofill {
-  -webkit-text-fill-color: #fff;
+  -webkit-text-fill-color: #fff !important;
   caret-color: #fff;
-  -webkit-box-shadow: 0 0 0 1000px #282018 inset;
+  -webkit-box-shadow: 0 0 0 1000px #282018 inset !important;
+  box-shadow: 0 0 0 1000px #282018 inset !important;
   transition: background-color 9999s ease-in-out 0s;
 }
 .field input[type="date"].date-empty { color: rgba(255,255,255,.2); font-weight: 400; }
@@ -232,6 +234,7 @@ select option { background: #1a1a1a; color: white; }
   .card-body { padding: 22px; }
   .row.c2, .row.c3, .row.c4, .row.addr { grid-template-columns: 1fr 1fr; }
   .row.ico-firma { grid-template-columns: 1fr; }   /* IČO + Názov firmy pod seba → celý názov sa zmestí, IČO zjednotené */
+  .row.c2:has(input[type="email"]) { grid-template-columns: 1fr; }  /* Telefón + E-mail pod seba → celý e-mail sa zmestí */
   .vin-full { grid-column: 1 / -1; }                /* 17-znakový VIN nezmestíme do polstĺpca → celý riadok */
   .row > *, .field { min-width: 0; }
   .step-label { display: none; }
