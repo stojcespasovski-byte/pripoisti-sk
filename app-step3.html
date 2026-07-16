@@ -366,6 +366,13 @@ select option { background: #1a1a1a; color: white; }
           <div class="field"><label>Názov firmy</label><input id="po-nazov" value="" readonly></div>
         </div>
 
+        <div class="row addr">
+          <div class="field"><label>Ulica</label><input id="po-ulica" data-required="true" placeholder="Hlavná"><div class="field-error">Zadajte ulicu</div></div>
+          <div class="field"><label>Číslo domu</label><input id="po-cislo" inputmode="numeric" data-required="true" placeholder="1"><div class="field-error">Povinné</div></div>
+          <div class="field"><label>Obec</label><input id="po-obec" value="" readonly></div>
+          <div class="field"><label>PSČ</label><input class="mono" id="po-psc" value="" readonly></div>
+        </div>
+
         <div class="row c2">
           <div class="field"><label>Konateľ meno</label><input id="po-meno" data-required="true" placeholder="Ján"><div class="field-error">Zadajte meno</div></div>
           <div class="field"><label>Konateľ priezvisko</label><input id="po-priezvisko" data-required="true" placeholder="Novák"><div class="field-error">Zadajte priezvisko</div></div>
@@ -374,13 +381,6 @@ select option { background: #1a1a1a; color: white; }
         <div class="row c2">
           <div class="field"><label>Telefón</label><input class="mono" id="po-telefon" inputmode="tel" data-required="true" placeholder="+421 900 000 000"><div class="field-error">Zadajte telefónne číslo</div></div>
           <div class="field"><label>E-mail</label><input type="email" id="po-email" data-required="true" placeholder="firma@email.sk"><div class="field-error">Zadajte e-mail</div></div>
-        </div>
-
-        <div class="row addr">
-          <div class="field"><label>Ulica</label><input id="po-ulica" data-required="true" placeholder="Hlavná"><div class="field-error">Zadajte ulicu</div></div>
-          <div class="field"><label>Číslo domu</label><input id="po-cislo" inputmode="numeric" data-required="true" placeholder="1"><div class="field-error">Povinné</div></div>
-          <div class="field"><label>Obec</label><input id="po-obec" value="" readonly></div>
-          <div class="field"><label>PSČ</label><input class="mono" id="po-psc" value="" readonly></div>
         </div>
       </div>
 
