@@ -531,7 +531,7 @@ if (order.tiles && order.tiles.length) {
   listEl.innerHTML = html;
   celkomEl.textContent = '€ ' + orderTotal.toFixed(2).replace('.', ',');
 } else {
-  listEl.innerHTML = '<div class="empty-state">Žiadne pripoistenia neboli vybrané. <a href="app.html" style="color:var(--o);">Vrátiť sa na výber</a></div>';
+  listEl.innerHTML = '<div class="empty-state">Žiadne pripoistenia neboli vybrané. <a href="/" style="color:var(--o);">Vrátiť sa na výber</a></div>';
   freqLabelEl.textContent = '';
 }
 
@@ -742,7 +742,7 @@ async function submitOrder() {
   clearSubmitError();
   const required = document.querySelectorAll('.suh-required');
   if (![...required].every(c => c.checked)) { showSubmitError('<b>Chýbajú súhlasy.</b><br>Pre pokračovanie zaškrtnite všetky povinné súhlasy.'); return; }
-  if (!order.tiles || !order.tiles.length) { showSubmitError('<b>Neboli vybrané žiadne pripoistenia.</b><br><a href="app.html" style="color:#fecaca;">Vrátiť sa na výber</a>'); return; }
+  if (!order.tiles || !order.tiles.length) { showSubmitError('<b>Neboli vybrané žiadne pripoistenia.</b><br><a href="/" style="color:#fecaca;">Vrátiť sa na výber</a>'); return; }
 
   const btn = document.getElementById('submit-btn');
   const orig = btn ? btn.innerHTML : '';

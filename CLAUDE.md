@@ -5,10 +5,10 @@ Verejná appka na pripoistenie vozidiel (9 pripoistení k existujúcemu PZP/hava
 
 ## Rozsah tejto codebase
 - Táto session/repo = **len frontend** (`pripoisti-sk`). Backend `api.pripoisti.sk` (repo `pripoisti-api`, privátne, FastAPI/Hetzner) vlastní iná session — zmeny backendu (nový endpoint, CORS, e-mail šablóny) NEROBIŤ tu, ale sformulovať ako požiadavku pre backend.
-- Súbory: `app.html` (Krok 1+2: vstupy, dlaždice, ceny), `app-step3.html` (údaje klienta, 4 varianty FO/cudzinec/SZČO/PO), `app-step4.html` (súhrn + Pillow save + platba/QR/e-mail), `index.html` (splash — **NEMENIŤ**), `radca/` (SEO články + rozcestník), `vercel.json` (clean URLs len pre /radca — funnel nedotknutý).
+- Súbory: `index.html` (**HOMEPAGE = Krok 1+2**: hero + vstupy, dlaždice, ceny; verejná domovská na `pripoisti.sk/`; pôvodne `app.html`, premenované 2026-07-17), `app-step3.html` (údaje klienta, 4 varianty FO/cudzinec/SZČO/PO), `app-step4.html` (súhrn + Pillow save + platba/QR/e-mail), `splash.html` (starý animovaný splash — odložený bokom, NEpoužitý), `poradna/` (SEO články + rozcestník), `vercel.json` (clean URLs pre /poradna + redirect `/app.html`→`/`). **Pozn.: heslový dev-gate zrušený (appka je verejná/naostro).**
 
 ## Nasadenie
-- Hosting = **Vercel** (nie Caddy!). Deploy = `git push origin main` → auto. Overenie: `curl -s https://pripoisti.sk/app.html | grep "<niečo z commitu>"`.
+- Hosting = **Vercel** (nie Caddy!). Deploy = `git push origin main` → auto. Overenie: `curl -s https://pripoisti.sk/ | grep "<niečo z commitu>"`.
 - Workflow s používateľom: **krok po kroku** — malá zmena → lokálny commit (záchytný bod) → ukázať → push **až po jeho súhlase** („ano / nasaď"). Kalkulačka býva v živom teste u poisťovne — nič nerozbiť, žiadne veľké big-bang refaktory.
 - GSC overovací súbor `google9ce749cdaf7d33ed.html` v roote **nikdy nemazať**.
 
