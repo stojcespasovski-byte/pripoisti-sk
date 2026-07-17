@@ -187,6 +187,7 @@ nav {
   .fv .val { word-break: break-word; }
 }
 </style>
+<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};</script>
 <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
@@ -797,6 +798,7 @@ const PILLOW_IBAN_DISP = 'SK64 8330 0000 0028 0266 5628';   // pevný účet Pil
 const PILLOW_BENEFICIARY = 'Pillow pojišťovna, a. s.';
 
 function showSuccess(policyId, varSym, bcrmOk) {
+  try { window.va('event', { name: 'Zmluva uzavretá' }); } catch (e) {}   // konverzný lievik (Vercel Analytics)
   const suma = orderTotal.toFixed(2);
   const due = order.poistenieOd || '';
   const freqLabel = (order.freq?.label || 'mesačne');

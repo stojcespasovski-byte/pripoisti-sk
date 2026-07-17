@@ -1090,6 +1090,7 @@ footer {
   .tile-price { font-size: 17px; }
 }
 </style>
+<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};</script>
 <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
@@ -4551,6 +4552,7 @@ function revealQuote() {
     return;
   }
   wowShown = true;
+  try { window.va('event', { name: 'Ceny načítané' }); } catch (e) {}   // konverzný lievik (Vercel Analytics)
   const tiles = grid ? [...grid.querySelectorAll('.tile')] : [];
   tiles.forEach(t => t.classList.add('wow'));        // opacity 0, kým je grid ešte skrytý (žiadny záblesk)
   [label, sw, grid].forEach(el => el && el.classList.remove('wow-hidden'));   // sekcia sa objaví (stránka narastie)
