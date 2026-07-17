@@ -1483,7 +1483,7 @@ footer {
   <div class="proof-div" id="proof-rating-div" hidden></div>
   <div class="proof-item" id="proof-rating" hidden>
     <div class="proof-num" style="color:var(--o)"><span style="font-size:.82em;vertical-align:2px">★</span> <span id="proof-rating-num">—</span></div>
-    <div class="proof-desc" id="proof-rating-desc">Google</div>
+    <div class="proof-desc" id="proof-rating-desc">hodnotenie na Google</div>
   </div>
   <div class="proof-div"></div>
   <div class="proof-item">
@@ -1644,7 +1644,7 @@ footer {
   function initials(name){var p=String(name||'').trim().split(/\s+/);return (((p[0]||'')[0]||'')+((p[1]||'')[0]||'')).toUpperCase()||'?';}
   fetch(RV_API+'/reviews/google').then(function(r){return r.ok?r.json():null;}).then(function(d){
     if(!d||!d.reviews||!d.reviews.length)return;                       // graceful: nič nezobraz
-    document.getElementById('rv-num').textContent=String(d.rating!=null?d.rating:'').replace('.',',');
+    document.getElementById('rv-num').textContent=(d.rating!=null?Number(d.rating).toFixed(1).replace('.',','):'');
     document.getElementById('rv-stars').textContent=starStr(d.rating);
     document.getElementById('rv-total').textContent=d.total!=null?d.total:d.reviews.length;
     if(d.placeUrl)document.getElementById('rv-link').href=d.placeUrl;
@@ -1656,8 +1656,7 @@ footer {
     document.getElementById('reviews-sec').hidden=false;              // odkry až keď sú dáta
     var pr=document.getElementById('proof-rating');                   // + rating chip v proof-stripe
     if(pr){
-      document.getElementById('proof-rating-num').textContent=String(d.rating!=null?d.rating:'').replace('.',',');
-      document.getElementById('proof-rating-desc').textContent=(d.total!=null?d.total:d.reviews.length)+' hodnotení · Google';
+      document.getElementById('proof-rating-num').textContent=(d.rating!=null?Number(d.rating).toFixed(1).replace('.',','):'');
       document.getElementById('proof-rating-div').hidden=false;
       pr.hidden=false;
     }
