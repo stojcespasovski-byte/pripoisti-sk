@@ -1596,6 +1596,62 @@ footer {
   </div>
 </section>
 
+<!-- ══════ RECENZIE (Google) — skryté, kým backend nedodá /reviews/google ══════ -->
+<section class="reviews-sec" id="reviews-sec" hidden>
+  <style>
+    .reviews-sec { padding: 84px 24px; }
+    .reviews-inner { max-width: 1100px; margin: 0 auto; }
+    .reviews-sec .section-tag { text-align: center; }
+    .reviews-head { display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap; margin:14px 0 6px; }
+    .reviews-num { font-size:46px; font-weight:900; color:#fff; letter-spacing:-1px; line-height:1; }
+    .reviews-stars { color:var(--o); font-size:24px; letter-spacing:2px; }
+    .reviews-meta { font-size:15px; color:rgba(255,255,255,.5); text-align:center; margin-bottom:34px; }
+    .reviews-meta b { color:rgba(255,255,255,.85); font-weight:700; }
+    .reviews-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; }
+    .rv-card { background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:22px; }
+    .rv-top { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+    .rv-av { width:42px; height:42px; border-radius:50%; background:rgba(232,130,26,.16); color:var(--o); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px; flex:0 0 auto; background-size:cover; background-position:center; }
+    .rv-nm { font-size:15px; font-weight:700; color:#fff; line-height:1.2; }
+    .rv-dt { font-size:12px; color:rgba(255,255,255,.4); }
+    .rv-cs { color:var(--o); font-size:14px; letter-spacing:1px; margin-bottom:9px; }
+    .rv-tx { font-size:15px; line-height:1.6; color:rgba(255,255,255,.72); }
+    .reviews-link { display:block; text-align:center; margin-top:28px; font-size:15px; font-weight:700; color:var(--o); text-decoration:none; }
+    .reviews-link:hover { text-decoration:underline; }
+    @media (max-width:600px){ .reviews-sec{padding:56px 20px} }
+  </style>
+  <div class="reviews-inner">
+    <div class="section-tag">Čo hovoria klienti</div>
+    <div class="reviews-head">
+      <span class="reviews-num" id="rv-num">—</span>
+      <span class="reviews-stars" id="rv-stars">★★★★★</span>
+    </div>
+    <div class="reviews-meta">z <b id="rv-total">—</b> hodnotení · Google</div>
+    <div class="reviews-grid" id="rv-grid"></div>
+    <a class="reviews-link" id="rv-link" href="https://maps.google.com/?cid=12291216322610965656" target="_blank" rel="noopener">Pozrieť všetky hodnotenia na Google →</a>
+  </div>
+</section>
+<script>
+(function(){
+  var RV_API=(location.hostname==='localhost'||location.hostname==='127.0.0.1')?'':'https://api.pripoisti.sk';
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function starStr(n){n=Math.max(0,Math.min(5,Math.round(n||0)));return '★'.repeat(n)+'☆'.repeat(5-n);}
+  function initials(name){var p=String(name||'').trim().split(/\s+/);return (((p[0]||'')[0]||'')+((p[1]||'')[0]||'')).toUpperCase()||'?';}
+  fetch(RV_API+'/reviews/google').then(function(r){return r.ok?r.json():null;}).then(function(d){
+    if(!d||!d.reviews||!d.reviews.length)return;                       // graceful: nič nezobraz
+    document.getElementById('rv-num').textContent=String(d.rating!=null?d.rating:'').replace('.',',');
+    document.getElementById('rv-stars').textContent=starStr(d.rating);
+    document.getElementById('rv-total').textContent=d.total!=null?d.total:d.reviews.length;
+    if(d.placeUrl)document.getElementById('rv-link').href=d.placeUrl;
+    document.getElementById('rv-grid').innerHTML=d.reviews.slice(0,6).map(function(rv){
+      var av=rv.photo?('style="background-image:url('+esc(rv.photo)+')"'):'';
+      var avTxt=rv.photo?'':esc(initials(rv.author));
+      return '<div class="rv-card"><div class="rv-top"><div class="rv-av" '+av+'>'+avTxt+'</div><div><div class="rv-nm">'+esc(rv.author)+'</div><div class="rv-dt">'+esc(rv.relativeTime||'')+'</div></div></div><div class="rv-cs">'+starStr(rv.rating)+'</div><div class="rv-tx">'+esc(rv.text||'')+'</div></div>';
+    }).join('');
+    document.getElementById('reviews-sec').hidden=false;              // odkry až keď sú dáta
+  }).catch(function(){});
+})();
+</script>
+
 <!-- ══════ HOW ══════ -->
 <section class="how" id="ako">
   <div class="how-inner">
