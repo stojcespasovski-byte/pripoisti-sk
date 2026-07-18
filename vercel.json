@@ -2,6 +2,7 @@
   "redirects": [
     { "source": "/app.html", "destination": "/", "permanent": true },
     { "source": "/index.html", "destination": "/", "permanent": true },
+    { "source": "/pripoisti-v2.html", "destination": "/", "permanent": true },
     { "source": "/radca/:slug.html", "destination": "/poradna/:slug", "permanent": true },
     { "source": "/radca/:slug", "destination": "/poradna/:slug", "permanent": true },
     { "source": "/radca", "destination": "/poradna", "permanent": true },
