@@ -4271,11 +4271,125 @@ async function rateAttempt(uid, codes, risks, freq) {
   }
 }
 
-/* ── Hlavné volanie: auth → rate (4 frekvencie) → ceny ──
+/* ══════════ CENOVÁ MATICA: POST /rate-matrix (backend) ══════════
+   Cutover z buildRateXML→/pillow. Backend vráti indexovanú maticu
+   matrix[risk][variant][spoluúčasť] = {annual,monthly,semiannual,quarterly}
+   (splátky za obdobie pri danej lehote). FE ju „rozbalí" do ROVNAKÝCH
+   globálov ako pôvodná cesta → zvyšok kalkulačky sa nemení.
+   Parita s pôvodnou cestou overená do centu (8 vstupných dimenzií).
+   Rollback: USE_RATE_MATRIX = false → pôvodná fetchPricesLegacy. */
+const USE_RATE_MATRIX = true;
+
+/* Pillow číselník 82 (spôsob užívania) → kanonický `ucel` pre /rate-matrix.
+   Mapovanie overené parita testom (bezna→10, taxi→02, pozicovna→03, autoskola→11). */
+const VEHUSE_TO_UCEL = { '10':'bezna', '02':'taxi', '03':'pozicovna', '11':'autoskola' };
+/* maticový freq kľúč → [Pillow paymentFrequency, počet mesiacov v období] */
+const MATRIX_FREQ = { monthly:[12,1], quarterly:[4,3], semiannual:[2,6], annual:[1,12] };
+
+/* Kanonický request pre /rate-matrix z aktuálneho stavu (rovnaké vstupy ako buildRateXML). */
+function buildRateMatrixReq() {
+  const v = lookup.vehicle || {}, p = lookup.poistnik || {};
+  const codes = resolveVehicleCodes();   // autoritatívne Pillow kódy (backend resolver/overrides)
+  return {
+    insurer: 'pillow',
+    start_date: todayISO(),
+    vehicle: {
+      druh:    v.typ || 'OA',
+      znacka:  v.znacka || '',
+      model:   v.model || '',
+      palivo:  v.palivo || '',
+      objem:   parseInt(v.objem) || 0,
+      vykon:   parseInt(v.vykon) || 0,
+      hmotnost:parseInt(v.hmotnost) || 0,
+      value:   parseFloat(v.cenaVozidla) || 0,
+      ucel:    VEHUSE_TO_UCEL[vehUse] || 'bezna',
+      najazd:  parseInt(v.najazd) || 15000,
+      x4:      !!v.pohon,
+      garazovane: vehGaraged,
+      zmluvny_servis: vehContractualService,
+      first_registration: v.datumReg || '',
+      // už-vyriešené kódy pošleme 1:1 (backend ich použije namiesto re-resolvingu → žiadny drift)
+      pillow_brand_kod: codes.brandCode,
+      pillow_model_kod: codes.modelCode,
+    },
+    party: {
+      typ:  p.typ || 'fo',
+      rc:   (p.rc || '').replace(/\D/g, ''),
+      ico:  p.ico || '',
+      psc:  cleanPsc(p.psc),
+      obec: p.obec || '',
+    },
+  };
+}
+
+/* Rozbalí maticu do pillowVariantPrices/pillowFreqPrices/pillowRiskPrices
+   v tvare, aký očakáva zvyšok UI (monthPremium per Pillow freq). */
+function ingestMatrix(matrix) {
+  matrix = matrix || {};
+  const freqs = [12, 4, 2, 1];
+  pillowVariantPrices = {}; pillowRiskPrices = {}; pillowFreqPrices = {};
+  freqs.forEach(pf => { pillowVariantPrices[pf] = {}; pillowRiskPrices[pf] = {}; });
+
+  // zapíš ceny jedného variantu do pillowVariantPrices[pf][risk][variantKey]
+  const put = (risk, variantKey, cell) => {
+    if (!cell) return;
+    for (const fk in MATRIX_FREQ) {
+      const [pf, months] = MATRIX_FREQ[fk];
+      const inst = cell[fk];
+      if (inst == null) continue;
+      (pillowVariantPrices[pf][risk] = pillowVariantPrices[pf][risk] || {})[variantKey] = inst / months;
+    }
+  };
+  // havarijné: matrix[risk]._[150/300/600] → varianty risk_150/300/600
+  ['HP2','SZ2','OV2','ZV2','VA2'].forEach(risk => {
+    const node = matrix[risk] && matrix[risk]['_']; if (!node) return;
+    ['150','300','600'].forEach(ded => put(risk, `${risk}_${ded}`, node[ded]));
+  });
+  // sklá: matrix.SK2._["10%"] → variant SK2_STANDARD
+  put('SK2', 'SK2_STANDARD', matrix.SK2 && matrix.SK2['_'] && matrix.SK2['_']['10%']);
+  // variantové: matrix[risk][variantKod]["null"] → variant = variantKod
+  ['AS2','UR2','ZA2'].forEach(risk => {
+    const node = matrix[risk]; if (!node) return;
+    Object.keys(node).forEach(vk => put(risk, vk, node[vk] && node[vk]['null']));
+  });
+
+  // pillowRiskPrices[pf][risk] = „chosen"/default variant (per-riziko pre Záznam);
+  // pillowFreqPrices[pf][tile] = súčet default rizík (fallback pre monthEqFor)
+  const CHOSEN = { HP2:'HP2_300', SZ2:'SZ2_300', OV2:'OV2_300', ZV2:'ZV2_300', VA2:'VA2_300',
+                   SK2:'SK2_STANDARD', AS2:'AS2_L', UR2:'UR2_1', ZA2:'ZA2_750' };
+  freqs.forEach(pf => {
+    for (const risk in CHOSEN) {
+      const val = pillowVariantPrices[pf][risk] && pillowVariantPrices[pf][risk][CHOSEN[risk]];
+      if (val != null) pillowRiskPrices[pf][risk] = val;
+    }
+    pillowFreqPrices[pf] = tilePricesFromRisks(pillowRiskPrices[pf]);
+  });
+}
+
+/* Nové hlavné volanie: 1× POST /rate-matrix → rozbalenie matice. */
+async function fetchPricesMatrix() {
+  const res = await fetch(`${API_BASE}/rate-matrix`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(buildRateMatrixReq()),
+  });
+  if (!res.ok) throw new Error('rate-matrix HTTP ' + res.status);
+  const data = await res.json();
+  if (data && Array.isArray(data.errors) && data.errors.length) console.warn('rate-matrix:', data.errors);
+  ingestMatrix(data && data.matrix);
+  return pillowFreqPrices[12] || {};
+}
+
+/* Dispatcher: nová maticová cesta, alebo pôvodná (rollback za flagom). */
+async function fetchPillowPrices() {
+  return USE_RATE_MATRIX ? fetchPricesMatrix() : fetchPricesLegacy();
+}
+
+/* ── PÔVODNÁ cesta (rollback: USE_RATE_MATRIX=false) — auth → rate (4 frekvencie) → ceny ──
    Pillow je all-or-nothing: jedno odmietnuté riziko (alebo závislosť, napr.
    HP2 vyžaduje SZ2) zhodí celý výpočet. Pri freq=12 odmietnuté riziká
    postupne zahadzujeme; zvyšné frekvencie použijú funkčnú množinu rizík. */
-async function fetchPillowPrices() {
+async function fetchPricesLegacy() {
   let uid;
   try {
     uid = await pillowAuth();
