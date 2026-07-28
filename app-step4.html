@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>pripoisti.sk — Súhrn</title>
 <meta name="robots" content="noindex, follow"><!-- procesný krok formulára — neindexovať -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -696,12 +696,77 @@ function parseSave(xml) {
   };
 }
 
-/* ── BCRM zmluva (best-effort — neblokuje success) ── */
-async function sendBcrm(policyId, varSym) {
+/* Pillow riziko → kanonický kód (zdroj pravdy = backend adaptér, nie preklad vo FE).
+   Používa sa v CRM zmluve (selectedRisks) aj v Zázname (rizika[].id). */
+const ZAZ_CODE_ID = { HP2:'havaria', SZ2:'zver', ZV2:'zivel', OV2:'kradez',
+  VA2:'vandalizmus', SK2:'sklo', ZA2:'batozina', UR2:'uraz', AS2:'asistencia', PR2:'pzp' };
+
+/* ── BCRM zmluva (best-effort — neblokuje success) ──
+   Tvar zladený s poistenieskla.sk (dialekt, ktorý CRM číta): pillowCisloZmluvy,
+   totalMonthPremium, paymentFrequency, zaciatok, selectedRisks, adresa{}, prilohy[{}].
+   pripoisti.sk je VEREJNÁ appka → bez uid/pracovnika (obchodníka), brand='pripoisti'.
+   pdfBase64 = Pillow PDF návrhu (data URL) zachytené v stave PRE → CRM príloha. */
+async function sendBcrm(policyId, varSym, pdfBase64, calcId) {
+  const typMap = { fo:'FO', po:'PO', szco:'SZCO', cudzinec:'FO' };
+  const klientTyp = typMap[P.typ] || 'FO';
+  const klient = {
+    typ: klientTyp,
+    email: P.email || '',
+    tel: P.tel || '',
+    cudzinec: P.typ === 'cudzinec' || !!P.cudzinec,
+    adresa: { ulica: P.ulica || '', cislo: P.cislo || '', obec: P.obec || '', psc: (P.psc || '').replace(/\s/g, '') },
+  };
+  if (klientTyp === 'FO' || klientTyp === 'SZCO') {
+    klient.meno = P.meno || '';
+    klient.priezvisko = P.priezvisko || '';
+    klient.rodneCislo = P.rc || '';
+    klient.datumNar = P.datumNar || '';
+    klient.dokladCislo = P.dokladCislo || '';
+    klient.statnaPrislusnost = P.statnaPrislusnost || '';
+  }
+  if (klientTyp === 'PO' || klientTyp === 'SZCO') {
+    klient.ico = P.ico || '';
+    klient.nazov = P.nazov || '';
+  }
+  // vybrané riziká ako kanonické kódy (combo dlaždica → obe riziká)
+  const selCodes = new Set((order.tiles || []).flatMap(t => (t.risks || []).map(r => r.risk)));
+  const selectedRisks = [...selCodes].map(c => ZAZ_CODE_ID[c] || c);
+
+  // prílohy do CRM: Pillow PDF návrhu (len FE ho má zo stavu PRE) + Záznam o sprostredkovaní
+  const prilohy = [];
+  if (pdfBase64) prilohy.push({ nazov: `Navrh_zmluvy_${policyId}.pdf`, typ: 'application/pdf', data: String(pdfBase64).split(',')[1] || '' });
+  try {
+    const zdata = buildZaznamData(); zdata.cisloNavrhu = policyId || zdata.cisloNavrhu;
+    const zres = await fetch(`${API_BASE}/bcrm/docs/zaznam?format=pdf`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(zdata),
+    });
+    if (zres.ok) {
+      const zblob = await zres.blob();
+      const zb64 = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(String(fr.result).split(',')[1] || null); fr.readAsDataURL(zblob); });
+      if (zb64) prilohy.push({ nazov: `Zaznam_o_sprostredkovani_${policyId}.pdf`, typ: 'application/pdf', data: zb64 });
+    }
+  } catch (_) { /* Záznam je doplnková príloha, neblokuje zmluvu */ }
+
   const payload = {
-    klient: { typ, ico: P.ico || '', nazov: P.nazov || '', rc: P.rc || '', meno: P.meno || '', priezvisko: P.priezvisko || '', email: P.email || '', telefon: P.tel || '', obec: P.obec || '', psc: P.psc || '', ulica: P.ulica || '', cislo: P.cislo || '' },
-    vozidlo: { ecv: V.ecv || '', vin: V.vin || '', znacka: V.znacka || '', model: V.model || '', typ: (VT_VALID.has(V.typ) ? V.typ : 'OA'), palivo: V.palivo || '', vykon: parseInt(V.vykon) || 0, objem: parseInt(V.objem) || 0 },
-    zmluva: { cisloZmluvy: policyId, datumOd: order.poistenieOd || '', frekvencia: pf, cena: orderTotal, varSym: varSym || '', produkty: (order.tiles || []).map(t => t.id) },
+    klient,
+    vozidlo: {
+      ecv: V.ecv || '', vin: V.vin || '', znacka: V.znacka || '', model: V.model || '',
+      typ: (VT_VALID.has(V.typ) ? V.typ : 'OA'), palivo: V.palivo || '',
+      vykon: parseInt(V.vykon) || 0, objem: parseInt(V.objem) || 0,
+    },
+    zmluva: {
+      pillowCisloZmluvy: policyId,
+      pillowCalcId:      calcId || '',
+      totalMonthPremium: orderTotal,                 // splátka za zvolenú lehotu
+      paymentFrequency:  pf,                          // 12/4/2/1
+      zaciatok:          order.poistenieOd || '',
+      spoluUcast:        order.spoluUcast || '',
+      selectedRisks,
+      poistovna:         'Pillow pojišťovna, a. s.',
+      produkt:           'Poistenie vozidla',
+      varSym:            varSym || '',
+    },
+    prilohy,
     brand: 'pripoisti',
   };
   const r = await fetch(BCRM_ZMLUVA, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -780,7 +845,7 @@ async function submitOrder() {
 
     // 4) BCRM (best-effort)
     let bcrmOk = true;
-    try { await sendBcrm(final.policyId, final.varSym); } catch (e) { bcrmOk = false; console.error('BCRM zmluva:', e); }
+    try { await sendBcrm(final.policyId, final.varSym, pdfBase64, check.calcId || rate.calcId); } catch (e) { bcrmOk = false; console.error('BCRM zmluva:', e); }
 
     localStorage.removeItem('pripoisti_order');
     showSuccess(final.policyId, final.varSym, bcrmOk);
@@ -929,7 +994,7 @@ function buildZaznamData() {
     rizika = Object.keys(rpf)
       .sort((a, b) => ((ZAZ_RISK_PORADIE[a] ?? 99) - (ZAZ_RISK_PORADIE[b] ?? 99)))
       .map(code => ({
-        nazov: ZAZ_CODE_NAZOV[code] || code,
+        id: ZAZ_CODE_ID[code] || code,          // kanonický kód, názov doplní backend
         krytie: ZAZ_CODE_KRYTIE[code] || '',
         cena: +(rpf[code] * mult).toFixed(2),
         zvolil: selCodes.has(code),
