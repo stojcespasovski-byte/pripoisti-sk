@@ -123,28 +123,26 @@ nav.scrolled { background: rgba(17,17,17,.97); border-bottom: 1px solid rgba(255
 .mobile-menu {
   display: none;
   position: absolute; left: 0; right: 0; top: 100%;
-  background: #1b1b1b;
-  /* rámiky AŽ pri otvorení — pri max-height:0 sa border stále vykresľuje
-     a pod hlavičkou by ostala 2px sivá linka */
-  border-top: 0 solid rgba(255,255,255,.1);
-  border-bottom: 0 solid rgba(255,255,255,.1);
+  /* takmer priehľadné — nad hero pôsobí ako súčasť pozadia, ale dole na stránke
+     udrží oranžový text čitateľný nad obsahom (ktorý má tiež oranžové prvky) */
+  background: rgba(10,7,6,.8);
+  /* rámik AŽ pri otvorení — pri max-height:0 sa border stále vykresľuje
+     a pod hlavičkou by ostala sivá linka */
+  border-bottom: 0 solid rgba(232,130,26,.22);
   max-height: 0; overflow: hidden;
   transition: max-height .28s cubic-bezier(.22,1,.36,1);
 }
 .mobile-menu.open {
   max-height: 220px;
-  border-top-width: 1px;
   border-bottom-width: 1px;
 }
 .mm-link {
-  display: block; padding: 14px 18px;
+  display: block; padding: 13px 18px;
   text-align: right;                      /* zarovnanie napravo */
-  font-size: 15px; font-weight: 500;
-  color: rgba(255,255,255,.9); text-decoration: none;
-  border-bottom: 1px solid rgba(255,255,255,.06);
+  font-size: 15px; font-weight: 700;
+  color: var(--o); text-decoration: none;  /* brandová oranžová */
 }
-.mm-link:last-child { border-bottom: none; }
-.mm-link:active { background: rgba(255,255,255,.05); }
+.mm-link:active { background: rgba(232,130,26,.08); }
 
 /* ─── HERO ─── */
 .hero {
