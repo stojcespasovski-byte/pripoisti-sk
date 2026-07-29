@@ -68,7 +68,8 @@ a{color:var(--o);text-decoration:none}
 a:hover{color:var(--a)}
 .hd{position:sticky;top:0;z-index:10;background:rgba(17,17,17,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--bd)}
 .hd-in{max-width:1080px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px}
-.logo{font-size:21px;font-weight:900;letter-spacing:-.5px}
+.logo{font-size:21px;font-weight:900;letter-spacing:-.5px;display:block;line-height:0}
+.logo img{display:block;height:39px;width:auto}
 .logo span{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .logo small{color:rgba(255,255,255,.35);font-weight:700;font-size:12px;margin-left:2px}
 .nav{display:flex;align-items:center;gap:22px;font-size:15px;font-weight:600}
@@ -127,9 +128,9 @@ hr{border:none;border-top:1px solid var(--bd);margin:36px 0}
 
 <header class="hd">
   <div class="hd-in">
-    <a href="/" class="logo"><span>pripoisti.sk</span><small>automanager</small></a>
+    <a href="/" class="logo" aria-label="pripoisti.sk"><img src="/logo.svg" alt="pripoisti.sk" width="133" height="39"></a>
     <nav class="nav">
-      <a class="muted" href="/#ako-to-funguje">Ako to funguje</a>
+      <a class="muted" href="/#ako">Ako to funguje</a>
       <a class="muted" href="/poradna">Poradňa</a>
       <a class="cta-btn" href="/">Spočítať cenu</a>
     </nav>
