@@ -4972,7 +4972,7 @@ function openVehModal(e, prefill) {
   }
   fillFarbySelect();                                 // číselník z backendu (async, dovtedy „Načítavam…")
   // vyčistiť polia
-  ['vm-znacka', 'vm-model', 'vm-typ', 'vm-datum', 'vm-palivo', 'vm-objem', 'vm-vykon', 'vm-hmotnost', 'vm-farba', 'vm-vin', 'vm-ina-text', 'vm-free-znacka', 'vm-free-model', 'vm-cena'].forEach(id => { const el = g(id); if (el) el.value = ''; });
+  ['vm-znacka', 'vm-model', 'vm-typ', 'vm-datum', 'vm-palivo', 'vm-objem', 'vm-vykon', 'vm-hmotnost', 'vm-farba', 'vm-ecv', 'vm-vin', 'vm-ina-text', 'vm-free-znacka', 'vm-free-model', 'vm-cena'].forEach(id => { const el = g(id); if (el) el.value = ''; });
   g('vm-model').disabled = true;
   g('vm-model').innerHTML = '<option value="">Vyberte model…</option>';
   g('vm-ina-wrap').style.display = 'none';
@@ -4982,11 +4982,12 @@ function openVehModal(e, prefill) {
 
   if (prefill) prefillVehModal();                   // predvyplniť z lookupu (netreba prepisovať všetko)
   else {
-    // vozidlo sa nenašlo → aspoň prenes VIN/EČV, ktoré klient práve zadal,
-    // nech ho nepíše druhýkrát (lookup.vehicle ho drží aj pri neúspechu)
+    // vozidlo sa nenašlo → prenes, čo klient zadal, do SPRÁVNEHO poľa:
+    // EČV do EČV, VIN do VIN (inak by musel predvyplnené EČV prepisovať VIN-om)
     const lv = lookup.vehicle || {};
-    const vmVin = g('vm-vin');
-    if (vmVin) vmVin.value = lv.vin || lv.ecv || '';
+    const vmEcv = g('vm-ecv'), vmVin = g('vm-vin');
+    if (vmEcv) vmEcv.value = lv.ecv || '';
+    if (vmVin) vmVin.value = lv.vin || '';
   }
   onVmTypChange();                                   // ukáže správne polia + km číselník
   g('vm-overlay').style.display = 'flex';
@@ -5030,7 +5031,8 @@ function prefillVehModal() {
     const sel = g('vm-farba');
     if (sel && [...sel.options].some(o => o.value === want)) sel.value = want;
   }).catch(() => {});
-  g('vm-vin').value      = v.vin || v.ecv || '';
+  g('vm-vin').value      = v.vin || '';
+  const vmEcvEl = g('vm-ecv'); if (vmEcvEl) vmEcvEl.value = v.ecv || '';
   // km + cena doplní onVmTypChange (km predvyberie z v.najazd); cena ostáva prázdna
 }
 
@@ -5175,6 +5177,7 @@ async function saveVehModal() {
   if (needsCena && !(parseFloat(cena) > 0)) errs.push('cenu vozidla');
   const vin = g('vm-vin').value.trim().toUpperCase();
   if (vin.length !== 17) errs.push('VIN (presne 17 znakov)');
+  const ecvVal = (g('vm-ecv')?.value || '').trim().toUpperCase().replace(/[\s-]/g, '');
   if (errs.length) { const e = g('vm-error'); e.textContent = 'Vyplňte: ' + errs.join(', ') + '.'; e.style.display = ''; return; }
 
   // Hmotnosť podľa typu — Pillow: osobné do 3500 kg, nákladné od 3501 kg
@@ -5195,11 +5198,12 @@ async function saveVehModal() {
   const v = lookup.vehicle || (lookup.vehicle = {});
   Object.assign(v, { znacka, model, typ, datumReg: datum, palivo, objem, vykon, hmotnost,
                      farba, vin, cenaVozidla: needsCena ? cena : '', pohon: false });
+  // EČV z modalu; keď ho klient nevyplnil, nechaj pôvodné zadanie z Kroku 1
+  if (ecvVal) v.ecv = ecvVal;
   // km z modalu (non-OA); inak ostáva z Kroku 1
   const kmWrap = g('vm-km-wrap');
   if (kmWrap && kmWrap.style.display !== 'none' && g('vm-km').value) v.najazd = g('vm-km').value;
   updateEntryKmOptions();                 // zosúladiť roletu v Kroku 1 s typom/km z modalu
-  // v.ecv zostáva z pôvodného zadania
 
   // Nezatvárať modal pred prepočtom — ak ceny zlyhajú, klient musí vedieť opraviť údaje vozidla
   const ok = await recalcPrices(false, true);   // 2. param = z modalu
@@ -6035,10 +6039,14 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
     <div class="vm-sub">Zadajte údaje o vozidle, ktoré chcete poistiť.</div>
     <div class="vm-grid">
       <!-- 0) EČV/VIN — hľadá v databáze (pri uzatvorení treba VIN 17 znakov) -->
+      <div class="vm-field">
+        <label>EČV</label>
+        <input id="vm-ecv" placeholder="napr. BA123AB" maxlength="10" autocapitalize="characters" style="text-transform:uppercase" autocomplete="off">
+      </div>
       <div class="vm-field full vm-vin-field">
-        <label>EČV/VIN</label>
+        <label>VIN <span style="color:rgba(255,255,255,.4);font-weight:400">(17 znakov)</span></label>
         <div class="vm-vin-wrap">
-          <input id="vm-vin" placeholder="EČV alebo VIN" maxlength="17" autocapitalize="characters" style="text-transform:uppercase;padding-right:38px" oninput="onVmVinInput()">
+          <input id="vm-vin" placeholder="napr. TMBZZZ1Z3J2123456" maxlength="17" autocapitalize="characters" style="text-transform:uppercase;padding-right:38px" oninput="onVmVinInput()">
           <span class="vm-spinner" id="vm-spinner" aria-hidden="true"></span>
         </div>
         <div class="vm-vin-hint" id="vm-vin-hint" style="font-size:12px;margin-top:5px;line-height:1.4;"></div>
