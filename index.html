@@ -1940,30 +1940,36 @@ const PILLOW_FUEL_MAP = {
   elektro:'EP', elektrina:'EP', EP:'EP', hybrid:'HY', HY:'HY',
   lpg:'PB', cng:'PB', plyn:'PB', PB:'PB',
 };
-/* Pillow číselník farieb — zrkadlí COLOUR_CODES v app-step4.html, kde sa názov
-   prekladá na kód (save vyžaduje kód, nie voľný text). Názvy musia sedieť presne. */
-const PILLOW_FARBY = [
-  'BIELA', 'BIELA METALÍZA', 'ČERVENÁ', 'ČERVENÁ METALÍZA', 'ČERVENÁ METALÍZA PASTELOVÁ',
-  'ČERVENÁ METALÍZA SVETLÁ', 'ČERVENÁ METALÍZA TMAVÁ', 'ČERVENÁ PASTELOVÁ', 'ČERVENÁ SVETLÁ', 'ČERVENÁ TMAVÁ',
-  'ČIERNA', 'ČIERNA METALÍZA', 'FIALOVÁ', 'FIALOVÁ METALÍZA', 'FIALOVÁ METALÍZA PASTELOVÁ',
-  'FIALOVÁ METALÍZA SVETLÁ', 'FIALOVÁ METALÍZA TMAVÁ', 'FIALOVÁ PASTELOVÁ', 'FIALOVÁ SVETLÁ', 'FIALOVÁ TMAVÁ',
-  'HNEDÁ', 'HNEDÁ METALÍZA', 'HNEDÁ METALÍZA PASTELOVÁ', 'HNEDÁ METALÍZA SVETLÁ', 'HNEDÁ METALÍZA TMAVÁ',
-  'HNEDÁ PASTELOVÁ', 'HNEDÁ SVETLÁ', 'HNEDÁ TMAVÁ', 'MODRÁ', 'MODRÁ METALÍZA', 'MODRÁ METALÍZA PASTELOVÁ',
-  'MODRÁ METALÍZA SVETLÁ', 'MODRÁ METALÍZA TMAVÁ', 'MODRÁ PASTELOVÁ', 'MODRÁ SVETLÁ', 'MODRÁ TMAVÁ',
-  'MODROZELENÁ', 'MODROZELENÁ METALÍZA', 'MODROZELENÁ METALÍZA PASTELOVÁ', 'MODROZELENÁ METALÍZA SVETLÁ',
-  'MODROZELENÁ METALÍZA TMAVÁ', 'MODROZELENÁ PASTELOVÁ', 'MODROZELENÁ SVETLÁ', 'MODROZELENÁ TMAVÁ', 'ORANŽOVÁ',
-  'ORANŽOVÁ METALÍZA - ZLATÁ', 'ORANŽOVÁ METALÍZA PASTELOVÁ', 'ORANŽOVÁ METALÍZA SVETLÁ',
-  'ORANŽOVÁ METALÍZA TMAVÁ', 'ORANŽOVÁ PASTELOVÁ', 'ORANŽOVÁ SVETLÁ', 'ORANŽOVÁ TMAVÁ', 'RUŽOVÁ',
-  'RUŽOVÁ METALÍZA', 'RUŽOVÁ METALÍZA PASTELOVÁ', 'RUŽOVÁ METALÍZA SVETLÁ', 'RUŽOVÁ METALÍZA TMAVÁ',
-  'RUŽOVÁ PASTELOVÁ', 'RUŽOVÁ SVETLÁ', 'RUŽOVÁ TMAVÁ', 'ŠEDÁ', 'ŠEDÁ METALÍZA', 'ŠEDÁ METALÍZA TMAVÁ',
-  'ŠEDÁ PASTELOVÁ', 'ŠEDÁ SVETLÁ', 'ŠEDÁ TMAVÁ', 'ŠEDOMODRÁ', 'ŠEDOZELENÁ', 'ŠEDOZELENÁ METALÍZA', 'STRIEBORNÁ',
-  'STRIEBORNÁ METALÍZA PASTELOVÁ', 'STRIEBORNÁ METALÍZA SVETLÁ', 'ZELENÁ', 'ZELENÁ METALÍZA',
-  'ZELENÁ METALÍZA PASTELOVÁ', 'ZELENÁ METALÍZA SVETLÁ', 'ZELENÁ METALÍZA TMAVÁ', 'ZELENÁ PASTELOVÁ',
-  'ZELENÁ SVETLÁ', 'ZELENÁ TMAVÁ', 'ZELENOŽLTÁ', 'ZELENOŽLTÁ METALÍZA', 'ZELENOŽLTÁ METALÍZA PASTELOVÁ',
-  'ZELENOŽLTÁ METALÍZA SVETLÁ', 'ZELENOŽLTÁ METALÍZA TMAVÁ', 'ZELENOŽLTÁ PASTELOVÁ', 'ZELENOŽLTÁ SVETLÁ',
-  'ZELENOŽLTÁ TMAVÁ', 'ŽLTÁ', 'ŽLTÁ METALÍZA - ZLATÁ', 'ŽLTÁ METALÍZA PASTELOVÁ', 'ŽLTÁ METALÍZA SVETLÁ',
-  'ŽLTÁ METALÍZA TMAVÁ', 'ŽLTÁ PASTELOVÁ', 'ŽLTÁ SVETLÁ', 'ŽLTÁ TMAVÁ',
-];
+/* Pillow číselník farieb — jeden zdroj: backend GET /ciselnik/farby (Pillow 723/SKP).
+   Kópiu vo frontende zámerne NEdržíme, aby sa nemohla rozísť s číselníkom. */
+let PILLOW_FARBY = null, _farbyPromise = null;
+/* Naplní roletku farieb; zachová už zvolenú hodnotu. Pri zlyhaní ponúkne skúsiť znova,
+   aby klient neuviazol na povinnom poli. */
+function fillFarbySelect() {
+  const sel = document.getElementById('vm-farba');
+  if (!sel || sel.dataset.filled === '1') return;
+  const keep = sel.value;
+  sel.innerHTML = '<option value="">Načítavam…</option>';
+  ensureFarby().then(list => {
+    sel.innerHTML = '<option value="">Vyberte farbu…</option>' +
+      list.map(f => `<option value="${f}">${f}</option>`).join('');
+    sel.dataset.filled = '1';
+    if (keep && [...sel.options].some(o => o.value === keep)) sel.value = keep;
+  }).catch(() => {
+    sel.innerHTML = '<option value="">Nepodarilo sa načítať — kliknite sem</option>';
+    sel.onmousedown = () => { sel.onmousedown = null; fillFarbySelect(); };
+  });
+}
+function ensureFarby() {
+  if (PILLOW_FARBY) return Promise.resolve(PILLOW_FARBY);
+  if (!_farbyPromise) {
+    _farbyPromise = fetch(`${API_BASE}/ciselnik/farby`)
+      .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(list => (PILLOW_FARBY = list.map(x => x.nazov)))
+      .catch(e => { _farbyPromise = null; throw e; });
+  }
+  return _farbyPromise;
+}
 const PILLOW_VEHICLETYPE_VALID = new Set(['OA','MO','NA','OBY','AB','ABM','4K','TAH','PN','PV','SAN','SPS','TBM','TRA','VZV','EB','EK','EV']);
 const PILLOW_PARTYTYPE_MAP = { fo:'FORC', po:'PO', szco:'OSVC' };
 const PILLOW_BRAND_MAP = {
@@ -4964,11 +4970,7 @@ function openVehModal(e, prefill) {
       '<option value="__INA__">Iná (nie je v zozname)</option>';
     _vmBrandsFilled = true;
   }
-  const farbaSel = g('vm-farba');
-  if (farbaSel && farbaSel.options.length <= 1) {
-    farbaSel.innerHTML = '<option value="">Vyberte farbu…</option>' +
-      PILLOW_FARBY.map(f => `<option value="${f}">${f}</option>`).join('');
-  }
+  fillFarbySelect();                                 // číselník z backendu (async, dovtedy „Načítavam…")
   // vyčistiť polia
   ['vm-znacka', 'vm-model', 'vm-typ', 'vm-datum', 'vm-palivo', 'vm-objem', 'vm-vykon', 'vm-hmotnost', 'vm-farba', 'vm-vin', 'vm-ina-text', 'vm-free-znacka', 'vm-free-model', 'vm-cena'].forEach(id => { const el = g(id); if (el) el.value = ''; });
   g('vm-model').disabled = true;
@@ -5021,12 +5023,13 @@ function prefillVehModal() {
   g('vm-objem').value    = v.objem    || '';
   g('vm-vykon').value    = v.vykon    || '';
   g('vm-hmotnost').value = v.hmotnost || '';
-  // farba z DB býva rôzne písaná („modrá", „Modrá tmavá") → zhoda na číselník veľkými
-  const fs_ = g('vm-farba');
-  if (fs_) {
-    const f = (v.farba || '').trim().toUpperCase().replace(/\s+/g, ' ');
-    fs_.value = [...fs_.options].some(o => o.value === f) ? f : '';
-  }
+  // farba z DB býva rôzne písaná („modrá", „Modrá tmavá") → zhoda na číselník veľkými.
+  // Roletka sa plní zo servera, tak hodnotu nastavíme až keď je načítaná.
+  const want = (v.farba || '').trim().toUpperCase().replace(/\s+/g, ' ');
+  if (want) ensureFarby().then(() => {
+    const sel = g('vm-farba');
+    if (sel && [...sel.options].some(o => o.value === want)) sel.value = want;
+  }).catch(() => {});
   g('vm-vin').value      = v.vin || v.ecv || '';
   // km + cena doplní onVmTypChange (km predvyberie z v.najazd); cena ostáva prázdna
 }
