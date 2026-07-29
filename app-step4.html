@@ -710,6 +710,24 @@ const ZAZ_CODE_ID = { HP2:'havaria', SZ2:'zver', ZV2:'zivel', OV2:'kradez',
 
    Výnimka: číslo dokladu a štátnu príslušnosť Pillow nepozná, v jeho XML nie sú.
    Tie mu pošleme zvlášť PRED uzavretím; odložia sa a pripoja k potvrdenej zmluve. */
+/* Znenie odklikaných súhlasov — čítame priamo z DOM, aby v Zázname stálo
+   PRESNE to, čo mal klient na obrazovke (nie druhá kópia textu v kóde). */
+function collectSuhlasy() {
+  const out = [];
+  document.querySelectorAll('.suhlas-item').forEach(item => {
+    const cb = item.querySelector('input[type="checkbox"]');
+    const lb = item.querySelector('label');
+    if (!cb || !lb) return;
+    const text = lb.textContent.replace(/\s+/g, ' ').replace(/\(nepovinné\)/i, '').trim();
+    if (text) out.push({ text, hodnota: !!cb.checked });
+  });
+  out.push({
+    text: 'Predpokladaný ročný nájazd',
+    hodnota: V.najazd ? Number(V.najazd).toLocaleString('sk-SK') + ' km' : '–',
+  });
+  return out;
+}
+
 async function sendPillowDoplnky(calcId) {
   if (!calcId) return;
   await fetch(`${API_BASE}/pillow/doplnky/${encodeURIComponent(calcId)}`, {
@@ -718,6 +736,7 @@ async function sendPillowDoplnky(calcId) {
     body: JSON.stringify({
       dokladCislo: P.dokladCislo || '',
       statnaPrislusnost: P.statnaPrislusnost || '',
+      suhlasy: collectSuhlasy(),
     }),
   });
 }
