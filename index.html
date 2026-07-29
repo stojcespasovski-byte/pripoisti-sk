@@ -114,6 +114,32 @@ nav.scrolled { background: rgba(17,17,17,.97); border-bottom: 1px solid rgba(255
 }
 .nav-cta:hover { background: rgba(232,130,26,.12); transform: translateY(-1px); }
 
+/* ── mobilné menu (hamburger) — zapína sa až v @media nižšie, desktop ostáva bez zmeny ── */
+.nav-burger {
+  display: none;
+  background: none; border: none; padding: 4px; cursor: pointer;
+  color: rgba(255,255,255,.85); align-items: center; line-height: 0;
+}
+.mobile-menu {
+  display: none;
+  position: absolute; left: 0; right: 0; top: 100%;
+  background: #1b1b1b;
+  border-top: 1px solid rgba(255,255,255,.1);
+  border-bottom: 1px solid rgba(255,255,255,.1);
+  max-height: 0; overflow: hidden;
+  transition: max-height .28s cubic-bezier(.22,1,.36,1);
+}
+.mobile-menu.open { max-height: 220px; }
+.mm-link {
+  display: block; padding: 14px 18px;
+  text-align: right;                      /* zarovnanie napravo */
+  font-size: 15px; font-weight: 500;
+  color: rgba(255,255,255,.9); text-decoration: none;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.mm-link:last-child { border-bottom: none; }
+.mm-link:active { background: rgba(255,255,255,.05); }
+
 /* ─── HERO ─── */
 .hero {
   min-height: 100vh;
@@ -1035,9 +1061,11 @@ footer {
   .entry-input { font-size: 16px; height: 46px; }
   nav { padding: 10px 16px; }
   .nav-logo svg { height: 36px; }
-  .nav-link { display: none; }               /* na mobile ostáva logo + CTA */
+  .nav-link { display: none; }               /* odkazy idú do hamburger menu */
+  .nav-cta { display: none; }                /* na mobile zbytočné — kalkulačka je hneď pod hero + sticky lišta dole */
+  .nav-burger { display: flex; }
+  .mobile-menu { display: block; }
   .nav-right { gap: 10px; }
-  .nav-cta { font-size: 14px; padding: 9px 16px; white-space: nowrap; }
   h1 { font-size: 32px; }
   .hero { padding: 112px 18px 48px; }   /* dosť miesta pod fixným nav, nech badge nie je schovaný */
   .covers-grid { grid-template-columns: 1fr; }
@@ -1139,6 +1167,15 @@ footer {
     <a href="#pripoistenia" class="nav-link">Pripoistenia</a>
     <a href="/poradna" class="nav-link">Poradňa</a>
     <a href="#entry-card" class="nav-cta" onclick="return scrollToEntry(event)">Začať teraz</a>
+    <button type="button" class="nav-burger" id="nav-burger" aria-label="Menu" aria-expanded="false" aria-controls="mobile-menu" onclick="toggleMobileMenu()">
+      <svg id="burger-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+  </div>
+  <!-- mobilné menu: rozbalí sa cez obsah (nav je fixed → stránka sa neposúva) -->
+  <div class="mobile-menu" id="mobile-menu">
+    <a href="/poradna" class="mm-link">Poradňa</a>
+    <a href="#pripoistenia" class="mm-link" onclick="closeMobileMenu()">Pripoistenia</a>
+    <a href="#ako" class="mm-link" onclick="closeMobileMenu()">Ako to funguje</a>
   </div>
 </nav>
 
@@ -4748,6 +4785,32 @@ function revealQuote() {
 }
 
 /* „Zmeniť" — scroll späť hore k vstupným poliam */
+/* ── Mobilné menu (hamburger) ──
+   nav je position:fixed → panel sa rozbalí CEZ obsah, stránka sa neposúva. */
+const BURGER_ICON = '<path d="M4 7h16M4 12h16M4 17h16"/>';
+const CLOSE_ICON  = '<path d="M6 6l12 12M18 6L6 18"/>';
+function setMobileMenu(open) {
+  const menu = document.getElementById('mobile-menu');
+  const btn  = document.getElementById('nav-burger');
+  const icon = document.getElementById('burger-icon');
+  if (!menu || !btn) return;
+  menu.classList.toggle('open', open);
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if (icon) icon.innerHTML = open ? CLOSE_ICON : BURGER_ICON;
+}
+function toggleMobileMenu() {
+  const menu = document.getElementById('mobile-menu');
+  setMobileMenu(!(menu && menu.classList.contains('open')));
+}
+function closeMobileMenu() { setMobileMenu(false); }
+/* klik mimo hlavičky zavrie menu */
+document.addEventListener('click', e => {
+  const nav = document.getElementById('nav');
+  const menu = document.getElementById('mobile-menu');
+  if (menu && menu.classList.contains('open') && nav && !nav.contains(e.target)) closeMobileMenu();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMobileMenu(); });
+
 function scrollToEntry(e) {
   if (e) e.preventDefault();
   const el = document.getElementById('entry-card');
