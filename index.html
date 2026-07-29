@@ -4950,6 +4950,13 @@ function openVehModal(e, prefill) {
   const vh = g('vm-vin-hint'); if (vh) vh.textContent = '';
 
   if (prefill) prefillVehModal();                   // predvyplniť z lookupu (netreba prepisovať všetko)
+  else {
+    // vozidlo sa nenašlo → aspoň prenes VIN/EČV, ktoré klient práve zadal,
+    // nech ho nepíše druhýkrát (lookup.vehicle ho drží aj pri neúspechu)
+    const lv = lookup.vehicle || {};
+    const vmVin = g('vm-vin');
+    if (vmVin) vmVin.value = lv.vin || lv.ecv || '';
+  }
   onVmTypChange();                                   // ukáže správne polia + km číselník
   g('vm-overlay').style.display = 'flex';
   setTimeout(() => g('vm-cena')?.focus(), 60);       // rovno kurzor do ceny
@@ -4985,7 +4992,7 @@ function prefillVehModal() {
   g('vm-objem').value    = v.objem    || '';
   g('vm-vykon').value    = v.vykon    || '';
   g('vm-hmotnost').value = v.hmotnost || '';
-  g('vm-vin').value      = v.vin      || '';
+  g('vm-vin').value      = v.vin || v.ecv || '';
   // km + cena doplní onVmTypChange (km predvyberie z v.najazd); cena ostáva prázdna
 }
 
