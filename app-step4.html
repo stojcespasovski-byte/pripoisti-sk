@@ -372,7 +372,6 @@ const P = order.poistnik || {};
 
 const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? '' : 'https://alexapi.sk';
 const PILLOW = { BASE: API_BASE + '/pillow', AGENT: '771' };
-const BCRM_ZMLUVA = API_BASE + '/bcrm/zmluva';
 
 const xe = (t, v) => { if (v === '' || v == null) return ''; const s = String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); return `<${t}>${s}</${t}>`; };
 const dDot = iso => { if (!iso) return '–'; const [y, m, d] = iso.split('-'); return d ? `${d}.${m}.${y}` : iso; };
@@ -548,7 +547,10 @@ async function pillowAuth() {
 }
 async function pillowLogout(uid) { try { await fetch(`${PILLOW.BASE}/logout`, { method: 'POST', headers: { 'RestUid': uid } }); } catch (e) {} }
 async function pillowCall(uid, endpoint, xml) {
-  const r = await fetch(`${PILLOW.BASE}/${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'text/xml; charset=utf-8', 'RestUid': uid }, body: xml });
+  // X-Brand: podľa nej backend pozná, že zápis zmluvy do CRM má spraviť on.
+  // Bez nej sa nezapíše nič — cez tú istú proxy chodí aj poistenieskla.sk,
+  // ktorý si do CRM zapisuje sám (plošné zapnutie = duplicitné zmluvy).
+  const r = await fetch(`${PILLOW.BASE}/${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'text/xml; charset=utf-8', 'RestUid': uid, 'X-Brand': 'pripoisti' }, body: xml });
   const txt = await r.text();
   if (!r.ok) {
     const msgs = [...new DOMParser().parseFromString(txt, 'text/xml').querySelectorAll('msgText')].map(e => e.textContent).join('\n');
@@ -697,81 +699,27 @@ function parseSave(xml) {
 }
 
 /* Pillow riziko → kanonický kód (zdroj pravdy = backend adaptér, nie preklad vo FE).
-   Používa sa v CRM zmluve (selectedRisks) aj v Zázname (rizika[].id). */
+   Používa sa v Zázname (rizika[].id). */
 const ZAZ_CODE_ID = { HP2:'havaria', SZ2:'zver', ZV2:'zivel', OV2:'kradez',
   VA2:'vandalizmus', SK2:'sklo', ZA2:'batozina', UR2:'uraz', AS2:'asistencia', PR2:'pzp' };
 
-/* ── BCRM zmluva (best-effort — neblokuje success) ──
-   Tvar zladený s poistenieskla.sk (dialekt, ktorý CRM číta): pillowCisloZmluvy,
-   totalMonthPremium, paymentFrequency, zaciatok, selectedRisks, adresa{}, prilohy[{}].
-   pripoisti.sk je VEREJNÁ appka → bez uid/pracovnika (obchodníka), brand='pripoisti'.
-   pdfBase64 = Pillow PDF návrhu (data URL) zachytené v stave PRE → CRM príloha. */
-async function sendBcrm(policyId, varSym, pdfBase64, calcId) {
-  const typMap = { fo:'FO', po:'PO', szco:'SZCO', cudzinec:'FO' };
-  const klientTyp = typMap[P.typ] || 'FO';
-  const klient = {
-    typ: klientTyp,
-    email: P.email || '',
-    tel: P.tel || '',
-    cudzinec: P.typ === 'cudzinec' || !!P.cudzinec,
-    adresa: { ulica: P.ulica || '', cislo: P.cislo || '', obec: P.obec || '', psc: (P.psc || '').replace(/\s/g, '') },
-  };
-  if (klientTyp === 'FO' || klientTyp === 'SZCO') {
-    klient.meno = P.meno || '';
-    klient.priezvisko = P.priezvisko || '';
-    klient.rodneCislo = P.rc || '';
-    klient.datumNar = P.datumNar || '';
-    klient.dokladCislo = P.dokladCislo || '';
-    klient.statnaPrislusnost = P.statnaPrislusnost || '';
-  }
-  if (klientTyp === 'PO' || klientTyp === 'SZCO') {
-    klient.ico = P.ico || '';
-    klient.nazov = P.nazov || '';
-  }
-  // vybrané riziká ako kanonické kódy (combo dlaždica → obe riziká)
-  const selCodes = new Set((order.tiles || []).flatMap(t => (t.risks || []).map(r => r.risk)));
-  const selectedRisks = [...selCodes].map(c => ZAZ_CODE_ID[c] || c);
+/* ── Zápis zmluvy do CRM robí BACKEND ──
+   Web už do CRM neposiela nič. Backend zápis skladá z XML, ktoré mu prejde cez
+   Pillow proxy — teda z toho, čo poisťovňa naozaj prijala a potvrdila (preto sa
+   nedá podstrčiť falošná zmluva). Spúšťa ho hlavička X-Brand v pillowCall().
 
-  // prílohy do CRM: Pillow PDF návrhu (len FE ho má zo stavu PRE) + Záznam o sprostredkovaní
-  const prilohy = [];
-  if (pdfBase64) prilohy.push({ nazov: `Navrh_zmluvy_${policyId}.pdf`, typ: 'application/pdf', data: String(pdfBase64).split(',')[1] || '' });
-  try {
-    const zdata = buildZaznamData(); zdata.cisloNavrhu = policyId || zdata.cisloNavrhu;
-    const zres = await fetch(`${API_BASE}/bcrm/docs/zaznam?format=pdf`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(zdata),
-    });
-    if (zres.ok) {
-      const zblob = await zres.blob();
-      const zb64 = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(String(fr.result).split(',')[1] || null); fr.readAsDataURL(zblob); });
-      if (zb64) prilohy.push({ nazov: `Zaznam_o_sprostredkovani_${policyId}.pdf`, typ: 'application/pdf', data: zb64 });
-    }
-  } catch (_) { /* Záznam je doplnková príloha, neblokuje zmluvu */ }
-
-  const payload = {
-    klient,
-    vozidlo: {
-      ecv: V.ecv || '', vin: V.vin || '', znacka: V.znacka || '', model: V.model || '',
-      typ: (VT_VALID.has(V.typ) ? V.typ : 'OA'), palivo: V.palivo || '',
-      vykon: parseInt(V.vykon) || 0, objem: parseInt(V.objem) || 0,
-    },
-    zmluva: {
-      pillowCisloZmluvy: policyId,
-      pillowCalcId:      calcId || '',
-      totalMonthPremium: orderTotal,                 // splátka za zvolenú lehotu
-      paymentFrequency:  pf,                          // 12/4/2/1
-      zaciatok:          order.poistenieOd || '',
-      spoluUcast:        order.spoluUcast || '',
-      selectedRisks,
-      poistovna:         'Pillow pojišťovna, a. s.',
-      produkt:           'Poistenie vozidla',
-      varSym:            varSym || '',
-    },
-    prilohy,
-    brand: 'pripoisti',
-  };
-  const r = await fetch(BCRM_ZMLUVA, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-  if (!r.ok) throw new Error('BCRM zmluva HTTP ' + r.status);
-  return r.json().catch(() => ({}));
+   Výnimka: číslo dokladu a štátnu príslušnosť Pillow nepozná, v jeho XML nie sú.
+   Tie mu pošleme zvlášť PRED uzavretím; odložia sa a pripoja k potvrdenej zmluve. */
+async function sendPillowDoplnky(calcId) {
+  if (!calcId) return;
+  await fetch(`${API_BASE}/pillow/doplnky/${encodeURIComponent(calcId)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Brand': 'pripoisti' },
+    body: JSON.stringify({
+      dokladCislo: P.dokladCislo || '',
+      statnaPrislusnost: P.statnaPrislusnost || '',
+    }),
+  });
 }
 
 /* ── Chybové hlášky — inline box namiesto alertu ── */
@@ -838,17 +786,17 @@ async function submitOrder() {
         pdfBase64 = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(blob); });
       }
     } catch (_) { /* best-effort — e-mail pôjde bez PDF */ }
-    // 3) finálne uzatvorenie (createPolicy=true)
+    // 2c) doplnky, ktoré Pillow nepozná (číslo dokladu, štátna príslušnosť) —
+    //     MUSIA ísť PRED uzavretím, backend si ich pripojí k potvrdenej zmluve
+    try { await sendPillowDoplnky(check.calcId || rate.calcId); }
+    catch (e) { console.error('Pillow doplnky:', e); }   // best-effort, neblokuje zmluvu
+    // 3) finálne uzatvorenie (createPolicy=true) — zápis do CRM spustí backend sám
     const final = parseSave(await pillowCall(uid, 'par/policies/save/AP2', buildSaveXML(check.calcId || rate.calcId, true, freq)));
     if (!final.policyId) throw new Error(final.errors[0] || 'Uzatvorenie zmluvy zlyhalo.');
     await pillowLogout(uid); uid = null;
 
-    // 4) BCRM (best-effort)
-    let bcrmOk = true;
-    try { await sendBcrm(final.policyId, final.varSym, pdfBase64, check.calcId || rate.calcId); } catch (e) { bcrmOk = false; console.error('BCRM zmluva:', e); }
-
     localStorage.removeItem('pripoisti_order');
-    showSuccess(final.policyId, final.varSym, bcrmOk);
+    showSuccess(final.policyId, final.varSym);
     sendClientEmail(final.policyId, final.varSym, pdfBase64);   // fire-and-forget
   } catch (e) {
     console.error(e);
@@ -862,7 +810,7 @@ async function submitOrder() {
 const PILLOW_IBAN_DISP = 'SK64 8330 0000 0028 0266 5628';   // pevný účet Pillow (Fio)
 const PILLOW_BENEFICIARY = 'Pillow pojišťovna, a. s.';
 
-function showSuccess(policyId, varSym, bcrmOk) {
+function showSuccess(policyId, varSym) {
   try { window.va('event', { name: 'Zmluva uzavretá' }); } catch (e) {}   // konverzný lievik (Vercel Analytics)
   const suma = orderTotal.toFixed(2);
   const due = order.poistenieOd || '';
@@ -902,7 +850,6 @@ function showSuccess(policyId, varSym, bcrmOk) {
         <a href="${payHref}" style="display:block;text-align:center;margin-top:18px;background:var(--grad);color:white;padding:13px 24px;border-radius:10px;text-decoration:none;font-weight:800;font-size:15px;">Zaplatiť kartou online →</a>
       </div>
 
-      ${bcrmOk ? '' : '<p style="font-size:14px;color:rgba(255,180,80,.7);margin-top:12px;text-align:center;">Poznámka: záznam do CRM sa nepodarilo uložiť, kontaktujte podporu.</p>'}
       <div style="text-align:center;margin-top:22px;">
         <a href="/" style="color:rgba(255,255,255,.45);font-size:15px;text-decoration:none;">← Späť na úvod</a>
       </div>
