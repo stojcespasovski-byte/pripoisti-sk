@@ -124,12 +124,18 @@ nav.scrolled { background: rgba(17,17,17,.97); border-bottom: 1px solid rgba(255
   display: none;
   position: absolute; left: 0; right: 0; top: 100%;
   background: #1b1b1b;
-  border-top: 1px solid rgba(255,255,255,.1);
-  border-bottom: 1px solid rgba(255,255,255,.1);
+  /* rámiky AŽ pri otvorení — pri max-height:0 sa border stále vykresľuje
+     a pod hlavičkou by ostala 2px sivá linka */
+  border-top: 0 solid rgba(255,255,255,.1);
+  border-bottom: 0 solid rgba(255,255,255,.1);
   max-height: 0; overflow: hidden;
   transition: max-height .28s cubic-bezier(.22,1,.36,1);
 }
-.mobile-menu.open { max-height: 220px; }
+.mobile-menu.open {
+  max-height: 220px;
+  border-top-width: 1px;
+  border-bottom-width: 1px;
+}
 .mm-link {
   display: block; padding: 14px 18px;
   text-align: right;                      /* zarovnanie napravo */
