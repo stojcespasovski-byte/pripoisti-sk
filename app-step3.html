@@ -402,9 +402,11 @@ function resetDraft() { try { localStorage.removeItem("pripoisti_order"); } catc
           <div class="field"><label>PSČ</label><input class="mono" id="po-psc" value="" readonly></div>
         </div>
 
-        <div class="row c2">
+        <div class="row c4">
+          <div class="field"><label>Titul pred</label><input id="po-titul-pred" placeholder="Ing." autocomplete="off"></div>
           <div class="field"><label>Konateľ meno</label><input id="po-meno" data-required="true" placeholder="Ján"><div class="field-error">Zadajte meno</div></div>
           <div class="field"><label>Konateľ priezvisko</label><input id="po-priezvisko" data-required="true" placeholder="Novák"><div class="field-error">Zadajte priezvisko</div></div>
+          <div class="field"><label>Titul za</label><input id="po-titul-za" placeholder="MBA" autocomplete="off"></div>
         </div>
 
         <div class="row c2">
@@ -428,10 +430,10 @@ function resetDraft() { try { localStorage.removeItem("pripoisti_order"); } catc
         </div>
 
         <div class="row c4">
-          <div class="field"><label>Titul pred</label><input placeholder="Ing."></div>
+          <div class="field"><label>Titul pred</label><input id="szco-titul-pred" placeholder="Ing." autocomplete="off"></div>
           <div class="field"><label>Meno</label><input id="szco-meno" data-required="true" placeholder="Ján"><div class="field-error">Zadajte meno</div></div>
           <div class="field"><label>Priezvisko</label><input id="szco-priezvisko" data-required="true" placeholder="Novák"><div class="field-error">Zadajte priezvisko</div></div>
-          <div class="field"><label>Titul za</label><input placeholder="PhD."></div>
+          <div class="field"><label>Titul za</label><input id="szco-titul-za" placeholder="PhD." autocomplete="off"></div>
         </div>
 
         <div class="row c4">
@@ -459,10 +461,10 @@ function resetDraft() { try { localStorage.removeItem("pripoisti_order"); } catc
         </div>
 
         <div class="row c4">
-          <div class="field"><label>Titul pred</label><input placeholder="Ing."></div>
+          <div class="field"><label>Titul pred</label><input id="fo-titul-pred" placeholder="Ing." autocomplete="off"></div>
           <div class="field"><label>Meno</label><input id="fo-meno" data-required="true" placeholder="Ján"><div class="field-error">Zadajte meno</div></div>
           <div class="field"><label>Priezvisko</label><input id="fo-priezvisko" data-required="true" placeholder="Novák"><div class="field-error">Zadajte priezvisko</div></div>
-          <div class="field"><label>Titul za</label><input placeholder="PhD."></div>
+          <div class="field"><label>Titul za</label><input id="fo-titul-za" placeholder="PhD." autocomplete="off"></div>
         </div>
 
         <div class="row c4">
@@ -490,10 +492,10 @@ function resetDraft() { try { localStorage.removeItem("pripoisti_order"); } catc
         </div>
 
         <div class="row c4">
-          <div class="field"><label>Titul pred</label><input placeholder=""></div>
+          <div class="field"><label>Titul pred</label><input id="cz-titul-pred" placeholder="" autocomplete="off"></div>
           <div class="field"><label>Meno</label><input id="cz-meno" data-required="true" placeholder="John"><div class="field-error">Zadajte meno</div></div>
           <div class="field"><label>Priezvisko</label><input id="cz-priezvisko" data-required="true" placeholder="Smith"><div class="field-error">Zadajte priezvisko</div></div>
-          <div class="field"><label>Titul za</label><input placeholder=""></div>
+          <div class="field"><label>Titul za</label><input id="cz-titul-za" placeholder="" autocomplete="off"></div>
         </div>
 
         <div class="row c4">
@@ -605,11 +607,6 @@ try { order = JSON.parse(localStorage.getItem('pripoisti_order')) || {}; } catch
 const typ = order.typ || getParam('typ') || 'po';
 const V = order.vehicle || {};
 const P = order.poistnik || {};
-/* Tituly konateľa z ORSR. MUSÍ byť deklarované TU, nad predvyplnením formulára —
-   to volá fillKonatel() ešte pri načítaní stránky a tá do tejto premennej zapisuje.
-   Keď bola deklarácia nižšie, spadlo to na ReferenceError (temporal dead zone),
-   skript sa prerušil a goToSummary sa vôbec nezadefinovala → tlačidlo nereagovalo. */
-let _konatelTituly = { pred: '', za: '' };
 /* Tituly za menom — uzavretý zoznam (nie „všetko po čiarke", tam býva aj rola).
    Musí byť tu z rovnakého dôvodu: splitKonatelMeno() ju číta už pri načítaní. */
 const POST_NOMINAL = /^(PhD|CSc|DrSc|MBA|LLM|MSc|DiS|ArtD)\.?$/i;
@@ -656,6 +653,11 @@ setV('v-objem', V.objem ? V.objem + ' cm³' : '');
 setV('v-vykon', V.vykon ? V.vykon + ' kW' : '');
 setV('v-hmotnost', V.hmotnost ? V.hmotnost + ' kg' : '');
 setV('v-typ', V.typ || 'OA');
+
+// tituly z predchádzajúcej návštevy (návrat zo Súhrnu) — pre všetky typy naraz
+const _titulPrefix = { po:'po', szco:'szco', cudzinec:'cz', fo:'fo' }[typ] || 'fo';
+setV(_titulPrefix + '-titul-pred', P.titulPred);
+setV(_titulPrefix + '-titul-za', P.titulZa);
 
 // Poistník — readonly polia z lookupu
 if (typ === 'po') {
@@ -706,7 +708,9 @@ function splitKonatelMeno(full) {
 function fillKonatel(fullName) {
   const { meno, priezvisko, titulPred, titulZa } = splitKonatelMeno(fullName);
   setV('po-meno', meno); setV('po-priezvisko', priezvisko);
-  _konatelTituly = { pred: titulPred, za: titulZa };
+  // tituly idú priamo do polí — klient ich vie dopísať aj prepísať
+  // (v ORSR často nie sú, napr. MBA)
+  setV('po-titul-pred', titulPred); setV('po-titul-za', titulZa);
 }
 function showKonatelPicker(names) {
   document.getElementById('konOv')?.remove();
@@ -949,7 +953,6 @@ function goToSummaryInner() {
   pk.statnaPrislusnost = 'Slovenská';   // default pre všetkých okrem cudzinca (pre Záznam o sprostredkovaní)
   if (typ === 'po') {
     pk.meno = g('po-meno'); pk.priezvisko = g('po-priezvisko');
-    pk.titulPred = _konatelTituly.pred; pk.titulZa = _konatelTituly.za;   // z ORSR
     pk.email = g('po-email'); pk.tel = normalizePhone(g('po-telefon')); pk.ulica = g('po-ulica'); pk.cislo = g('po-cislo');
   } else if (typ === 'szco') {
     pk.meno = g('szco-meno'); pk.priezvisko = g('szco-priezvisko');
@@ -966,6 +969,10 @@ function goToSummaryInner() {
     pk.email = g('fo-email'); pk.tel = normalizePhone(g('fo-telefon')); pk.ulica = g('fo-ulica'); pk.cislo = g('fo-cislo');
     pk.dokladCislo = g('fo-doklad');
   }
+  // tituly — spoločné pre všetky typy (prefix podľa bloku), nepovinné
+  const _tp = { po:'po', szco:'szco', cudzinec:'cz', fo:'fo' }[typ] || 'fo';
+  pk.titulPred = g(_tp + '-titul-pred');
+  pk.titulZa   = g(_tp + '-titul-za');
   pk.vlastnik = collectVlastnik();       // vlastník vozidla (task 5)
 
   localStorage.setItem('pripoisti_order', JSON.stringify(order));
