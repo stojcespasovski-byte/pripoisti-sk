@@ -748,6 +748,14 @@ function normalizePhone(raw) {
 function validMobile(p) {
   return /^\+4219\d{8}$/.test(p) || /^\+420[67]\d{8}$/.test(p);
 }
+/* Tvar e-mailu — chytí chýbajúci @, medzeru, doménu bez bodky, diakritiku.
+   POZOR: NEchytí adresu, ktorá je tvarom platná, ale patrí niekomu inému
+   (napr. keď klávesnica prilepí slovo pred adresu) — na to je zvýraznenie
+   e-mailu v Súhrne, aby si ho klient prečítal. */
+function validEmail(e) {
+  const s = String(e || '').trim();
+  return !/\s/.test(s) && /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(s);
+}
 
 function validateForm() {
   let firstInvalid = null;
@@ -770,6 +778,10 @@ function validateForm() {
         ok = false;
         const err = input.parentElement.querySelector('.field-error');
         if (err) err.textContent = 'Zadajte platné mobilné číslo, napr. +421 901 234 567';
+      } else if (ok && /-email$/.test(input.id) && !validEmail(input.value)) {
+        ok = false;
+        const err = input.parentElement.querySelector('.field-error');
+        if (err) err.textContent = 'E-mail nemá správny tvar, napr. jan.novak@gmail.com';
       }
       input.classList.toggle('error', !ok);
       if (!ok) {
