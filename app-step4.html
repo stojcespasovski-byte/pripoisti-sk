@@ -94,7 +94,6 @@ nav {
 /* E-mail je jediný údaj, ktorý si klient MUSÍ prečítať: chodia naň doklady a
    preklep môže byť tvarom platná adresa niekoho iného — validácia to nechytí. */
 .fv.check .val { color: var(--o); border-bottom-color: rgba(232,130,26,.55); }
-.fv-hint { font-size: 12px; color: rgba(232,130,26,.75); margin-top: 5px; line-height: 1.35; }
 
 .poistenie-row {
   display: flex; align-items: flex-start; justify-content: space-between;
@@ -474,7 +473,6 @@ const rowKontakt = () => `
       <div class="fv check">
         <label>E-mail</label>
         <div class="val">${P.email && P.email.trim() ? P.email : '<span class="empty">–</span>'}</div>
-        <div class="fv-hint">Sem pošleme zmluvu a doklady — skontrolujte, či je adresa správna.</div>
       </div>
     </div>`;
 const rowOsoba = (labelMeno, labelPriezvisko) => `
