@@ -1130,12 +1130,20 @@ footer {
 </style>
 <script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};</script>
 <script defer src="/_vercel/insights/script.js"></script>
+<script>
+/* Logo = Domov, a zároveň RESET. Krok 1 si inak stav obnoví z localStorage
+   (aby sa nestratila práca pri návrate z Kroku 3/4 cez history.back), takže bez
+   zmazania draftu vyzeralo kliknutie na logo, že sa nič nestalo — a nepomohol
+   ani hard reload, lebo localStorage nie je cache.
+   Návrat "Späť" ide cez history.back(), ten stav zachová. */
+function resetDraft() { try { localStorage.removeItem("pripoisti_order"); } catch (e) {} }
+</script>
 </head>
 <body>
 
 <!-- NAV -->
 <nav id="nav">
-  <div class="nav-logo"><a href="/" style="display:block;line-height:0;">
+  <div class="nav-logo"><a href="/" onclick="resetDraft()" title="Začať odznova" style="display:block;line-height:0;">
     <svg viewBox="0 0 488 143" height="52" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="pripoisti.sk">
 <defs><linearGradient id="ppg" gradientUnits="userSpaceOnUse" x1="8.0" y1="0" x2="480.2" y2="0">
 <stop offset="0" stop-color="#dc2626"/><stop offset="1" stop-color="#f59e0b"/></linearGradient></defs>
