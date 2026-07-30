@@ -175,6 +175,13 @@ input[type="date"] { cursor: pointer; }            /* afordancia — klik kdeko�
   margin-top: 5px;
   display: none;
 }
+/* Hláška pri tlačidle — pokračovanie nesmie zlyhať bez vysvetlenia */
+.step-error {
+  margin: 0 22px 14px; padding: 12px 14px;
+  border: 1px solid rgba(226,75,74,.45); border-radius: 10px;
+  background: rgba(226,75,74,.08); color: #F09595;
+  font-size: 14px; line-height: 1.45;
+}
 .field input.error + .field-error,
 .field input.error ~ .field-error {
   display: block;
@@ -569,6 +576,7 @@ function resetDraft() { try { localStorage.removeItem("pripoisti_order"); } catc
 
   <!-- AKCIE -->
   <div class="card">
+    <div class="step-error" id="step-error" style="display:none;"></div>
     <div class="card-foot">
       <button class="btn-back" onclick="history.back()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
@@ -889,11 +897,44 @@ function validateVlastnik() {
     if (el) el.classList.toggle('error', bad);
     if (bad) { ok = false; if (!first) first = el; }
   });
-  if (!ok && first) { first.scrollIntoView({ behavior: 'smooth', block: 'center' }); first.focus(); }
+  if (!ok && first) {
+    // bez tejto hlášky to blokovalo len červeným rámikom — pri poli mimo obrazovky
+    // to vyzeralo, že tlačidlo nereaguje
+    showStepError('<b>Doplňte údaje vlastníka vozidla.</b><br>Chýbajúce polia sú v sekcii „Vlastník vozidla" označené červeným.');
+    first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    first.focus();
+  }
   return ok;
 }
 
+/* Viditeľná hláška pri tlačidle. Bez nej vedela chyba v skripte vyzerať tak,
+   že tlačidlo „nereaguje" — klient nemal ako zistiť, čo sa deje. */
+function showStepError(html) {
+  const el = document.getElementById('step-error');
+  if (!el) { alert(String(html).replace(/<[^>]+>/g, '')); return; }
+  el.innerHTML = html;
+  el.style.display = '';
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function clearStepError() {
+  const el = document.getElementById('step-error');
+  if (el) { el.style.display = 'none'; el.innerHTML = ''; }
+}
+
+/* Obal: čokoľvek nečakané sa zobrazí, nezhltne sa. */
 function goToSummary() {
+  clearStepError();
+  try {
+    goToSummaryInner();
+  } catch (e) {
+    console.error(e);
+    showStepError('<b>Nepodarilo sa pokračovať ďalej.</b><br>' +
+      'Skúste stránku načítať znova (Cmd/Ctrl + R). Ak to nepomôže, ozvite sa nám — ' +
+      'chyba: ' + String(e && e.message || e));
+  }
+}
+
+function goToSummaryInner() {
   if (!validateForm() || !validateVlastnik()) return;
   const g = id => (document.getElementById(id)?.value || '').trim();
 

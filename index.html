@@ -5408,7 +5408,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const forTypes = row.dataset.for.split(',');
     row.classList.toggle('show', forTypes.includes('po'));
   });
-  restoreFromOrder();     // návrat z kroku 3/4 → obnoviť ceny, výber aj formulár
+  if (isReturnFromSteps()) restoreFromOrder();   // len návrat z Kroku 3/4, nie refresh
 });
 
 /* ─── TILE TOGGLE ─── */
@@ -5976,6 +5976,18 @@ function goToStep3(e) {
       objednávky (po úspešnom odoslaní sa objednávka maže, takže sa obnoví len
       rozpracovaná; staršia ako 12 h sa ignoruje — ceny by mohli byť neplatné) ── */
 const DRAFT_VERSION = 2;   // bump pri zmene defaultov (napr. variant Úrazu) → staré drafty sa ignorujú, nepresadia starý default
+/* Obnovujeme LEN pri skutočnom návrate z Kroku 3/4 (tlačidlo Späť = history.back).
+   Refresh ani nová návšteva stav neobnovia — inak Cmd+R vyzeral, že reset nefunguje:
+   localStorage nie je cache, hard reload ho nezmaže a formulár sa vypĺňal znova. */
+function isReturnFromSteps() {
+  try {
+    const nav = performance.getEntriesByType('navigation')[0];
+    if (nav && nav.type === 'reload') return false;          // refresh = čistý štart
+    if (nav && nav.type === 'back_forward') return true;     // Späť z Kroku 3/4
+  } catch (_) {}
+  return /app-step[34]\.html/.test(document.referrer || '');
+}
+
 function restoreFromOrder() {
   let order = null;
   try { order = JSON.parse(localStorage.getItem('pripoisti_order') || 'null'); } catch (_) {}
