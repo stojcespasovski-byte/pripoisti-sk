@@ -755,6 +755,19 @@ async function sendPillowDoplnky(calcId) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Brand': 'pripoisti' },
     body: JSON.stringify({
+      // kontaktné údaje — do Pillow nikdy nešli (má len RČ/IČO + PSČ/obec),
+      // takže bez nich by bol záznam v CRM bez kontaktu na klienta
+      meno: P.meno || '',
+      priezvisko: P.priezvisko || '',
+      email: P.email || '',
+      tel: P.tel || '',
+      ulica: P.ulica || '',
+      cislo: P.cislo || '',
+      ...(P.nazov ? { nazov: P.nazov } : {}),                 // firma / názov živnosti
+      // pri PO je meno+priezvisko konateľ — a klient ho v Kroku 3 mohol OPRAVIŤ,
+      // takže posielame jeho hodnotu, nie tú z ORSR
+      ...(typ === 'po' && (P.meno || P.priezvisko)
+        ? { opravnenaOsoba: [P.meno, P.priezvisko].filter(Boolean).join(' ') } : {}),
       dokladCislo: P.dokladCislo || '',
       statnaPrislusnost: P.statnaPrislusnost || '',
       suhlasy: collectSuhlasy(),
