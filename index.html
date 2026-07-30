@@ -5213,6 +5213,13 @@ async function saveVehModal() {
   if (kmWrap && kmWrap.style.display !== 'none' && g('vm-km').value) v.najazd = g('vm-km').value;
   updateEntryKmOptions();                 // zosúladiť roletu v Kroku 1 s typom/km z modalu
 
+  // Ručne vypísané vozidlo → uložiť do lookup cache pod identifikátor z Kroku 1
+  // (rovnako ako pri návrate zo Súhrnu). Inak zmena nájazdu spustí nový BCRM
+  // lookup, auto sa opäť nenájde a ručné údaje sa zahodia s hláškou „nenašlo sa".
+  const step1Id = (fieldVal(currentType === 'po' ? 'f-ecv-po' : currentType === 'fo' ? 'f-ecv-fo' : 'f-ecv-szco') || '')
+    .toUpperCase().replace(/[\s-]/g, '');
+  if (step1Id) { _vehCacheKey = step1Id; _vehCacheVal = { found: true, data: { ...v } }; }
+
   // Nezatvárať modal pred prepočtom — ak ceny zlyhajú, klient musí vedieť opraviť údaje vozidla
   const ok = await recalcPrices(false, true);   // 2. param = z modalu
   if (ok) closeVehModal();
