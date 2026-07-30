@@ -597,6 +597,14 @@ try { order = JSON.parse(localStorage.getItem('pripoisti_order')) || {}; } catch
 const typ = order.typ || getParam('typ') || 'po';
 const V = order.vehicle || {};
 const P = order.poistnik || {};
+/* Tituly konateľa z ORSR. MUSÍ byť deklarované TU, nad predvyplnením formulára —
+   to volá fillKonatel() ešte pri načítaní stránky a tá do tejto premennej zapisuje.
+   Keď bola deklarácia nižšie, spadlo to na ReferenceError (temporal dead zone),
+   skript sa prerušil a goToSummary sa vôbec nezadefinovala → tlačidlo nereagovalo. */
+let _konatelTituly = { pred: '', za: '' };
+/* Tituly za menom — uzavretý zoznam (nie „všetko po čiarke", tam býva aj rola).
+   Musí byť tu z rovnakého dôvodu: splitKonatelMeno() ju číta už pri načítaní. */
+const POST_NOMINAL = /^(PhD|CSc|DrSc|MBA|LLM|MSc|DiS|ArtD)\.?$/i;
 
 const dDot = iso => { if (!iso) return ''; const [y, m, d] = iso.split('-'); return (d && m && y) ? `${d}.${m}.${y}` : iso; };
 const PALIVO_LABEL = { benzin: 'Benzín', diesel: 'Nafta', nafta: 'Nafta', elektrina: 'Elektrina', hybrid: 'Hybrid', plyn: 'LPG/CNG' };
@@ -667,8 +675,6 @@ if (typ === 'po') {
 }
 
 /* ── Konateľ z ORSR → oprávnená osoba (PO) ── */
-/* Tituly za menom — uzavretý zoznam. Nie „všetko po čiarke", tam býva aj rola. */
-const POST_NOMINAL = /^(PhD|CSc|DrSc|MBA|LLM|MSc|DiS|ArtD)\.?$/i;
 /* „Ing. Mgr. Ján Novák, PhD. - Člen predstavenstva" → tituly, meno, priezvisko.
    Titul UŽ NEZAHADZUJEME (išiel do koša) — ide do Záznamu aj do CRM.
    Priezvisko = posledný token; hádať viac sa nesnažíme, polia sú editovateľné. */
@@ -689,8 +695,6 @@ function splitKonatelMeno(full) {
     titulZa: za.join(' '),
   };
 }
-/* tituly konateľa z ORSR — v PO formulári na ne nie je pole, nesieme ich stavom */
-let _konatelTituly = { pred: '', za: '' };
 function fillKonatel(fullName) {
   const { meno, priezvisko, titulPred, titulZa } = splitKonatelMeno(fullName);
   setV('po-meno', meno); setV('po-priezvisko', priezvisko);
