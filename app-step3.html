@@ -659,16 +659,34 @@ if (typ === 'po') {
 }
 
 /* ── Konateľ z ORSR → oprávnená osoba (PO) ── */
+/* Tituly za menom — uzavretý zoznam. Nie „všetko po čiarke", tam býva aj rola. */
+const POST_NOMINAL = /^(PhD|CSc|DrSc|MBA|LLM|MSc|DiS|ArtD)\.?$/i;
+/* „Ing. Mgr. Ján Novák, PhD. - Člen predstavenstva" → tituly, meno, priezvisko.
+   Titul UŽ NEZAHADZUJEME (išiel do koša) — ide do Záznamu aj do CRM.
+   Priezvisko = posledný token; hádať viac sa nesnažíme, polia sú editovateľné. */
 function splitKonatelMeno(full) {
-  // "Ing. Ján Novák - Člen predstavenstva" → bez titulov a bez roly za pomlčkou
   const bezRole = String(full).split(/\s[-–]\s/)[0];
-  const t = bezRole.split(/\s+/).filter(x => x && !/\.$/.test(x) && !/^(PhD|CSc|DrSc|MBA|LLM)$/i.test(x.replace(/,$/, '')));
-  if (!t.length) return { meno: '', priezvisko: '' };
-  return { meno: t.slice(0, -1).join(' '), priezvisko: t[t.length - 1] };
+  const pred = [], za = [], name = [];
+  bezRole.split(/\s+/).filter(Boolean).forEach(tok => {
+    const t = tok.replace(/,$/, '');
+    if (!t) return;
+    if (POST_NOMINAL.test(t)) { za.push(t); return; }
+    if (/\.$/.test(t)) { (name.length ? za : pred).push(t); return; }   // pred menom vs za menom
+    name.push(t);
+  });
+  return {
+    meno: name.slice(0, -1).join(' '),
+    priezvisko: name.length ? name[name.length - 1] : '',
+    titulPred: pred.join(' '),
+    titulZa: za.join(' '),
+  };
 }
+/* tituly konateľa z ORSR — v PO formulári na ne nie je pole, nesieme ich stavom */
+let _konatelTituly = { pred: '', za: '' };
 function fillKonatel(fullName) {
-  const { meno, priezvisko } = splitKonatelMeno(fullName);
+  const { meno, priezvisko, titulPred, titulZa } = splitKonatelMeno(fullName);
   setV('po-meno', meno); setV('po-priezvisko', priezvisko);
+  _konatelTituly = { pred: titulPred, za: titulZa };
 }
 function showKonatelPicker(names) {
   document.getElementById('konOv')?.remove();
@@ -866,6 +884,7 @@ function goToSummary() {
   pk.statnaPrislusnost = 'Slovenská';   // default pre všetkých okrem cudzinca (pre Záznam o sprostredkovaní)
   if (typ === 'po') {
     pk.meno = g('po-meno'); pk.priezvisko = g('po-priezvisko');
+    pk.titulPred = _konatelTituly.pred; pk.titulZa = _konatelTituly.za;   // z ORSR
     pk.email = g('po-email'); pk.tel = normalizePhone(g('po-telefon')); pk.ulica = g('po-ulica'); pk.cislo = g('po-cislo');
   } else if (typ === 'szco') {
     pk.meno = g('szco-meno'); pk.priezvisko = g('szco-priezvisko');

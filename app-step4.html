@@ -79,6 +79,7 @@ nav {
 
 .row { display: grid; gap: 14px; margin-bottom: 14px; }
 .row.c4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+.row.c3 { grid-template-columns: 1fr 1fr 1fr; }
 .row.c2 { grid-template-columns: 1fr 1fr; }
 .row:last-child { margin-bottom: 0; }
 
@@ -443,77 +444,72 @@ function fv(label, value, mono) {
   return `<div class="fv"><label>${label}</label><div class="${cls}">${v}</div></div>`;
 }
 
+/* Poradie polí: identita → adresa → kontakt → osoba (s titulmi).
+   Adresa je v jednom riadku v poradí, ako sa píše (ulica, číslo, PSČ, obec) —
+   predtým bola roztrhaná na dva riadky. Názov firmy/živnosti dostáva polovicu
+   šírky, aby sa nezalamoval. „OP, Pas, Pobyt.preukaz" je pomenované rovnako
+   ako v Kroku 3, nech to klient spáruje s tým, čo vypĺňal. */
+const rowAdresa = () => `
+    <div class="row c4">
+      ${fv('Ulica', P.ulica)}
+      ${fv('Číslo domu', P.cislo)}
+      ${fv('PSČ', P.psc, true)}
+      ${fv('Obec', P.obec)}
+    </div>`;
+const rowKontakt = () => `
+    <div class="row c2">
+      ${fv('Telefón', P.tel, true)}
+      ${fv('E-mail', P.email)}
+    </div>`;
+const rowOsoba = (labelMeno, labelPriezvisko) => `
+    <div class="row c4">
+      ${fv('Titul pred', P.titulPred)}
+      ${fv(labelMeno, P.meno)}
+      ${fv(labelPriezvisko, P.priezvisko)}
+      ${fv('Titul za', P.titulZa)}
+    </div>`;
+
 if (typ === 'po') {
   klientFields.innerHTML = `
-    <div class="row c4">
-      ${fv('IČO', P.ico, true)}
+    <div class="row c2">
       ${fv('Názov firmy', P.nazov)}
-      ${fv('Konateľ meno', P.meno)}
-      ${fv('Konateľ priezvisko', P.priezvisko)}
+      ${fv('IČO', P.ico, true)}
     </div>
-    <div class="row c4">
-      ${fv('Telefón', P.tel, true)}
-      ${fv('E-mail', P.email)}
-      ${fv('Ulica', P.ulica)}
-      ${fv('Číslo domu', P.cislo)}
-    </div>
-    <div class="row c4">
-      ${fv('Obec', P.obec)}
-      ${fv('PSČ', P.psc, true)}
-    </div>`;
+    ${rowAdresa()}
+    ${rowKontakt()}
+    ${rowOsoba('Konateľ meno', 'Konateľ priezvisko')}`;
 } else if (typ === 'szco') {
   klientFields.innerHTML = `
-    <div class="row c4">
-      ${fv('IČO', P.ico, true)}
+    <div class="row c2">
       ${fv('Názov živnosti', P.nazov)}
-      ${fv('Meno', P.meno)}
-      ${fv('Priezvisko', P.priezvisko)}
+      ${fv('IČO', P.ico, true)}
     </div>
-    <div class="row c4">
+    ${rowAdresa()}
+    ${rowKontakt()}
+    ${rowOsoba('Meno', 'Priezvisko')}
+    <div class="row c2">
       ${fv('Rodné číslo', P.rc, true)}
-      ${fv('Telefón', P.tel, true)}
-      ${fv('E-mail', P.email)}
-      ${fv('PSČ', P.psc, true)}
-    </div>
-    <div class="row c4">
-      ${fv('Ulica', P.ulica)}
-      ${fv('Číslo domu', P.cislo)}
-      ${fv('Obec', P.obec)}
+      ${fv('OP, Pas, Pobyt.preukaz', P.dokladCislo, true)}
     </div>`;
 } else if (typ === 'cudzinec') {
   klientFields.innerHTML = `
-    <div class="row c4">
-      ${fv('Meno', P.meno)}
-      ${fv('Priezvisko', P.priezvisko)}
+    ${rowOsoba('Meno', 'Priezvisko')}
+    <div class="row c3">
       ${fv('Dátum narodenia', dDot(P.datumNar))}
-      ${fv('Telefón', P.tel, true)}
+      ${fv('OP, Pas, Pobyt.preukaz', P.dokladCislo, true)}
+      ${fv('Štátna príslušnosť', P.statnaPrislusnost)}
     </div>
-    <div class="row c4">
-      ${fv('E-mail', P.email)}
-      ${fv('Ulica', P.ulica)}
-      ${fv('Číslo domu', P.cislo)}
-      ${fv('Obec', P.obec)}
-    </div>
-    <div class="row c4">
-      ${fv('PSČ', P.psc, true)}
-    </div>`;
+    ${rowAdresa()}
+    ${rowKontakt()}`;
 } else {
   klientFields.innerHTML = `
-    <div class="row c4">
-      ${fv('Meno', P.meno)}
-      ${fv('Priezvisko', P.priezvisko)}
+    ${rowOsoba('Meno', 'Priezvisko')}
+    <div class="row c2">
       ${fv('Rodné číslo', P.rc, true)}
-      ${fv('Telefón', P.tel, true)}
+      ${fv('OP, Pas, Pobyt.preukaz', P.dokladCislo, true)}
     </div>
-    <div class="row c4">
-      ${fv('E-mail', P.email)}
-      ${fv('Ulica', P.ulica)}
-      ${fv('Číslo domu', P.cislo)}
-      ${fv('Obec', P.obec)}
-    </div>
-    <div class="row c4">
-      ${fv('PSČ', P.psc, true)}
-    </div>`;
+    ${rowAdresa()}
+    ${rowKontakt()}`;
 }
 
 /* VYBRATÉ POISTENIA — reálne ceny z objednávky (Pillow, zvolená frekvencia) */
