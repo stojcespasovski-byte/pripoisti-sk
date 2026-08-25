@@ -841,25 +841,33 @@ async function submitOrder() {
     // 2) kontrolný návrh (createPolicy=false)
     const check = parseSave(await pillowCall(uid, 'par/policies/save/AP2', buildSaveXML(rate.calcId, false, freq)));
     if (check.errors.length && !check.calcId && !check.policyId) throw new Error(check.errors[0]);
-    // 2b) PDF návrhu — MUSÍ byť teraz: po save-check je kalkulácia v stave PRE,
-    //     po finálnom uzatvorení už print preview nefunguje ("Kalkulace musí být ve stavu PRE")
+    // 2b) doplnky, ktoré Pillow nepozná (číslo dokladu, štátna príslušnosť) —
+    //     MUSIA ísť PRED uzavretím, backend si ich pripojí k potvrdenej zmluve
+    const calcId = check.calcId || rate.calcId;
+    try { await sendPillowDoplnky(calcId); }
+    catch (e) { console.error('Pillow doplnky:', e); }   // best-effort, neblokuje zmluvu
+    // 3) finálne uzatvorenie (createPolicy=true) — zápis do CRM spustí backend sám
+    const final = parseSave(await pillowCall(uid, 'par/policies/save/AP2', buildSaveXML(calcId, true, freq)));
+    if (!final.policyId) throw new Error(final.errors[0] || 'Uzatvorenie zmluvy zlyhalo.');
+
+    // 4) PDF pre klienta — AŽ TERAZ, po uzavretí. Pillow má dve rôzne tlačivá:
+    //    policyPreview (stav PRE)  = náhľad, orazený „Vzorový návrh", BEZ čísla zmluvy
+    //    policyProposal/AP2_NAV (stav NAB, až po createPolicy) = „Návrh poistnej zmluvy
+    //    na zaplatenie" s číslom zmluvy — podľa TOHTO klient platí.
+    //    Predtým sme sťahovali náhľad pred uzavretím a poslali ho klientovi ako zmluvu.
+    //    ⚠️ Pri zlyhaní NEnahrádzať náhľadom — klient by platil podľa nesprávneho dokumentu.
     let pdfBase64 = null;
     try {
-      const pdfRes = await fetch(`${PILLOW.BASE}/par/policies/print/AP2/policyPreview/${check.calcId || rate.calcId}/print`, {
-        method: 'POST', headers: { 'Content-Type': 'text/xml; charset=utf-8', 'RestUid': uid },
+      const pdfRes = await fetch(`${PILLOW.BASE}/par/policies/print/AP2/policyProposal/${calcId}/print/AP2_NAV`, {
+        method: 'POST', headers: { 'Content-Type': 'text/xml; charset=utf-8', 'RestUid': uid, 'X-Brand': 'pripoisti' },
       });
       if (pdfRes.ok) {
         const blob = await pdfRes.blob();
-        pdfBase64 = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(blob); });
+        if (blob.size > 0) pdfBase64 = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(blob); });
+      } else {
+        console.error('AP2_NAV návrh na zaplatenie zlyhal: HTTP ' + pdfRes.status);
       }
-    } catch (_) { /* best-effort — e-mail pôjde bez PDF */ }
-    // 2c) doplnky, ktoré Pillow nepozná (číslo dokladu, štátna príslušnosť) —
-    //     MUSIA ísť PRED uzavretím, backend si ich pripojí k potvrdenej zmluve
-    try { await sendPillowDoplnky(check.calcId || rate.calcId); }
-    catch (e) { console.error('Pillow doplnky:', e); }   // best-effort, neblokuje zmluvu
-    // 3) finálne uzatvorenie (createPolicy=true) — zápis do CRM spustí backend sám
-    const final = parseSave(await pillowCall(uid, 'par/policies/save/AP2', buildSaveXML(check.calcId || rate.calcId, true, freq)));
-    if (!final.policyId) throw new Error(final.errors[0] || 'Uzatvorenie zmluvy zlyhalo.');
+    } catch (e) { console.error('AP2_NAV návrh na zaplatenie zlyhal:', e); }
     await pillowLogout(uid); uid = null;
 
     localStorage.removeItem('pripoisti_order');
