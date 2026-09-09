@@ -372,6 +372,11 @@ h1 {
 .entry-row[data-for]:not(.show) { display: none; }
 .entry-field { flex: 1; }
 .entry-field-sm { width: 130px; flex-shrink: 0; position: relative; }
+/* Šírka na mieru obsahu. MUSIA stáť NAD @media (max-width:880px), kde sa
+   .entry-field-sm prepisuje na 100 % — špecificita je rovnaká, rozhoduje poradie,
+   inak by mobil prestal byť jednostĺpcový. Triedu .entry-field-sm nechať, nie nahradiť. */
+.entry-field-psc { width: 92px; }   /* PSČ má 5 číslic — 130px nechávalo prázdne miesto */
+.entry-field-vin { width: 206px; }  /* 17-znakový VIN sa do 130px nezmestil a rezal sa */
 .entry-obec-hint { position: absolute; top: 100%; left: 2px; margin-top: 4px; font-size: 12px; color: rgba(255,255,255,.42); line-height: 1.3; white-space: nowrap; }
 .entry-obec-hint.ok { color: rgba(255,255,255,.62); }
 .entry-obec-sel { font-size: 12px; background: #241d16; color: #fff; border: 1px solid rgba(232,130,26,.45); border-radius: 6px; padding: 2px 6px; max-width: 128px; }
@@ -1231,7 +1236,7 @@ function resetDraft() { try { localStorage.removeItem("pripoisti_order"); } catc
             <div class="entry-label">IČO</div>
             <input class="entry-input" id="f-ico" placeholder="12345678" inputmode="numeric" oninput="onFieldInput()">
           </div>
-          <div class="entry-field-sm">
+          <div class="entry-field-sm entry-field-vin">
             <div class="entry-label">EČV alebo VIN</div>
             <input class="entry-input" id="f-ecv-po" placeholder="BA123AB" autocapitalize="characters" autocorrect="off" spellcheck="false" oninput="onFieldInput()">
           </div>
@@ -1270,13 +1275,13 @@ function resetDraft() { try { localStorage.removeItem("pripoisti_order"); } catc
             <div class="entry-label">Rodné číslo</div>
             <input class="entry-input" id="f-rc" placeholder="900101/1234" inputmode="numeric" oninput="onFieldInput()">
           </div>
-          <div class="entry-field-sm">
+          <div class="entry-field-sm entry-field-psc">
             <div class="entry-label">PSČ</div>
             <input class="entry-input" id="f-psc-fo" placeholder="841 01" inputmode="numeric" autocomplete="off" oninput="onFieldInput()">
             <div class="entry-obec-hint" id="f-obec-hint-fo"></div>
             <input type="hidden" id="f-obec-fo">
           </div>
-          <div class="entry-field-sm">
+          <div class="entry-field-sm entry-field-vin">
             <div class="entry-label">EČV alebo VIN</div>
             <input class="entry-input" id="f-ecv-fo" placeholder="BA123AB" autocapitalize="characters" autocorrect="off" spellcheck="false" oninput="onFieldInput()">
           </div>
@@ -1315,13 +1320,13 @@ function resetDraft() { try { localStorage.removeItem("pripoisti_order"); } catc
             <div class="entry-label">IČO</div>
             <input class="entry-input" id="f-ico-szco" placeholder="12345678" inputmode="numeric" oninput="onFieldInput()">
           </div>
-          <div class="entry-field-sm">
+          <div class="entry-field-sm entry-field-psc">
             <div class="entry-label">PSČ</div>
             <input class="entry-input" id="f-psc-szco" placeholder="841 01" inputmode="numeric" autocomplete="off" oninput="onFieldInput()">
             <div class="entry-obec-hint" id="f-obec-hint-szco"></div>
             <input type="hidden" id="f-obec-szco">
           </div>
-          <div class="entry-field-sm">
+          <div class="entry-field-sm entry-field-vin">
             <div class="entry-label">EČV alebo VIN</div>
             <input class="entry-input" id="f-ecv-szco" placeholder="BA123AB" autocapitalize="characters" autocorrect="off" spellcheck="false" oninput="onFieldInput()">
           </div>
