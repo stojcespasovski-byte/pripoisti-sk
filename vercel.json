@@ -9,6 +9,7 @@
     { "source": "/poradna/:slug.html", "destination": "/poradna/:slug", "permanent": true }
   ],
   "rewrites": [
-    { "source": "/poradna/:slug", "destination": "/poradna/:slug.html" }
+    { "source": "/poradna/:slug", "destination": "/poradna/:slug.html" },
+    { "source": "/api/(.*)", "destination": "/api/proxy?__proxy_cesta=$1" }
   ]
 }
