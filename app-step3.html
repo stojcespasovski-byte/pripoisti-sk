@@ -594,7 +594,7 @@ function resetDraft() { try { localStorage.removeItem("pripoisti_order"); } catc
 
 <script>
 const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-  ? '' : 'https://alexapi.sk';
+  ? '' : '/api';
 
 function getParam(name) {
   const params = new URLSearchParams(window.location.search);

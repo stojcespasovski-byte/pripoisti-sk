@@ -4,8 +4,14 @@ Verejná appka na pripoistenie vozidiel (9 pripoistení k existujúcemu PZP/hava
 **Toto repo je PUBLIC — nikdy sem nedávaj tajomstvá** (credentials, API kľúče, heslá). Všetka autentifikácia voči Pillow/BCRM žije na backende.
 
 ## Rozsah tejto codebase
-- Táto session/repo = **len frontend** (`pripoisti-sk`). Backend `api.pripoisti.sk` (repo `pripoisti-api`, privátne, FastAPI/Hetzner) vlastní iná session — zmeny backendu (nový endpoint, CORS, e-mail šablóny) NEROBIŤ tu, ale sformulovať ako požiadavku pre backend.
+- Táto session/repo = **len frontend** (`pripoisti-sk`). Backend `alexapi.sk` (repo `alex-sk`, privátne, FastAPI/Hetzner; priečinok na disku `pripoisti-api`) vlastní iná session — zmeny backendu (nový endpoint, CORS, e-mail šablóny) NEROBIŤ tu, ale sformulovať ako požiadavku pre backend.
 - Súbory: `index.html` (**HOMEPAGE = Krok 1+2**: hero + vstupy, dlaždice, ceny; verejná domovská na `pripoisti.sk/`; pôvodne `app.html`, premenované 2026-07-17), `app-step3.html` (údaje klienta, 4 varianty FO/cudzinec/SZČO/PO), `app-step4.html` (súhrn + Pillow save + platba/QR/e-mail), `splash.html` (starý animovaný splash — odložený bokom, NEpoužitý), `poradna/` (SEO články + rozcestník), `vercel.json` (clean URLs pre /poradna + redirect `/app.html`→`/`). **Pozn.: heslový dev-gate zrušený (appka je verejná/naostro).**
+
+## Volania na backend (kľúč odberateľa)
+- Backend vyžaduje na každej ceste `X-Api-Key`. Prehliadač ho nesmie vidieť, preto **nič nevolá `alexapi.sk` priamo**: volá `/api/<cesta>` na našej doméne a kľúč doplní serverová proxy `api/[...cesta].js` z env `ALEX_API_KEY` (Vercel → Settings → Environment Variables). Kľúč **nikdy** do JS ani do repa.
+- Nová cesta = `${API_BASE}/nieco`. `API_BASE` je `/api` na produkcii a `''` na localhoste (vývoj ide cez `proxy.py`). Nepíš `https://alexapi.sk` ani zadrôtované `/api`.
+- **Výnimka — odkazy, na ktoré klient klikne** (`<a href>`, odkazy v e-maile): hlavičku niet kto poslať, preto ostávajú absolútne na `alexapi.sk` a backend ich necháva bez kľúča. Sú to LEN `/docs/*` (právne PDF) a `/bcrm/payment/pay|dakujeme|qr`. Čokoľvek iné, na čo klient klikne, musí ísť cez `/api` — `/bcrm/docs/najazd` medzi výnimkami **nie je**.
+- Po zmene proxy spusť `node tests/api-proxy.test.mjs` (bez závislostí). Hlavičky `RestUid` (Pillow session) a `X-Brand` (backend podľa nej vie, že zápis do CRM robí on) sa MUSIA prenášať — bez nich sa zmluva neuzavrie / nezapíše.
 
 ## Nasadenie
 - Hosting = **Vercel** (nie Caddy!). Deploy = `git push origin main` → auto. Overenie: `curl -s https://pripoisti.sk/ | grep "<niečo z commitu>"`.
