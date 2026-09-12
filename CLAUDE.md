@@ -10,7 +10,8 @@ Verejná appka na pripoistenie vozidiel (9 pripoistení k existujúcemu PZP/hava
 ## Volania na backend (kľúč odberateľa)
 - Backend vyžaduje na každej ceste `X-Api-Key`. Prehliadač ho nesmie vidieť, preto **nič nevolá `alexapi.sk` priamo**: volá `/api/<cesta>` na našej doméne a kľúč doplní serverová proxy `api/[...cesta].js` z env `ALEX_API_KEY` (Vercel → Settings → Environment Variables). Kľúč **nikdy** do JS ani do repa.
 - Nová cesta = `${API_BASE}/nieco`. `API_BASE` je `/api` na produkcii a `''` na localhoste (vývoj ide cez `proxy.py`). Nepíš `https://alexapi.sk` ani zadrôtované `/api`.
-- **Výnimka — odkazy, na ktoré klient klikne** (`<a href>`, odkazy v e-maile): hlavičku niet kto poslať, preto ostávajú absolútne na `alexapi.sk` a backend ich necháva bez kľúča. Sú to LEN `/docs/*` (právne PDF) a `/bcrm/payment/pay|dakujeme|qr`. Čokoľvek iné, na čo klient klikne, musí ísť cez `/api` — `/bcrm/docs/najazd` medzi výnimkami **nie je**.
+- **Výnimka — odkazy, na ktoré klient klikne** (`<a href>`, odkazy v e-maile): hlavičku niet kto poslať, preto ostávajú absolútne na `alexapi.sk` a backend ich necháva bez kľúča: `/docs/*` (právne PDF), `/bcrm/payment/pay|dakujeme|qr`, `/bcrm/docs/*` (tlačivá) a `/obhliadka/*`, `/platba/*`. Zdroj pravdy je `_VYNIMKY` v `routers/api_kluc.py` na backende — pri novom klikacom odkaze si to tam over, inak klient dostane 401.
+- Vyhlásenie k nájazdu (`/bcrm/docs/najazd`) vedie u nás cez `/api`, hoci dnes už výnimku má (backend ju pridal 12. 9. 2026 po tom, čo bolo nahlásené, že je to klikací odkaz mimo zoznamu). Ponechané zámerne: cez proxy funguje bez ohľadu na to, či výnimka v budúcnosti zostane.
 - Po zmene proxy spusť `node tests/api-proxy.test.mjs` (bez závislostí). Hlavičky `RestUid` (Pillow session) a `X-Brand` (backend podľa nej vie, že zápis do CRM robí on) sa MUSIA prenášať — bez nich sa zmluva neuzavrie / nezapíše.
 
 ## Nasadenie
