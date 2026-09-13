@@ -1243,28 +1243,7 @@ function resetDraft() { try { localStorage.removeItem("pripoisti_order"); } catc
           <div class="entry-field-sm">
             <div class="entry-label">Nájazd (km/rok)</div>
             <select class="entry-input" id="f-km-po" onchange="onFieldInput()">
-              <option value="">Vyberte...</option>
-              <option value="5000">5 000 km a menej</option>
-              <option value="6000">6 000 km</option>
-              <option value="7000">7 000 km</option>
-              <option value="8000">8 000 km</option>
-              <option value="9000">9 000 km</option>
-              <option value="10000">10 000 km</option>
-              <option value="11000">11 000 km</option>
-              <option value="12000">12 000 km</option>
-              <option value="13000">13 000 km</option>
-              <option value="14000">14 000 km</option>
-              <option value="15000">15 000 km</option>
-              <option value="16000">16 000 km</option>
-              <option value="17000">17 000 km</option>
-              <option value="18000">18 000 km</option>
-              <option value="19000">19 000 km</option>
-              <option value="20000">20 000 km</option>
-              <option value="21000">21 000 km</option>
-              <option value="22000">22 000 km</option>
-              <option value="23000">23 000 km</option>
-              <option value="24000">24 000 km</option>
-              <option value="25000">25 000 km a viac</option>
+              <option value="">Načítavam…</option>
             </select>
           </div>
         </div>
@@ -1288,28 +1267,7 @@ function resetDraft() { try { localStorage.removeItem("pripoisti_order"); } catc
           <div class="entry-field-sm">
             <div class="entry-label">Nájazd (km/rok)</div>
             <select class="entry-input" id="f-km-fo" onchange="onFieldInput()">
-              <option value="">Vyberte...</option>
-              <option value="5000">5 000 km a menej</option>
-              <option value="6000">6 000 km</option>
-              <option value="7000">7 000 km</option>
-              <option value="8000">8 000 km</option>
-              <option value="9000">9 000 km</option>
-              <option value="10000">10 000 km</option>
-              <option value="11000">11 000 km</option>
-              <option value="12000">12 000 km</option>
-              <option value="13000">13 000 km</option>
-              <option value="14000">14 000 km</option>
-              <option value="15000">15 000 km</option>
-              <option value="16000">16 000 km</option>
-              <option value="17000">17 000 km</option>
-              <option value="18000">18 000 km</option>
-              <option value="19000">19 000 km</option>
-              <option value="20000">20 000 km</option>
-              <option value="21000">21 000 km</option>
-              <option value="22000">22 000 km</option>
-              <option value="23000">23 000 km</option>
-              <option value="24000">24 000 km</option>
-              <option value="25000">25 000 km a viac</option>
+              <option value="">Načítavam…</option>
             </select>
           </div>
         </div>
@@ -1333,28 +1291,7 @@ function resetDraft() { try { localStorage.removeItem("pripoisti_order"); } catc
           <div class="entry-field-sm">
             <div class="entry-label">Nájazd (km/rok)</div>
             <select class="entry-input" id="f-km-szco" onchange="onFieldInput()">
-              <option value="">Vyberte...</option>
-              <option value="5000">5 000 km a menej</option>
-              <option value="6000">6 000 km</option>
-              <option value="7000">7 000 km</option>
-              <option value="8000">8 000 km</option>
-              <option value="9000">9 000 km</option>
-              <option value="10000">10 000 km</option>
-              <option value="11000">11 000 km</option>
-              <option value="12000">12 000 km</option>
-              <option value="13000">13 000 km</option>
-              <option value="14000">14 000 km</option>
-              <option value="15000">15 000 km</option>
-              <option value="16000">16 000 km</option>
-              <option value="17000">17 000 km</option>
-              <option value="18000">18 000 km</option>
-              <option value="19000">19 000 km</option>
-              <option value="20000">20 000 km</option>
-              <option value="21000">21 000 km</option>
-              <option value="22000">22 000 km</option>
-              <option value="23000">23 000 km</option>
-              <option value="24000">24 000 km</option>
-              <option value="25000">25 000 km a viac</option>
+              <option value="">Načítavam…</option>
             </select>
           </div>
         </div>
@@ -1983,6 +1920,86 @@ function ensureFarby() {
   }
   return _farbyPromise;
 }
+/* Ročný nájazd — jeden zdroj: schéma porovnávača GET /porovnavac/schema, pole
+   `vehicle.najazd`. Kópiu pásiem vo frontende zámerne NEdržíme: keď sa pásma v schéme
+   zmenia, web by ponúkal staré hodnoty.
+   Pillow pásma NEMÁ — každý km má vlastnú cenu (overené: 12 000 / 12 500 / 13 000 km =
+   tri rôzne ceny) a mimo rozsahu ticho oreže (2 000 aj 4 000 km = cena za 5 000). Preto
+   `moznosti_podla[druh]` (zjednotenie pre všetky poisťovne porovnávača, OA začína na
+   2 000 kvôli Wüstenrotu) orezávame na `rozsah_pre.pillow[druh]` — inak by klient zvolil
+   2 000 km, vyhlásenie k nájazdu by ho uvádzalo a zmluva by mala 5 000.
+   Schéma má ~840 kB (60 kB brotli) → načíta sa RAZ na stránku a drží v pamäti. */
+let _najazdPole = null, _najazdPromise = null;
+// Web drží Pillow kódy typu (idú aj do save XML), schéma kanonické druhy. Zrkadlí
+// DIALEKT_NA_DRUH v alex-sk adapters/canonical.py; ostatné kódy sú zhodné.
+const DRUH_KANONICKY = {
+  MO: 'MOTO', '4K': 'STVORKOLKA', PN: 'NAVES', PV: 'PRIVES', TRA: 'TR',
+  ABM: 'AB_MHD', TBM: 'TROLEJBUS', EK: 'EKOLOBEZKA', EV: 'EVOZIK',
+};
+function ensureNajazdSchema() {
+  if (_najazdPole) return Promise.resolve(_najazdPole);
+  if (!_najazdPromise) {
+    _najazdPromise = fetch(`${API_BASE}/porovnavac/schema`)
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(s => {
+        const pole = (s.polia || []).find(p => p.kluc === 'vehicle.najazd');
+        if (!pole) throw new Error('schéma nemá pole vehicle.najazd');
+        return (_najazdPole = pole);
+      })
+      .catch(e => { _najazdPromise = null; throw e; });   // ďalšie volanie skúsi znova
+  }
+  return _najazdPromise;
+}
+/* Voľby nájazdu pre Pillow typ vozidla → [[km, text], …], alebo null, keď Pillow pre
+   daný druh nájazd nepozná (náves, príves, traktor…) — pole sa vtedy nezobrazuje. */
+function najazdMoznosti(typ) {
+  if (!_najazdPole || !typ) return null;
+  const druh = DRUH_KANONICKY[typ] || typ;
+  const rozsah = ((_najazdPole.rozsah_pre || {}).pillow || {})[druh];
+  const moznosti = (_najazdPole.moznosti_podla || {})[druh];
+  if (!rozsah || !moznosti) return null;
+  const [min, max] = rozsah;
+  const out = Object.entries(moznosti)
+    .map(([k, text]) => [parseInt(k, 10), text])
+    .filter(([km]) => km >= min && km <= max)
+    .sort((a, b) => a[0] - b[0]);
+  if (!out.length) return null;
+  // Pillow pod minimom a nad maximom oreže → krajné voľby naozaj znamenajú „a menej" /
+  // „a viac". Odvodené zo schémy (`orezava_mimo_rozsahu_pre`), nie vymyslené: bez toho
+  // by klient s 3 000 km nevedel, že má zvoliť 5 000.
+  if ((_najazdPole.orezava_mimo_rozsahu_pre || []).includes('pillow')) {
+    const n = out.length - 1;
+    if (!/menej/.test(out[0][1])) out[0] = [out[0][0], out[0][1] + ' a menej'];
+    if (!/viac/.test(out[n][1])) out[n] = [out[n][0], out[n][1] + ' a viac'];
+  }
+  return out;
+}
+const najazdOptionsHtml = volby => volby.map(([km, text]) => `<option value="${km}">${text}</option>`).join('');
+/* Krok 1: pri štarte naplní všetky tri rolety (FO/PO/SZČO) voľbami osobného auta.
+   Druh ešte nie je známy — spresní ho až lookup vozidla (updateEntryKmOptions). */
+function fillEntryKmSelects() {
+  const ids = ['f-km-po', 'f-km-fo', 'f-km-szco'];
+  ensureNajazdSchema().then(() => {
+    const volby = najazdMoznosti('OA');
+    ids.forEach(id => {
+      const sel = document.getElementById(id);
+      if (!sel || sel.dataset.kmDruh) return;              // už naplnená pre konkrétny druh
+      sel.innerHTML = '<option value="">Vyberte...</option>' + najazdOptionsHtml(volby);
+      sel.dataset.kmDruh = 'OA';
+      sel.onmousedown = null;
+    });
+    updateEntryKmOptions();                                  // hodnota z obnovenej objednávky
+  }).catch(() => {
+    ids.forEach(id => {
+      const sel = document.getElementById(id);
+      if (!sel || sel.dataset.kmDruh) return;
+      sel.innerHTML = '<option value="">Nepodarilo sa načítať — kliknite sem</option>';
+      sel.onmousedown = () => { ids.forEach(i => { const s = document.getElementById(i); if (s) s.onmousedown = null; }); fillEntryKmSelects(); };
+    });
+  });
+}
+fillEntryKmSelects();
+
 const PILLOW_VEHICLETYPE_VALID = new Set(['OA','MO','NA','OBY','AB','ABM','4K','TAH','PN','PV','SAN','SPS','TBM','TRA','VZV','EB','EK','EV']);
 const PILLOW_PARTYTYPE_MAP = { fo:'FORC', po:'PO', szco:'OSVC' };
 const PILLOW_BRAND_MAP = {
@@ -4739,10 +4756,13 @@ async function ecvPreLookup() {
   const seq = ++_preSeq;
   const sel = entryKmSelect();
   const firstOpt = sel ? sel.options[0] : null;
+  // pôvodný text vrátiť presne — roleta môže ešte ukazovať „Načítavam…" alebo ponuku
+  // skúsiť znova, ak sa schéma nenačítala; natvrdo „Vyberte..." by to zakrylo
+  const firstText = firstOpt ? firstOpt.textContent : '';
   if (sel) { sel.disabled = true; if (firstOpt) firstOpt.textContent = 'Zisťujem vozidlo…'; }
   const veh = await apiLookupVehicleCached(ecv).catch(() => null);
   if (seq !== _preSeq) return;                                  // medzitým sa EČV zmenilo
-  if (sel) { sel.disabled = false; if (firstOpt) firstOpt.textContent = 'Vyberte...'; }
+  if (sel) { sel.disabled = false; if (firstOpt && firstOpt.isConnected) firstOpt.textContent = firstText; }
   if (veh && veh.found) {
     // vozidlo mohlo byť nájdené cez EČV aj VIN → porovnaj vstup s oboma
     const prevCena = (lookup.vehicle && (lookup.vehicle.ecv === ecv || lookup.vehicle.vin === ecv)) ? lookup.vehicle.cenaVozidla : '';
@@ -4892,40 +4912,28 @@ function vehIsNew(datumReg) {
 /* Vozidlo potrebuje cenu (rate aj save): každé non-OA, alebo OA mladšie ako 6 mes. */
 function needsCenaFor(v) { return !!v && !!v.typ && (v.typ !== 'OA' || vehIsNew(v.datumReg)); }
 
-/* Číselníky nájazdu — motorka jazdí menej, má vlastné pásma */
-const _kmLbl = k => String(k).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' km';
-// MO — Pillow číselník moto: 1 000 a menej … 10 000 a viac (1 000-krok)
-const KM_MOTO = [[1000,'1 000 km a menej'],[2000,'2 000 km'],[3000,'3 000 km'],[4000,'4 000 km'],[5000,'5 000 km'],[6000,'6 000 km'],[7000,'7 000 km'],[8000,'8 000 km'],[9000,'9 000 km'],[10000,'10 000 km a viac']];
-const KM_CAR  = [[5000,'5 000 km a menej'],[7000,'7 000 km'],[10000,'10 000 km'],[13000,'13 000 km'],[15000,'15 000 km'],[18000,'18 000 km'],[20000,'20 000 km'],[25000,'25 000 km a viac']];
-// NA/OBY/ťahač/autobus a ďalšie — Pillow číselník 5252: 10 000 a menej … 100 000 a viac (5 000-krok)
-const KM_HEAVY = [[10000,'10 000 km a menej'],
-  ...[15000,20000,25000,30000,35000,40000,45000,50000,55000,60000,65000,70000,75000,80000,85000,90000,95000].map(k => [k, _kmLbl(k)]),
-  [100000,'100 000 km a viac']];
-
 /* interné palivo (z BCRM) → hodnota v <select> modalu */
 const PALIVO_TO_SELECT = { benzin:'benzin', diesel:'diesel', nafta:'diesel', elektro:'elektrina', elektrina:'elektrina', hybrid:'hybrid', lpg:'plyn', cng:'plyn', plyn:'plyn' };
 
-/* Krok 1: plná autová roleta nájazdu (rovnaká ako v HTML) — pre swap späť z moto módu */
-const KM_CAR_ENTRY = (() => {
-  const fmt = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-  const a = [[5000, '5 000 km a menej']];
-  for (let n = 6000; n <= 24000; n += 1000) a.push([n, fmt(n) + ' km']);
-  a.push([25000, '25 000 km a viac']);
-  return a;
-})();
 function entryKmSelect() {
   return document.getElementById(currentType === 'po' ? 'f-km-po' : currentType === 'fo' ? 'f-km-fo' : 'f-km-szco');
 }
-/* Prepne roletu nájazdu v Kroku 1 podľa typu vozidla z lookupu (motorka má vlastné pásma).
-   Hodnotu namapuje na najbližšie pásmo a zosúladí s lookup.vehicle.najazd. */
+/* Prepne roletu nájazdu v Kroku 1 podľa typu vozidla z lookupu (voľby zo schémy).
+   Hodnotu namapuje na najbližšiu voľbu a zosúladí s lookup.vehicle.najazd. */
 function updateEntryKmOptions() {
   const sel = entryKmSelect(); if (!sel) return;
-  const mode = (lookup.vehicle && lookup.vehicle.typ === 'MO') ? 'moto' : 'car';
+  if (!_najazdPole) { ensureNajazdSchema().then(updateEntryKmOptions).catch(() => {}); return; }
+  const typ = (lookup.vehicle && lookup.vehicle.typ) || 'OA';
+  // Roleta v Kroku 1 je zároveň spúšťač výpočtu (onFieldInput čaká na výber km), preto
+  // sa NEskrýva ani pri druhu, pre ktorý Pillow nájazd nepozná — ponúkne voľby osobného
+  // auta ako doteraz. Pre takýto druh sa nájazd reálne rieši v modáli, kde sa skryje.
+  const druh = najazdMoznosti(typ) ? typ : 'OA';
+  const brackets = najazdMoznosti(druh);
   const desired = parseInt((lookup.vehicle && lookup.vehicle.najazd) || sel.value, 10) || 0;
-  if ((sel.dataset.kmMode || 'car') !== mode) {
-    const brackets = mode === 'moto' ? KM_MOTO : KM_CAR_ENTRY;
-    sel.innerHTML = '<option value="">Vyberte...</option>' + brackets.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
-    sel.dataset.kmMode = mode;
+  if (sel.dataset.kmDruh !== druh) {
+    sel.innerHTML = '<option value="">Vyberte...</option>' + najazdOptionsHtml(brackets);
+    sel.dataset.kmDruh = druh;
+    sel.onmousedown = null;
     if (desired) {
       const best = brackets.reduce((a, b) => Math.abs(b[0] - desired) < Math.abs(a[0] - desired) ? b : a);
       sel.value = String(best[0]);
@@ -5105,11 +5113,18 @@ function onVmTypChange() {
   show('vm-free-znacka-wrap', !!typ && !isOA);
   show('vm-free-model-wrap', !!typ && !isOA);
 
-  // nájazd km/rok — pre non-OA (OA berie km z Kroku 1); motorka má vlastný číselník.
-  // Typy bez nájazdu (náves, príves, traktor, pracovný stroj, VZV, e-bicykel, kolobežka,
-  // elektrovozidlo bez reg.) roletku nájazdu nemajú.
-  const NO_NAJAZD = new Set(['PN', 'PV', 'TRA', 'SPS', 'VZV', 'EB', 'EK', 'EV']);
-  const showKm = !!typ && !isOA && !NO_NAJAZD.has(typ);
+  // nájazd km/rok — pre non-OA (OA berie km z Kroku 1). Voľby aj to, či sa pole vôbec
+  // ukáže, určuje schéma: druh bez Pillow rozsahu (náves, príves, traktor, pracovný stroj…)
+  // roletku nemá. Kým sa schéma načítava, pole sa ukáže s „Načítavam…" — je povinné,
+  // takže sa modal nedá uložiť bez nájazdu, a po načítaní sa zobrazenie spresní.
+  // Dvojargumentové then: chyba VNÚTRI onVmTypChange sa nesmie vydávať za „nenačítalo sa".
+  if (!_najazdPole && typ && !isOA) ensureNajazdSchema().then(() => onVmTypChange(), () => {
+    const s = g('vm-km');
+    s.innerHTML = '<option value="">Nepodarilo sa načítať — kliknite sem</option>';
+    s.onmousedown = () => { s.onmousedown = null; s.innerHTML = '<option value="">Načítavam…</option>'; onVmTypChange(); };
+  });
+  const kmVolby = najazdMoznosti(typ);
+  const showKm = !!typ && !isOA && (!_najazdPole || !!kmVolby);
   show('vm-km-wrap', showKm);
 
   // motorové polia (palivo/objem/výkon) — návesy a prívesy nemajú motor
@@ -5118,17 +5133,21 @@ function onVmTypChange() {
   show('vm-palivo-wrap', hasEngine);
   show('vm-objem-wrap', hasEngine);
   show('vm-vykon-wrap', hasEngine);
-  if (showKm) {
+  if (showKm && kmVolby) {
     const sel = g('vm-km');
-    const brackets = typ === 'MO' ? KM_MOTO : KM_HEAVY;   // modal = len non-OA; MO moto, ostatné (NA/OBY/ťahač/autobus) číselník 5252
     const cur = sel.value || (lookup.vehicle && lookup.vehicle.najazd) || '';
-    sel.innerHTML = brackets.map(([v, lbl]) => `<option value="${v}">${lbl}</option>`).join('');
-    // predvybrať najbližšie pásmo k doterajšej hodnote
+    // Prázdna voľba NAVRCHU: bez nej by prehliadač sám vybral prvú hodnotu a klient by
+    // odoslal nájazd, ktorý nezadal (schéma: `predvolene` nie je).
+    sel.innerHTML = '<option value="">Vyberte…</option>' + najazdOptionsHtml(kmVolby);
+    sel.onmousedown = null;
+    // hodnotu, ktorú klient už zadal (Krok 1 / predošlý typ), namapovať na najbližšiu voľbu
     if (cur) {
       const curN = parseInt(cur, 10);
-      const best = brackets.reduce((a, b) => Math.abs(b[0] - curN) < Math.abs(a[0] - curN) ? b : a);
+      const best = kmVolby.reduce((a, b) => Math.abs(b[0] - curN) < Math.abs(a[0] - curN) ? b : a);
       sel.value = String(best[0]);
     }
+  } else if (showKm && !g('vm-km').onmousedown) {
+    g('vm-km').innerHTML = '<option value="">Načítavam…</option>';   // schéma ešte beží
   }
 
   // cena vozidla: non-OA vždy, OA len ak je nové (<6 mes.)
@@ -5188,6 +5207,9 @@ async function saveVehModal() {
   const farba = (g('vm-farba')?.value || '').trim();
   if (!farba) errs.push('farbu');
   if (needsCena && !(parseFloat(cena) > 0)) errs.push('cenu vozidla');
+  // nájazd je cenotvorný — keď sa pole ukazuje, bez neho by sa ocenilo bez údaja od klienta
+  const kmShown = g('vm-km-wrap') && g('vm-km-wrap').style.display !== 'none';
+  if (kmShown && !g('vm-km').value) errs.push('ročný nájazd');
   const vin = g('vm-vin').value.trim().toUpperCase();
   if (vin.length !== 17) errs.push('VIN (presne 17 znakov)');
   const ecvVal = (g('vm-ecv')?.value || '').trim().toUpperCase().replace(/[\s-]/g, '');
