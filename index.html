@@ -4900,13 +4900,32 @@ function vmBuildBrands() {
     .sort((a, b) => a.name.localeCompare(b.name, 'sk'));
 }
 /* Vozidlo mladšie ako 6 mesiacov (podľa 1. registrácie) → „nové" */
-function vehIsNew(datumReg) {
+/* „Nové vozidlo" = prvá evidencia `on_or_after dnes-6m` — pravidlo schémy pre Pillow
+   (`vehicle.value`, povinne_ak_pre.pillow). Bez hodnoty Pillow pri takom aute odmietne riziká
+   závislé od hodnoty vrátane skla, preto sa hranica nesmie od backendu líšiť ani o deň.
+   Rovnaká gramatika ako `datum_z_kotvy` v alex-sk canonical.py:
+   - mesiace kalendárne s orezaním na koniec mesiaca (31. 8. − 6m = 28. 2.). Predtým
+     `setMonth(-6)` pretiekol na 3. 3., takže auto z 1. 3. web nepovažoval za nové,
+     cenu nepýtal a Pillow by sklo odmietol;
+   - porovnávajú sa len dátumy. Predtým sa dátum registrácie (polnoc) porovnával s „teraz"
+     vrátane času, takže samotný hraničný deň vypadol.
+   `dnes` je parameter len kvôli testu hranice. */
+function vehIsNew(datumReg, dnes = new Date()) {
   if (!datumReg) return false;
-  const d = new Date(datumReg);
-  if (isNaN(d)) return false;
-  const cutoff = new Date();
-  cutoff.setMonth(cutoff.getMonth() - 6);
-  return d >= cutoff;
+  const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(datumReg));
+  let reg;
+  if (iso) {
+    reg = Date.UTC(+iso[1], +iso[2] - 1, +iso[3]);
+  } else {                                    // iný formát než ISO — rozparsovať ako doteraz
+    const d = new Date(datumReg);
+    if (isNaN(d)) return false;
+    reg = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+  }
+  let rok = dnes.getFullYear(), mesiac = dnes.getMonth() - 6;
+  if (mesiac < 0) { mesiac += 12; rok -= 1; }
+  const poslednyDen = new Date(Date.UTC(rok, mesiac + 1, 0)).getUTCDate();
+  const hranica = Date.UTC(rok, mesiac, Math.min(dnes.getDate(), poslednyDen));
+  return reg >= hranica;
 }
 
 /* Vozidlo potrebuje cenu (rate aj save): každé non-OA, alebo OA mladšie ako 6 mes. */
