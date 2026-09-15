@@ -1890,6 +1890,25 @@ const PILLOW_FUEL_MAP = {
   elektro:'EP', elektrina:'EP', EP:'EP', hybrid:'HY', HY:'HY',
   lpg:'PB', cng:'PB', plyn:'PB', PB:'PB',
 };
+/* Zoradenie roletiek tak, ako človek hľadá: bez diakritiky a bez ohľadu na veľkosť písmen
+   (Čierna medzi C, nie na konci), čísla prirodzene (T5 pred T10), kratší názov pred dlhším
+   (Kodiaq pred Kodiaq Scout). Slovenské pravidlá zámerne nie — v nich je „ch" až za „h"
+   a Chevrolet by bol za Hyundai. Funkcie (nie const), aby ich šlo volať odkiaľkoľvek. */
+function bezDiakritiky(s) {
+  return String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+function porovnajNazvy(a, b) {
+  const c = porovnajNazvy.c || (porovnajNazvy.c = new Intl.Collator('en', { sensitivity: 'base', numeric: true }));
+  return c.compare(bezDiakritiky(a), bezDiakritiky(b)) || c.compare(String(a), String(b));
+}
+/* Modely značky zoradené podľa názvu. Na koniec idú položky, ktoré nie sú model:
+   pokazené názvy z číselníka („=C2010" — vzorec z tabuľky namiesto hodnoty; nahlásené
+   backendu) a zberné „Ostatní"/„Neuvedený". Inak by „=" vyskočilo navrch zoznamu. */
+function zoradModely(models) {
+  const poradie = n => /^(ostatn|neuveden)/i.test(n) ? 2 : /^=/.test(n) ? 1 : 0;
+  return [...models].sort(([, a], [, b]) => (poradie(a) - poradie(b)) || porovnajNazvy(a, b));
+}
+
 /* Pillow číselník farieb — jeden zdroj: backend GET /ciselnik/farby (Pillow 723/SKP).
    Kópiu vo frontende zámerne NEdržíme, aby sa nemohla rozísť s číselníkom. */
 let PILLOW_FARBY = null, _farbyPromise = null;
@@ -1902,7 +1921,7 @@ function fillFarbySelect() {
   sel.innerHTML = '<option value="">Načítavam…</option>';
   ensureFarby().then(list => {
     sel.innerHTML = '<option value="">Vyberte farbu…</option>' +
-      list.map(f => `<option value="${f}">${f}</option>`).join('');
+      [...list].sort(porovnajNazvy).map(f => `<option value="${f}">${f}</option>`).join('');
     sel.dataset.filled = '1';
     if (keep && [...sel.options].some(o => o.value === keep)) sel.value = keep;
   }).catch(() => {
@@ -4897,7 +4916,7 @@ function vmBuildBrands() {
   for (const [name, code] of Object.entries(PILLOW_BRAND_MAP)) if (!codeToName[code]) codeToName[code] = name;
   return Object.keys(PILLOW_MODELS)
     .map(code => ({ code, name: codeToName[code] || code }))
-    .sort((a, b) => a.name.localeCompare(b.name, 'sk'));
+    .sort((a, b) => porovnajNazvy(a.name, b.name));
 }
 /* Vozidlo mladšie ako 6 mesiacov (podľa 1. registrácie) → „nové" */
 /* „Nové vozidlo" = prvá evidencia `on_or_after dnes-6m` — pravidlo schémy pre Pillow
@@ -5192,7 +5211,7 @@ function onVmBrandChange() {
   }
   inaWrap.style.display = 'none'; warn.style.display = 'none';
   modelSel.disabled = !code;
-  const models = PILLOW_MODELS[code] || [];
+  const models = zoradModely(PILLOW_MODELS[code] || []);
   modelSel.innerHTML = '<option value="">Vyberte model…</option>' +
     models.map(([id, name]) => `<option value="${id}">${name}</option>`).join('');
 }
